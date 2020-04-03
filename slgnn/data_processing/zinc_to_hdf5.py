@@ -84,10 +84,10 @@ class ZincToHdf5:
         Output:
             A binary index file under the dir_path.
         """
-        files = os.scandir(dir_path)
+        files = list(os.scandir(dir_path))
         index = dict()
         indexer = 0
-        for f in files:
+        for f in tqdm(files):
             if not f.name.split(".")[-1] in ["gz", "mol2"]:
                 continue
             mol2 = Mol2(f.path)
