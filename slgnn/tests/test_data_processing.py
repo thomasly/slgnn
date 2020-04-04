@@ -1,8 +1,10 @@
 import unittest
-from unittest import mock
 import os
+import pickle as pk
 
-from ..data_processing.zinc_to_hdf5 import ZincToHdf5
+from scipy import sparse
+
+from ..data_processing.zinc_to_hdf5 import ZincToHdf5, Hdf5Loader
 
 
 class TestZincReading(unittest.TestCase):
@@ -18,42 +20,59 @@ class TestZincReading(unittest.TestCase):
             # "HHADRO.xaa.mol2.gz",
         ]
 
-    @mock.patch("builtins.input")
-    def test_files_from_list(self, mocked_input):
+    def test_files_from_list(self):
         with self.assertRaisesRegex(ValueError, "^.* is not a valid path.$"):
-            ZincToHdf5(self.invalid_gzips)
-
-        zth = ZincToHdf5(self.gzips)
-        self.assertTrue(hasattr(zth, "_fpaths"))
-        self.assertEqual(len(zth._fpaths), 3)
-        for gzip in self.gzips:
-            self.assertIn(os.path.basename(gzip), self.test_file_names)
-        self.assertIsNone(zth._n_mols)
-        # calculate n_mols
-        # positive responses
-        user_responses = ["", "Y", "yes"]
-        mocked_input.side_effect = user_responses
-        for _ in range(len(user_responses)):
-            zth = ZincToHdf5(self.gzips)
-            zth.n_mols
-            self.assertIsNotNone(zth._n_mols)
-        # negative responses
-        user_responses = ["n", "#$%"]
-        mocked_input.side_effect = user_responses
-        for _ in range(len(user_responses)):
-            zth = ZincToHdf5(self.gzips)
-            zth.n_mols
-            self.assertIsNone(zth._n_mols)
+            ZincToHdf5.from_files(self.invalid_gzips)
+        zth = ZincToHdf5.from_files(self.gzips)
+        self.assertIsInstance(zth, ZincToHdf5)
+        self.assertTrue(hasattr(zth, "_n_mols"))
+        self.assertGreater(zth.n_mols, 0)
+        self.assertEqual(zth.n_mols, zth._n_mols)
 
     def test_files_from_n_samples(self):
-        zth = ZincToHdf5.random_sample(1000, dir_path="test_data")
-        self.assertTrue(hasattr(zth, "_fpaths"))
-        self.assertGreaterEqual(len(zth._fpaths), 1)
-        self.assertIsNotNone(zth._n_mols)
-        self.assertGreaterEqual(zth._n_mols, 1000)
+        if os.path.exists("test_data/index"):
+            os.remove("test_data/index")
+        zth = ZincToHdf5.random_sample(10, dir_path="test_data", verbose=False)
+        self.assertTrue(hasattr(zth, "_mol2s"))
+        self.assertEqual(len(zth._mol2s), 10)
+        self.assertTrue(hasattr(zth, "_n_mols"))
+        self.assertEqual(zth.n_mols, 10)
         # number of samples too big
         with self.assertLogs() as cm:
-            zth = ZincToHdf5.random_sample(10000, dir_path="test_data")
-            self.assertLess(zth._n_mols, 10000)
+            zth = ZincToHdf5.random_sample(
+                10000, dir_path="test_data", verbose=False)
+            self.assertLess(zth.n_mols, 10000)
+            self.assertGreater(zth.n_mols, 0)
         self.assertIn(
-            "Target path does not have enough molecules.", cm.output[0])
+            "does not have enough samples.", cm.output[0])
+
+    def test_indexing(self):
+        self.assertIsInstance(ZincToHdf5.__dict__["indexing"], staticmethod)
+        # remove the old testing file
+        if os.path.exists("test_data/index"):
+            os.remove("test_data/index")
+        ZincToHdf5.indexing("test_data", verbose=False)
+        self.assertTrue(os.path.exists("test_data/index"))
+        with open("test_data/index", "rb") as f:
+            index = pk.load(f)
+        # assert the total number is there
+        index["total"]
+        # assert the number of entries is correct
+        index[index["total"]-1]
+        with self.assertRaises(KeyError):
+            index[index["total"]]
+
+
+class TestHdf5Loader(unittest.TestCase):
+
+    def setUp(self):
+        if os.path.exists("test_data/test.hdf5"):
+            os.remove("test_data/test.hdf5")
+        zth = ZincToHdf5.random_sample(10, dir_path="test_data", verbose=False)
+        zth.save_hdf5("test_data/test.hdf5")
+        self.loader = Hdf5Loader("test_data/test.hdf5")
+
+    def test_read_sparse_adjacency_matrices(self):
+        self.assertTrue(os.path.exists("test_data/test.hdf5"))
+        matrices = self.loader.load_adjacency_matrices(10)
+        self.assertIsInstance(matrices[0], sparse.csr_matrix)
