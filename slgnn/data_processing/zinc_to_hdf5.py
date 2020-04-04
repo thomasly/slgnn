@@ -102,13 +102,16 @@ class ZincToHdf5:
             bond_feats.append(graph["bond_features"])
         h5f.create_dataset("smiles",
                            data=np.array(smiles).astype(bytes),
-                           dtype=dt)
+                           dtype=dt,
+                           chunks=True)
         h5f.create_dataset("atom_features",
                            data=np.array(atom_feats),
-                           dtype=np.float16)
+                           dtype=np.float16,
+                           chunks=True)
         h5f.create_dataset("bond_features",
                            data=np.array(bond_feats),
-                           dtype=np.int8)
+                           dtype=np.int8,
+                           chunks=True)
         # Save sparse adjacency matrices
         adj = h5f.create_group("adjacency_matrices")
         for i, mat in enumerate(a_matrices):
@@ -116,6 +119,7 @@ class ZincToHdf5:
             adj.create_dataset("indptr_{}".format(i), data=mat.indptr)
             adj.create_dataset("indices_{}".format(i), data=mat.indices)
             adj.attrs["shape_{}".format(i)] = mat.shape
+        h5f.attrs["total"] = self.n_mols
         h5f.close()
 
     @staticmethod
@@ -167,3 +171,8 @@ class Hdf5Loader:
             matrices.append(mat)
         h5f.close()
         return matrices
+
+    @property
+    def total(self):
+        with h5py.File(self.path, "r") as h5f:
+            return h5f.attrs["total"]
