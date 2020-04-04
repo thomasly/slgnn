@@ -2,6 +2,7 @@ import os
 import random
 import pickle as pk
 import logging
+from collections import defaultdict
 
 from chemreader.readers.readmol2 import Mol2
 import h5py
@@ -63,6 +64,13 @@ class ZincToHdf5:
         return n_mols
 
     @classmethod
+    def _group_samples(cls, samples, index):
+        groups = defaultdict(list)
+        for s in samples:
+            groups[index[s][0]].append(index[s][1])
+        return groups
+
+    @classmethod
     def random_sample(cls, n_samples, dir_path=None, verbose=True):
         if dir_path is None:
             dir_path = "data"
@@ -78,9 +86,13 @@ class ZincToHdf5:
             return cls(mol2blocks, n_mols)
         # n_samples is smaller than the number of samples in the dir_path
         samples = random.sample(list(range(index["total"])), n_samples)
-        for sample in (tqdm(samples) if verbose else samples):
-            file_path = os.path.join(dir_path, index[sample][0])
-            mol2blocks.append(Mol2(file_path).mol2_blocks[index[sample][1]])
+        groups = cls._group_samples(samples, index)
+        it = tqdm(list(groups.items())) if verbose else groups.items()
+        for fname, block_indices in it:
+            file_path = os.path.join(dir_path, fname)
+            mol2 = Mol2(file_path)
+            for id in block_indices:
+                mol2blocks.append(mol2.mol2_blocks[id])
         return cls(mol2blocks, n_samples)
 
     @property
