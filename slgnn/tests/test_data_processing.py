@@ -72,7 +72,11 @@ class TestHdf5Loader(unittest.TestCase):
         zth.save_hdf5("test_data/test.hdf5")
         self.loader = Hdf5Loader("test_data/test.hdf5")
 
+    def test_attributes(self):
+        self.assertEqual(self.loader.total, 10)
+
     def test_read_sparse_adjacency_matrices(self):
         self.assertTrue(os.path.exists("test_data/test.hdf5"))
         matrices = self.loader.load_adjacency_matrices(10)
         self.assertIsInstance(matrices[0], sparse.csr_matrix)
+        self.assertEqual(matrices[0].shape, (70, 70))
