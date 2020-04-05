@@ -68,15 +68,26 @@ class TestHdf5Loader(unittest.TestCase):
     def setUp(self):
         if os.path.exists("test_data/test.hdf5"):
             os.remove("test_data/test.hdf5")
-        zth = ZincToHdf5.random_sample(10, dir_path="test_data", verbose=False)
+        zth = ZincToHdf5.random_sample(
+            1000, dir_path="test_data", verbose=False)
         zth.save_hdf5("test_data/test.hdf5")
         self.loader = Hdf5Loader("test_data/test.hdf5")
 
     def test_attributes(self):
-        self.assertEqual(self.loader.total, 10)
+        self.assertEqual(self.loader.total, 1000)
 
     def test_read_sparse_adjacency_matrices(self):
         self.assertTrue(os.path.exists("test_data/test.hdf5"))
-        matrices = self.loader.load_adjacency_matrices(10)
+        matrices = self.loader.load_adjacency_matrices(1000)
         self.assertIsInstance(matrices[0], sparse.csr_matrix)
         self.assertEqual(matrices[0].shape, (70, 70))
+
+    def test_read_atom_bond_features(self):
+        atom_feat = self.loader.load_atom_features()
+        bond_feat = self.loader.load_bond_features()
+        self.assertEqual(atom_feat.shape, (1000, 70, 7))
+        self.assertEqual(bond_feat.shape, (1000, 100,))
+        atom_feat = self.loader.load_atom_features(10)
+        bond_feat = self.loader.load_bond_features(10)
+        self.assertEqual(atom_feat.shape, (10, 70, 7))
+        self.assertEqual(bond_feat.shape, (10, 100,))
