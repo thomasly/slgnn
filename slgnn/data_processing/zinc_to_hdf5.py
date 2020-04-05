@@ -108,7 +108,7 @@ class ZincToHdf5:
         bond_feats = list()
         for block in self._mol2s:
             smiles.append(block.to_smiles(isomeric=True))
-            graph = block.to_graph(sparse=True, pad_atom=70, pad_bond=70)
+            graph = block.to_graph(sparse=True, pad_atom=70, pad_bond=100)
             a_matrices.append(graph["adjacency"])
             atom_feats.append(graph["atom_features"])
             bond_feats.append(graph["bond_features"])
@@ -170,10 +170,12 @@ class Hdf5Loader:
     def __init__(self, path):
         self.path = path
 
-    def load_adjacency_matrices(self, n):
+    def load_adjacency_matrices(self, n=None):
         h5f = h5py.File(self.path, "r")
         adj = h5f["adjacency_matrices"]
         matrices = list()
+        if n is None:
+            n = self.total
         for i in range(n):
             mat = sparse.csr_matrix(
                 (adj["data_{}".format(i)][:],
@@ -183,6 +185,20 @@ class Hdf5Loader:
             matrices.append(mat)
         h5f.close()
         return matrices
+
+    def load_atom_features(self, n=None):
+        if n is None:
+            n = self.total
+        with h5py.File(self.path, "r") as h5f:
+            atom_features = h5f["atom_features"][:n]
+        return atom_features
+
+    def load_bond_features(self, n=None):
+        if n is None:
+            n = self.total
+        with h5py.File(self.path, "r") as h5f:
+            bond_features = h5f["bond_features"][:n]
+        return bond_features
 
     @property
     def total(self):
