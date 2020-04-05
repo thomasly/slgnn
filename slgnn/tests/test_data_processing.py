@@ -32,15 +32,35 @@ class TestZincReading(unittest.TestCase):
     def test_files_from_n_samples(self):
         if os.path.exists("test_data/index"):
             os.remove("test_data/index")
-        zth = ZincToHdf5.random_sample(10, dir_path="test_data", verbose=False)
+        zth = ZincToHdf5.random_sample(
+            1000, dir_path="test_data", verbose=False)
         self.assertTrue(hasattr(zth, "_mol2s"))
-        self.assertEqual(len(zth._mol2s), 10)
+        self.assertEqual(len(zth._mol2s), 1000)
         self.assertTrue(hasattr(zth, "_n_mols"))
-        self.assertEqual(zth.n_mols, 10)
+        self.assertEqual(zth.n_mols, 1000)
         # number of samples too big
         with self.assertLogs() as cm:
             zth = ZincToHdf5.random_sample(
                 10000, dir_path="test_data", verbose=False)
+            self.assertLess(zth.n_mols, 10000)
+            self.assertGreater(zth.n_mols, 0)
+        self.assertIn(
+            "does not have enough samples.", cm.output[0])
+
+    def test_files_from_n_samples_wo_index(self):
+        zth = ZincToHdf5.random_sample_without_index(
+            1000,
+            dir_path="test_data/splitted",
+            verbose=True
+        )
+        self.assertTrue(hasattr(zth, "_mol2s"))
+        self.assertEqual(len(zth._mol2s), 1000)
+        self.assertTrue(hasattr(zth, "_n_mols"))
+        self.assertEqual(zth.n_mols, 1000)
+        # number of samples too big
+        with self.assertLogs() as cm:
+            zth = ZincToHdf5.random_sample_without_index(
+                10000, dir_path="test_data/splitted", verbose=True)
             self.assertLess(zth.n_mols, 10000)
             self.assertGreater(zth.n_mols, 0)
         self.assertIn(
@@ -68,16 +88,18 @@ class TestHdf5Loader(unittest.TestCase):
     def setUp(self):
         if os.path.exists("test_data/test.hdf5"):
             os.remove("test_data/test.hdf5")
+        if os.path.exists("test_data/index"):
+            os.remove("test_data/index")
         zth = ZincToHdf5.random_sample(
             1000, dir_path="test_data", verbose=False)
         zth.save_hdf5("test_data/test.hdf5")
+        self.assertTrue(os.path.exists("test_data/test.hdf5"))
         self.loader = Hdf5Loader("test_data/test.hdf5")
 
     def test_attributes(self):
         self.assertEqual(self.loader.total, 1000)
 
     def test_read_sparse_adjacency_matrices(self):
-        self.assertTrue(os.path.exists("test_data/test.hdf5"))
         matrices = self.loader.load_adjacency_matrices(1000)
         self.assertIsInstance(matrices[0], sparse.csr_matrix)
         self.assertEqual(matrices[0].shape, (70, 70))
