@@ -96,19 +96,20 @@ class ZincToHdf5:
         return cls(mol2blocks, n_samples)
 
     @classmethod
-    def _get_mol2files(cls, path, out=[]):
+    def _get_mol2files(cls, path):
+        files = list()
         for item in os.scandir(path):
             if item.is_file() and item.name.split(".")[-1] in ["gz", "mol2"]:
-                out.append(item)
+                files.append(item)
             elif item.is_dir():
-                cls._get_mol2files(item.path, out)
+                files.extend(cls._get_mol2files(item.path))
+        return files
 
     @classmethod
     def random_sample_without_index(cls, n_samples, dir_path, verbose=True):
         # Get Mol2Blocks randomly
         mol2blocks = list()
-        files = list()
-        cls._get_mol2files(dir_path, files)
+        files = cls._get_mol2files(dir_path)
         if len(files) < n_samples:
             logging.warning(
                 "{} does not have enough samples. Got {}/{}".format(
