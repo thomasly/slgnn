@@ -95,6 +95,30 @@ class ZincToHdf5:
                 mol2blocks.append(mol2.mol2_blocks[id])
         return cls(mol2blocks, n_samples)
 
+    @classmethod
+    def random_sample_without_index(cls, n_samples, dir_path, verbose=True):
+        # Get Mol2Blocks randomly
+        mol2blocks = list()
+        files = [item for item in os.scandir(dir_path) if
+                 item.name.split(".")[-1] in ["gz", "mol2"]]
+        if len(files) < n_samples:
+            logging.warning(
+                "{} does not have enough samples. Got {}/{}".format(
+                    dir_path, len(files), n_samples))
+            samples = files
+        else:
+            samples = random.sample(files, n_samples)
+        it = tqdm(samples) if verbose else samples
+        counter = 0
+        for sample in it:
+            try:
+                mol2blocks.append(Mol2(sample.path).mol2_blocks[0])
+            except IndexError:
+                logging.warning("{} is an empty file.".format(sample.path))
+                continue
+            counter += 1
+        return cls(mol2blocks, counter)
+
     @property
     def n_mols(self):
         return self._n_mols
