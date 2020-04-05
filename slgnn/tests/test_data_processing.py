@@ -51,7 +51,7 @@ class TestZincReading(unittest.TestCase):
         zth = ZincToHdf5.random_sample_without_index(
             1000,
             dir_path="test_data/splitted",
-            verbose=True
+            verbose=False
         )
         self.assertTrue(hasattr(zth, "_mol2s"))
         self.assertEqual(len(zth._mol2s), 1000)
@@ -60,7 +60,7 @@ class TestZincReading(unittest.TestCase):
         # number of samples too big
         with self.assertLogs() as cm:
             zth = ZincToHdf5.random_sample_without_index(
-                10000, dir_path="test_data/splitted", verbose=True)
+                10000, dir_path="test_data/splitted", verbose=False)
             self.assertLess(zth.n_mols, 10000)
             self.assertGreater(zth.n_mols, 0)
         self.assertIn(
