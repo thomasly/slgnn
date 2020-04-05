@@ -12,5 +12,6 @@ parser.add_argument("-v", "--verbose", action="store_true",
 parser.add_argument("-o", "--output", help="Output file path.")
 args = parser.parse_args()
 
-saver = ZincToHdf5.random_sample(args.n_samples, args.path, verbose=True)
+saver = ZincToHdf5.random_sample_without_index(
+    args.n_samples, args.path, verbose=True)
 saver.save_hdf5(args.output)
