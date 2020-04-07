@@ -233,6 +233,13 @@ class Hdf5Loader:
             bond_features = h5f["bond_features"][:n]
         return bond_features
 
+    def load_smiles(self, n=None):
+        if n is None:
+            n = self.total
+        with h5py.File(self.path, "r") as h5f:
+            smiles = h5f["smiles"][:n]
+        return smiles
+
     @property
     def total(self):
         with h5py.File(self.path, "r") as h5f:
