@@ -1,3 +1,6 @@
+# playground scripts
+playground/
+
 # testing temp files
 test_data/test*.hdf5
 test_data/index
