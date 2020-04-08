@@ -9,11 +9,12 @@ from ..data_processing.zinc_to_hdf5 import ZincToHdf5, Hdf5Loader
 
 class TestZincReading(unittest.TestCase):
 
-    def setUp(self):
-        self.invalid_gzips = [f.path for f in os.scandir("test_data")]
-        self.gzips = [
+    @classmethod
+    def setUpClass(cls):
+        cls.invalid_gzips = [f.path for f in os.scandir("test_data")]
+        cls.gzips = [
             f.path for f in os.scandir("test_data") if f.name.endswith("gz")]
-        self.test_file_names = [
+        cls.test_file_names = [
             "AAAARN.xaa.mol2.gz",
             "AAAARO.xaa.mol2.gz",
             "AAABRN.xaa.mol2.gz",
@@ -85,7 +86,8 @@ class TestZincReading(unittest.TestCase):
 
 class TestHdf5Loader(unittest.TestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         if os.path.exists("test_data/test.hdf5"):
             os.remove("test_data/test.hdf5")
         if os.path.exists("test_data/index"):
@@ -93,8 +95,8 @@ class TestHdf5Loader(unittest.TestCase):
         zth = ZincToHdf5.random_sample(
             1000, dir_path="test_data", verbose=False)
         zth.save_hdf5("test_data/test.hdf5")
-        self.assertTrue(os.path.exists("test_data/test.hdf5"))
-        self.loader = Hdf5Loader("test_data/test.hdf5")
+        # cls.assertTrue(os.path.exists("test_data/test.hdf5"))
+        cls.loader = Hdf5Loader("test_data/test.hdf5")
 
     def test_attributes(self):
         self.assertEqual(self.loader.total, 1000)

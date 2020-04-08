@@ -1,0 +1,2 @@
+PAD_ATOM = 70
+PAD_BOND = 100

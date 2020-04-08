@@ -1,9 +1,12 @@
 import numpy as np
+import pandas as pd
 import scipy.sparse as sp
 import torch
 
 from slgnn.data_processing.zinc_to_hdf5 import Hdf5Loader
 from PyFingerprint.All_Fingerprint import get_fingerprint
+from chemreader.readers.readsmiles import Smiles
+from slgnn.config import PAD_ATOM, PAD_BOND
 
 
 def encode_onehot(labels):
@@ -48,22 +51,75 @@ def load_encoder_data(path):
     train, valid = dict(), dict()
     sep = int(loader.total * 0.9)
     features = loader.load_atom_features()
-    train["features"] = features[:sep]
-    valid["features"] = features[sep:]
+    train["features"] = torch.FloatTensor(features[:sep, :, 3:])
+    valid["features"] = torch.FloatTensor(features[sep:, :, 3:])
     adjs = loader.load_adjacency_matrices()
-    train["adj"] = adjs[:sep]
-    valid["adj"] = adjs[sep:]
+    train["adj"] = [sparse_mx_to_torch_spare_tensor(adj) for adj in adjs[:sep]]
+    valid["adj"] = [sparse_mx_to_torch_spare_tensor(adj) for adj in adjs[sep:]]
     smiles = loader.load_smiles()
-    pubchem_fps = list()
-    for sm in smiles:
-        pubchem_fps.append(
-            get_fingerprint(sm, fp_type='pubchem', output="vector"))
+    pubchem_fps = [get_fingerprint(
+        sm, fp_type='pubchem', output="vector") for sm in smiles]
     pubchem_fps = np.stack(pubchem_fps)
-    train["labels"] = pubchem_fps[:sep]
-    valid["labels"] = pubchem_fps[sep:]
+    train["labels"] = torch.FloatTensor(pubchem_fps[:sep])
+    valid["labels"] = torch.FloatTensor(pubchem_fps[sep:])
     return train, valid
 
 
-def load_classifier_data(path):
+def load_classifier_data(path,
+                         smiles_col="smiles",
+                         label_cols=[],
+                         training_ratio=0.7,
+                         testing_ratio=None):
+    """ Load classification task data.
+
+    Args:
+        path (str): path to the data file.
+        training_ratio (float): training data ratio in the whole dataset. The
+            ration between training and validate data is alwasy set to 0.9.
+        testing_ratio (float): testing data ration in the whole datast. If
+            None, the ration is default to 1 - training_ration.
     """
-    """
+    import random
+    random.seed(12391)
+
+    if testing_ratio is not None:
+        if testing_ratio + training_ratio > 1:
+            raise ValueError("The sum of training_ratio and testing_ratio"
+                             " should be less than 1.")
+    if testing_ratio is None:
+        testing_ratio = 1. - training_ratio
+    if training_ratio >= 0.9 or training_ratio <= 0.1:
+        raise ValueError(
+            "training_ratio should be a float in range (0.1, 0.9).")
+
+    train, valid, test = dict(), dict(), dict()
+    df = pd.read_csv(path)
+    smiles = list(df[smiles_col].map(Smiles))
+    random.shuffle(smiles)
+    graphs = [s.to_graph(pad_atom=PAD_ATOM, pad_bond=PAD_BOND, sparse=True)
+              for s in smiles if s.num_atoms < 71]
+
+    sep_tr = int(len(graphs) * training_ratio)  # training
+    sep_te = int(len(graphs) * testing_ratio)  # testing
+    sep_tv = int(sep_tr * 0.9)  # train/valid
+
+    feat = np.stack([g["atom_features"] for g in graphs])
+    train["features"] = torch.FloatTensor(feat[:sep_tv])
+    valid["features"] = torch.FloatTensor(feat[sep_tv:sep_tr])
+    test["features"] = torch.FloatTensor(feat[-sep_te:])
+
+    adjs = [g["adjacency"] for g in graphs]
+    train["adj"] = [sparse_mx_to_torch_spare_tensor(
+        adj) for adj in adjs[: sep_tv]]
+    valid["adj"] = [sparse_mx_to_torch_spare_tensor(
+        adj) for adj in adjs[sep_tv: sep_tr]]
+    test["adj"] = [sparse_mx_to_torch_spare_tensor(
+        adj) for adj in adjs[-sep_te:]]
+
+    labels = df[label_cols].fillna(0).to_numpy()
+    n_classes = labels.shape[1]
+    train["labels"] = torch.FloatTensor(labels[:sep_tv])
+    valid["labels"] = torch.FloatTensor(labels[sep_tv:sep_tr])
+    test["labels"] = torch.FloatTensor(labels[-sep_te:])
+
+    return train, valid, test, n_classes

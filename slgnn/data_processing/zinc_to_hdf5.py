@@ -10,6 +10,7 @@ import numpy as np
 from scipy import sparse
 from tqdm import tqdm
 
+from slgnn.config import PAD_ATOM, PAD_BOND
 
 SEED = 1458907
 random.seed(SEED)
@@ -141,7 +142,8 @@ class ZincToHdf5:
         bond_feats = list()
         for block in self._mol2s:
             smiles.append(block.to_smiles(isomeric=True))
-            graph = block.to_graph(sparse=True, pad_atom=70, pad_bond=100)
+            graph = block.to_graph(
+                sparse=True, pad_atom=PAD_ATOM, pad_bond=PAD_BOND)
             a_matrices.append(graph["adjacency"])
             atom_feats.append(graph["atom_features"])
             bond_feats.append(graph["bond_features"])
