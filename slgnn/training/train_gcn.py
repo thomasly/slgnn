@@ -1,7 +1,9 @@
+import os
 import time
 import argparse
 import numpy as np
 from itertools import chain
+import pickle as pk
 
 import torch
 import torch.nn.functional as F
@@ -176,7 +178,10 @@ axes[1].plot(list(range(len(losses_val))), losses_val, color="orange")
 axes[1].set(xlabel="Epochs",
             ylabel="Validation loss",
             xlim=[0, args.encoder_epochs])
-fig.savefig("autoencoder_training.png")
+os.makedirs("logs", exist_ok=True)
+fig.savefig("logs/autoencoder_training.png")
+with open("logs/autoencoder_training_losses.pk", "wb") as f:
+    pk.dump({"train_loss": losses_train, "val_loss": losses_val}, f)
 
 print("Encoder training finished!")
 print("Time elapsed: {:.4f}s".format(time.time() - t_total))
