@@ -28,11 +28,17 @@ class TrainingSettings(argparse.ArgumentParser):
                           help="Random seed.")
         self.add_argument("--encoder-epochs", type=int, default=200,
                           help="Number of epochs to train the encoder.")
-        self.add_argument("--classifier_epochs", type=int, default=200,
+        self.add_argument("--classifier-epochs", type=int, default=200,
                           help="Number of epochs to train the classifier.")
-        self.add_argument("--lr", type=float, default=0.00001,
-                          help="Initial learning rate.")
-        self.add_argument("--weight_decay", type=float, default=5e-4,
+        self.add_argument("--batch-size", type=int, default=32,
+                          help="Batch size.")
+        self.add_argument("--encoder-lr", type=float, default=0.00001,
+                          help="Initial learning rate for autoencoder"
+                          " training.")
+        self.add_argument("--classifier-lr", type=float, default=0.00001,
+                          help="Initial learning rate for classifier"
+                          " training.")
+        self.add_argument("--weight-decay", type=float, default=5e-4,
                           help="Weight decay (L2 loss on parameters).")
         self.add_argument("--gcn-hidden", type=int, default=20,
                           help="Number of hidden units of the gcn model.")
@@ -59,7 +65,6 @@ def train_autoencoder(epoch, batch_size=32):
     t = time.time()
     decoder.train()
     gcn_model.train()
-    encoder_optimizer.zero_grad()
     steps = 0
     train_losses = []
     loss_train = torch.Tensor([0]).cuda()
@@ -70,22 +75,25 @@ def train_autoencoder(epoch, batch_size=32):
         adj = adj.cuda()
         lb = lb[None, :].cuda()
         output = decoder(gcn_model(feat, adj))
-        one_step_loss = torch.abs(output - lb).sum()
+        # one_step_loss = torch.abs(output - lb).sum()
+        one_step_loss = torch.sqrt(torch.pow((output - lb), 2)).sum()
         loss_train += one_step_loss
         steps += 1
         if steps % batch_size == 0:
             loss_train = loss_train / batch_size
+            encoder_optimizer.zero_grad()
             loss_train.backward()
             encoder_optimizer.step()
             train_losses.append(loss_train.item())
-            print("Step: {}, loss_train: {}".format(steps, loss_train.item()),
+            print("Step: {:>4}".format(steps),
+                  "loss_train: {:.4f}".format(loss_train.item()),
                   end="\r")
             loss_train = torch.Tensor([0]).cuda()
 
     gcn_model.eval()
     decoder.eval()
     steps = 0
-    loss_val = 0
+    loss_val = 0.
     for feat, adj, lb in zip(val_encoder["features"],
                              val_encoder["adj"],
                              val_encoder["labels"]):
@@ -106,45 +114,89 @@ def train_autoencoder(epoch, batch_size=32):
     return train_losses, loss_val
 
 
-def train_classifier(epoch):
+def train_classifier(epoch, batch_size=32):
     t = time.time()
     classifier.train()
     gcn_model.train()
-    finetune_optimizer.zero_grad()
-    output = classifier(gcn_model(train_clfr["features"], train_clfr["adj"]))
-    loss_train = F.nll_loss(output, train_clfr["labels"])
-    acc_train = accuracy(output, train_clfr["labels"])
-    loss_train.backward()
-    finetune_optimizer.step()
+    loss_train = torch.Tensor([0]).cuda()
+    acc_train = 0.
+    steps = 0
+    for feat, adj, lb in zip(train_clfr["features"],
+                             train_clfr["adj"],
+                             train_clfr["labels"]):
+        feat = feat.cuda()
+        adj = adj.cuda()
+        lb = lb[None, :].cuda()
+        output = classifier(gcn_model(feat, adj))
+        loss_train_onestep = F.binary_cross_entropy(output, lb)
+        loss_train += loss_train_onestep
+        acc_train += accuracy(output, lb)
+        steps += 1
+        if steps % batch_size == 0:
+            loss_train = loss_train / batch_size
+            finetune_optimizer.zero_grad()
+            loss_train.backward()
+            finetune_optimizer.step()
+            print("Steps: {:>5d}".format(steps),
+                  "loss_train: {:.4f}".format(loss_train.item()),
+                  #   "acc_train: {} / {}".format(acc_train, batch_size),
+                  "acc_train: {:.4f}".format(acc_train/batch_size),
+                  end="\r")
+            loss_train = torch.Tensor([0]).cuda()
+            acc_train = 0.
 
     gcn_model.eval()
     classifier.eval()
-    output = classifier(gcn_model(val_clfr["features"], val_clfr["adj"]))
-    loss_val = F.nll_loss(output, val_clfr["labels"])
-    acc_val = accuracy(output, val_clfr["labels"])
+    loss_val, acc_val = 0., 0.
+    steps = 0
+    for feat, adj, lb in zip(val_clfr["features"],
+                             val_clfr["adj"],
+                             val_clfr["labels"]):
+        feat = feat.cuda()
+        adj = adj.cuda()
+        lb = lb[None, :].cuda()
+        output = classifier(gcn_model(feat, adj))
+        loss_val_one_step = F.binary_cross_entropy(output, lb)
+        acc_val_one_step = accuracy(output, lb)
+        loss_val += loss_val_one_step
+        acc_val += acc_val_one_step
+        steps += 1
+
     print("Epoch: {:>4d}".format(epoch + 1),
-          "loss_train: {:.4f}".format(loss_train.item()),
-          "acc_train: {:.4f}".format(acc_train.item()),
-          "loss_val: {:.4f}".format(loss_val.item()),
-          "acc_val: {:.4f}".format(acc_val.item()),
-          "time: {:.4f}s".format(time.time() - t))
+          "loss_val: {:.4f}".format(loss_val / steps),
+          #   "acc_val: {}/{}".format(acc_val, steps),
+          "acc_val: {:.4f}".format(acc_val/steps),
+          "time: {:.4f}s".format(time.time() - t),
+          end="\r")
 
 
 def test():
     gcn_model.eval()
-    output = gcn_model(test_clfr["features"], test_clfr["adj"])
-    loss_test = F.nll_loss(output, test_clfr["labels"])
-    acc_test = accuracy(output, test_clfr["labels"])
-    print("Test set results:",
-          "loss= {:.4f}".format(loss_test.item()),
-          "accuracy= {:.4f}".format(acc_test.item()))
+    loss_test, acc_test = 0., 0.
+    steps = 0
+    for feat, adj, lb in zip(test_clfr["features"],
+                             test_clfr["adj"],
+                             test_clfr["labels"]):
+        feat = feat.cuda()
+        adj = adj.cuda()
+        lb = lb[None, :].cuda()
+        output = classifier(gcn_model(feat, adj))
+        loss_test += F.binary_cross_entropy(output, lb).item()
+        acc_test += accuracy(output, lb)
+        steps += 1
+
+    print("Testing results:",
+          "loss= {:.4f}".format(loss_test / steps),
+          #   "accuracy= {} / {}".format(acc_test, steps))
+          "accuracy= {:.4f}".format(acc_test/steps),
+          end="\r")
 
 
 # Train encoder model
 # Load data
 # the datasets are dictionaries with ["adj", "features", "labels"] keys
 train_encoder, val_encoder = load_encoder_data(
-    "test_data/zinc_ghose_1000.hdf5")
+    "data/ZINC/zinc_ghose_10000.hdf5")
 # Model and optimizer
 gcn_model = GCN(nfeat=train_encoder["features"].shape[2],
                 nhid=args.gcn_hidden,
@@ -156,7 +208,7 @@ decoder = Decoder(n_feat=args.gcn_hidden,
                   dropout=args.dropout)
 encoder_optimizer = optim.Adam(
     chain(decoder.parameters(), gcn_model.parameters()),
-    lr=args.lr,
+    lr=args.encoder_lr,
     weight_decay=args.weight_decay
 )
 
@@ -167,11 +219,11 @@ if args.cuda:
 t_total = time.time()
 losses_train, losses_val = list(), list()
 for epoch in range(args.encoder_epochs):
-    l_train, l_val = train_autoencoder(epoch)
+    l_train, l_val = train_autoencoder(epoch, args.batch_size)
     losses_train.extend(l_train)
     losses_val.append(l_val)
 
-fig, axes = plt.subplots(1, 2, figsize=(16.0, 6.0))
+fig, axes = plt.subplots(1, 2, figsize=(16., 6.))
 axes[0].plot(list(range(len(losses_train))), losses_train)
 axes[0].set(xlabel="Steps", ylabel="Training loss")
 axes[1].plot(list(range(len(losses_val))), losses_val, color="orange")
@@ -179,43 +231,76 @@ axes[1].set(xlabel="Epochs",
             ylabel="Validation loss",
             xlim=[0, args.encoder_epochs])
 os.makedirs("logs", exist_ok=True)
-fig.savefig("logs/autoencoder_training.png")
+fig.savefig("logs/autoencoder_training.png",
+            dpi=300,
+            bbox_inches="tight")
 with open("logs/autoencoder_training_losses.pk", "wb") as f:
     pk.dump({"train_loss": losses_train, "val_loss": losses_val}, f)
 
 print("Encoder training finished!")
+fig2, axes2 = plt.subplots(2, 1, figsize=(8., 12.))
+reconst = decoder(
+    gcn_model(train_encoder["features"][0].cuda(),
+              train_encoder["adj"][0].cuda())).detach().cpu().numpy()
+ax1, ax2 = axes2.flatten()
+ax1.bar(list(range(reconst.shape[1])),
+        reconst[0, :])
+ax1.set_xlabel("Reconstructed Fingerprint")
+ax2.bar(list(range(len(train_encoder["labels"][0]))),
+        train_encoder["labels"][0])
+ax2.set_xlabel("PubChem Fingerprint")
+fig2.savefig("logs/autoencoder_reconstruct_bar.png",
+             dpi=300,
+             bbox_inches="tight")
+print("Autoencoder output: {}".format(
+    decoder(gcn_model(train_encoder["features"][0].cuda(),
+                      train_encoder["adj"][0].cuda()))))
+
 print("Time elapsed: {:.4f}s".format(time.time() - t_total))
 
 # fine-tune classifier
 train_clfr, val_clfr, test_clfr, n_classes = load_classifier_data(
-    "test_data/tox21.csv.gz",
-    label_cols=['NR-AR', 'NR-AR-LBD', 'NR-AhR', 'NR-Aromatase', 'NR-ER',
-                'NR-ER-LBD', 'NR-PPAR-gamma', 'SR-ARE', 'SR-ATAD5', 'SR-HSE',
-                'SR-MMP', 'SR-p53'])
+    "data/sider.csv.gz",
+    label_cols=[
+        'Hepatobiliary disorders',
+        # 'Metabolism and nutrition disorders',
+        # 'Product issues', 'Eye disorders', 'Investigations',
+        # 'Musculoskeletal and connective tissue disorders',
+        # 'Gastrointestinal disorders', 'Social circumstances',
+        # 'Immune system disorders',
+        # 'Reproductive system and breast disorders',
+        # 'Neoplasms benign,
+        # malignant and unspecified (incl cysts and polyps)',
+        # 'General disorders and administration site conditions',
+        # 'Endocrine disorders', 'Surgical and medical procedures',
+        # 'Vascular disorders', 'Blood and lymphatic system disorders',
+        # 'Skin and subcutaneous tissue disorders',
+        # 'Congenital, familial and genetic disorders',
+        # 'Infections and infestations',
+        # 'Respiratory, thoracic and mediastinal disorders',
+        # 'Psychiatric disorders', 'Renal and urinary disorders',
+        # 'Pregnancy, puerperium and perinatal conditions',
+        # 'Ear and labyrinth disorders', 'Cardiac disorders',
+        # 'Nervous system disorders',
+        # 'Injury, poisoning and procedural complications'
+    ])
 classifier = Decoder(n_feat=args.gcn_hidden,
                      n_hid=args.decoder_hidden,
                      n_out=n_classes,  # dimension of pubchem fp
                      dropout=args.dropout)
 finetune_optimizer = optim.Adam(
     chain(classifier.parameters(), gcn_model.parameters()),
-    lr=args.lr,
+    lr=args.classifier_lr,
     weight_decay=args.weight_decay
 )
-
-# del train_encoder
-# del val_encoder
-# del decoder
 
 if args.cuda:
     torch.cuda.empty_cache()
     gcn_model.cuda()
     classifier.cuda()
-    train_clfr = train_clfr.cuda()
-    val_clfr = val_clfr.cuda()
-    test_clfr = test_clfr.cuda()
 
 for epoch in range(args.classifier_epochs):
-    train_classifier(epoch)
+    train_classifier(epoch, args.batch_size)
 print("Fine-tune finished!")
 print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
 
