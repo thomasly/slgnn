@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 import torch.nn.functional as F
 
@@ -22,4 +23,4 @@ class Decoder(nn.Module):
         x = F.dropout(x, self.dropout, training=self.training)
         x = x.flatten(start_dim=1)
         x = self.dense(x)
-        return F.sigmoid(x)
+        return torch.sigmoid(x)
