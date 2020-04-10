@@ -29,10 +29,18 @@ def normalize(mx):
 
 
 def accuracy(output, labels):
-    preds = output.max(1)[1].type_as(labels)
-    correct = preds.eq(labels).double()
-    correct = correct.sum()
-    return correct / len(labels)
+    if any([s > 1 for s in labels.shape]):
+        s = output.round() + labels
+        numerator = (s == 2).sum().double() + (s == 0).sum().double()
+        denominator = (s == 1).sum()
+        # print("output + labels: {}".format(s),
+        #       "numerator: {}".format(numerator.item()),
+        #       "denominator: {}".format(denominator.item()))
+        if denominator == 0:
+            return 0.
+        return (numerator / denominator).item()
+    else:
+        return (output.round() == labels).sum().item() / output.numel()
 
 
 def sparse_mx_to_torch_spare_tensor(sparse_mx):
@@ -54,8 +62,14 @@ def load_encoder_data(path):
     train["features"] = torch.FloatTensor(features[:sep, :, 3:])
     valid["features"] = torch.FloatTensor(features[sep:, :, 3:])
     adjs = loader.load_adjacency_matrices()
-    train["adj"] = [sparse_mx_to_torch_spare_tensor(adj) for adj in adjs[:sep]]
-    valid["adj"] = [sparse_mx_to_torch_spare_tensor(adj) for adj in adjs[sep:]]
+    train["adj"], valid["adj"] = list(), list()
+    for i, adj in enumerate(adjs):
+        adj = adj + sp.identity(adj.shape[0])
+        adj = sparse_mx_to_torch_spare_tensor(adj)
+        if i < sep:
+            train["adj"].append(adj)
+        else:
+            valid["adj"].append(adj)
     smiles = loader.load_smiles()
     pubchem_fps = [get_fingerprint(
         sm, fp_type='pubchem', output="vector") for sm in smiles]
@@ -110,12 +124,11 @@ def load_classifier_data(path,
 
     adjs = [g["adjacency"] for g in graphs]
     train["adj"] = [sparse_mx_to_torch_spare_tensor(
-        adj) for adj in adjs[: sep_tv]]
+        adj+sp.identity(adj.shape[0])) for adj in adjs[: sep_tv]]
     valid["adj"] = [sparse_mx_to_torch_spare_tensor(
-        adj) for adj in adjs[sep_tv: sep_tr]]
+        adj+sp.identity(adj.shape[0])) for adj in adjs[sep_tv: sep_tr]]
     test["adj"] = [sparse_mx_to_torch_spare_tensor(
-        adj) for adj in adjs[-sep_te:]]
-
+        adj+sp.identity(adj.shape[0])) for adj in adjs[-sep_te:]]
     labels = df[label_cols].fillna(0).to_numpy()
     n_classes = labels.shape[1]
     train["labels"] = torch.FloatTensor(labels[:sep_tv])
