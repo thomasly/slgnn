@@ -52,6 +52,29 @@ def sparse_mx_to_torch_spare_tensor(sparse_mx):
     return torch.sparse.FloatTensor(indices, values, shape)
 
 
+def get_filtered_fingerprint(smiles):
+    """ Get PubChem fingerprint wiht elements other than C, H, O, N, S, F, Cl,
+    Br.
+
+    Args:
+        smiles (str): SMILES string.
+
+    Return:
+        fp (np.ndarray): The filtered PubChem fingerprint as a vector.
+        length (int): length of the filtered vector.
+    """
+    fp = get_fingerprint(smiles, fp_type='pubchem', output="vector")
+    del_pos = [26, 27, 28, 29, 30, 31, 32, 41, 42, 46, 47, 48, 295, 296, 298,
+               303, 304, 348, 354, 369, 407, 411, 415, 456, 525, 627] + \
+        list(range(49, 115)) + list(range(263, 283)) + \
+        list(range(288, 293)) + list(range(310, 317)) + \
+        list(range(318, 327)) + list(range(327, 332)) + \
+        list(range(424, 427))
+    fp = np.delete(fp, del_pos)
+    length = 881 - len(del_pos)
+    return fp, length
+
+
 def load_encoder_data(path):
     """ Load the data for training autoencoder
     """
