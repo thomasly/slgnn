@@ -71,8 +71,7 @@ def get_filtered_fingerprint(smiles):
         list(range(318, 327)) + list(range(327, 332)) + \
         list(range(424, 427))
     fp = np.delete(fp, del_pos)
-    length = 881 - len(del_pos)
-    return fp, length
+    return fp
 
 
 def load_encoder_data(path):
@@ -94,8 +93,9 @@ def load_encoder_data(path):
         else:
             valid["adj"].append(adj)
     smiles = loader.load_smiles()
-    pubchem_fps = [get_fingerprint(
-        sm, fp_type='pubchem', output="vector") for sm in smiles]
+    # pubchem_fps = [get_fingerprint(
+    #     sm, fp_type='pubchem', output="vector") for sm in smiles]
+    pubchem_fps = [get_filtered_fingerprint(sm) for sm in smiles]
     pubchem_fps = np.stack(pubchem_fps)
     train["labels"] = torch.FloatTensor(pubchem_fps[:sep])
     valid["labels"] = torch.FloatTensor(pubchem_fps[sep:])
