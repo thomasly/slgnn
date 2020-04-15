@@ -26,6 +26,9 @@ class TrainingSettings(argparse.ArgumentParser):
                           help="Validate during training pass.")
         self.add_argument("--seed", type=int, default=1733,
                           help="Random seed.")
+        self.add_argument("--encoder-data",
+                          default="data/ZINC/zinc_ghose_1000.hdf5",
+                          help="Data path for encoder training.")
         self.add_argument("--encoder-epochs", type=int, default=200,
                           help="Number of epochs to train the encoder.")
         self.add_argument("--classifier-epochs", type=int, default=200,
@@ -76,7 +79,8 @@ def train_autoencoder(epoch, batch_size=32):
         lb = lb[None, :].cuda()
         output = decoder(gcn_model(feat, adj))
         # one_step_loss = torch.abs(output - lb).sum()
-        one_step_loss = torch.sqrt(torch.pow((output - lb), 2)).sum()
+        # one_step_loss = torch.sqrt(torch.pow((output - lb), 2)).sum()
+        one_step_loss = F.binary_cross_entropy(output, lb)
         loss_train += one_step_loss
         steps += 1
         if steps % batch_size == 0:
@@ -195,8 +199,7 @@ def test():
 # Train encoder model
 # Load data
 # the datasets are dictionaries with ["adj", "features", "labels"] keys
-train_encoder, val_encoder = load_encoder_data(
-    "data/ZINC/zinc_ghose_10000.hdf5")
+train_encoder, val_encoder = load_encoder_data(args.encoder_data)
 # Model and optimizer
 gcn_model = GCN(nfeat=train_encoder["features"].shape[2],
                 nhid=args.gcn_hidden,
@@ -204,7 +207,7 @@ gcn_model = GCN(nfeat=train_encoder["features"].shape[2],
                 dropout=args.dropout)
 decoder = Decoder(n_feat=args.gcn_hidden,
                   n_hid=args.decoder_hidden,
-                  n_out=881,  # dimension of pubchem fp
+                  n_out=740,  # dimension of pubchem fp
                   dropout=args.dropout)
 encoder_optimizer = optim.Adam(
     chain(decoder.parameters(), gcn_model.parameters()),
@@ -236,7 +239,13 @@ fig.savefig("logs/autoencoder_training.png",
             bbox_inches="tight")
 with open("logs/autoencoder_training_losses.pk", "wb") as f:
     pk.dump({"train_loss": losses_train, "val_loss": losses_val}, f)
-
+os.makedirs("trained_models", exist_ok=True)
+torch.save(gcn_model, "trained_models/gcn_model.pt")
+torch.save({"gcn_model_state_dict": gcn_model.state_dict(),
+            "decoder_model_state_dict": decoder.state_dict(),
+            "epoch": epoch,
+            "optimizer_state_dict": encoder_optimizer.state_dict()},
+           "trained_models/gcn_model_checkpoint")
 print("Encoder training finished!")
 fig2, axes2 = plt.subplots(2, 1, figsize=(8., 12.))
 reconst = decoder(
@@ -249,7 +258,7 @@ ax1.set_xlabel("Reconstructed Fingerprint")
 ax2.bar(list(range(len(train_encoder["labels"][0]))),
         train_encoder["labels"][0])
 ax2.set_xlabel("PubChem Fingerprint")
-fig2.savefig("logs/autoencoder_reconstruct_bar.png",
+fig2.savefig("logs/autoencoder_reconstruct_filtered_bar.png",
              dpi=300,
              bbox_inches="tight")
 print("Autoencoder output: {}".format(
