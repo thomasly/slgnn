@@ -20,8 +20,9 @@ def listener(q, outpath):
             return
         outf.write(data)
         counter += 1
-        if counter % 100 == 0:
-            logging.info("{} SMILES written to {}".format(counter, outpath))
+        if counter % 1000 == 0:
+            logging.info(
+                "{} SMILES written to {}\r".format(counter, outpath))
 
 
 def worker(path, q):
@@ -34,11 +35,13 @@ def worker(path, q):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    files = os.scandir("../ghose_filtered")
+    files = os.scandir("../../data/ZINC/ghose_filtered")
     pool = mp.Pool(10)
     manager = mp.Manager()
     que = manager.Queue()
-    lsnr = mp.Process(target=listener, args=(que, "ghose_filtered_smiles.csv")) 
+    lsnr = mp.Process(
+        target=listener,
+        args=(que, "../../data/ZINC/ghose_filtered_smiles.csv")) 
     for f in files:
         if not f.name.endswith(".gz"):
             continue
