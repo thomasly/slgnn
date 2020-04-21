@@ -65,6 +65,7 @@ class SmilesSampler:
             return samples
         count = 0
         samples = list()
+        selected_mols_fp = list()
         if verbose:
             pb = tqdm(total=n_samples, ascii=True, desc="Sampling")
         while count < n_samples:
@@ -76,9 +77,7 @@ class SmilesSampler:
                 continue
             fp = GetMorganFingerprintAsBitVect(mol, 4, nBits=2048)
             flag = 0
-            for s in samples:
-                mol2 = Chem.MolFromSmiles(s)
-                fp2 = GetMorganFingerprintAsBitVect(mol2, 4, nBits=2048)
+            for fp2 in selected_mols_fp:
                 score = DataStructs.FingerprintSimilarity(fp, fp2)
                 if score > threshold:
                     data[idx] = data.pop()
@@ -86,6 +85,7 @@ class SmilesSampler:
                     break
             if flag == 0:
                 samples.append(smiles)
+                selected_mols_fp.append(fp)
                 if verbose:
                     pb.update(1)
                 count += 1
