@@ -18,14 +18,26 @@ def encode_onehot(labels):
     return labels_onehot
 
 
-def normalize(mx):
-    """Row normalize sparse matrix"""
-    rowsum = np.array(mx.sum(1))
-    r_inv = np.power(rowsum, -1).flatten()
-    r_inv[np.isinf(r_inv)] = 0.
-    r_mat_inv = sp.diags(r_inv)
-    mx = r_mat_inv.dot(mx)
-    return mx
+# def normalize(mx):
+#     """Row normalize sparse matrix"""
+#     rowsum = np.array(mx.sum(1))
+#     r_inv = np.power(rowsum, -1).flatten()
+#     r_inv[np.isinf(r_inv)] = 0.
+#     print("r_inv: {}".format(r_inv))
+#     r_mat_inv = np.diag(r_inv)
+#     mx = r_mat_inv.dot(mx)
+#     return mx
+
+
+def normalize(matrices):
+    for i, mx in enumerate(matrices):
+        rowsum = np.array(mx.sum(0))
+        r_inv = np.power(rowsum, -1).flatten()
+        r_inv[np.isinf(r_inv)] = 0.
+        r_mat_inv = np.diag(r_inv)
+        mx = mx.dot(r_mat_inv)
+        matrices[i] = mx
+    return matrices
 
 
 def accuracy(output, labels):
@@ -81,12 +93,14 @@ def load_encoder_data(path):
     train, valid = dict(), dict()
     sep = int(loader.total * 0.9)
     features = loader.load_atom_features()
+    features = normalize(features)
     train["features"] = torch.FloatTensor(features[:sep, :, 3:])
     valid["features"] = torch.FloatTensor(features[sep:, :, 3:])
     adjs = loader.load_adjacency_matrices()
     train["adj"], valid["adj"] = list(), list()
     for i, adj in enumerate(adjs):
         adj = adj + sp.identity(adj.shape[0])
+        # adj = normalize(adj)
         adj = sparse_mx_to_torch_spare_tensor(adj)
         if i < sep:
             train["adj"].append(adj)
@@ -141,6 +155,7 @@ def load_classifier_data(path,
     sep_tv = int(sep_tr * 0.9)  # train/valid
 
     feat = np.stack([g["atom_features"] for g in graphs])
+    feat = normalize(feat)
     train["features"] = torch.FloatTensor(feat[:sep_tv])
     valid["features"] = torch.FloatTensor(feat[sep_tv:sep_tr])
     test["features"] = torch.FloatTensor(feat[-sep_te:])
