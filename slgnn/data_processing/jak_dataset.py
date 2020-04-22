@@ -29,7 +29,7 @@ def filter(path):
     filtered[["Smiles", "Activity"]].to_csv(out_path)
 
 
-def write_graphs(inpath, outpath, prefix=None, ):
+def write_graphs(inpath, outpath, prefix=None):
     """ Convert JAK dataset to graphs
     """
     smiles = list()

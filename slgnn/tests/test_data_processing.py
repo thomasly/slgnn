@@ -1,10 +1,12 @@
 import unittest
 import os
+import shutil
 import pickle as pk
 
 from scipy import sparse
 
 from ..data_processing.zinc_to_hdf5 import ZincToHdf5, Hdf5Loader
+from ..data_processing import zinc_to_graph as zg
 
 
 class TestZincReading(unittest.TestCase):
@@ -115,3 +117,15 @@ class TestHdf5Loader(unittest.TestCase):
         bond_feat = self.loader.load_bond_features(10)
         self.assertEqual(atom_feat.shape, (10, 70, 7))
         self.assertEqual(bond_feat.shape, (10, 100,))
+
+
+class TestGraphConverting(unittest.TestCase):
+
+    def test_convert_sampled_smiles_to_graphs(self):
+        inpath = "test_data/sampled_smiles_1000.txt"
+        pre = os.path.basename(inpath).split(".")[0]
+        outpath = os.path.join(os.path.dirname(inpath), "graphs")
+        zg.write_graphs(inpath, outpath, pre)
+        self.assertTrue(
+            os.path.isfile("test_data/graphs/sampled_smiles_1000_A.txt"))
+        shutil.rmtree(outpath)
