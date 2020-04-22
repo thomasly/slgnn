@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from slgnn.models.gcn.layers import GraphConvolution
@@ -15,4 +16,4 @@ class GCN(nn.Module):
         x = F.relu(self.gc1(x, adj))
         x = F.dropout(x, self.dropout, training=self.training)
         x = self.gc2(x, adj)
-        return F.sigmoid(x)
+        return torch.sigmoid(x)

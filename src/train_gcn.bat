@@ -1,1 +1,4 @@
-python -m slgnn.training.train_gcn --encoder-epochs 50 --classifier-epochs 1
+python -m slgnn.training.train_gcn ^
+--encoder-epochs 5 ^
+--classifier-epochs 1 ^
+--encoder-data data/ZINC/zinc_ghose_1000.hdf5

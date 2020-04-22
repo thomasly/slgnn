@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 
 from slgnn.models.gcn.utils import load_encoder_data, load_classifier_data
 from slgnn.models.gcn.utils import accuracy
+from slgnn.training.utils import plot_reconstruct
 from slgnn.models.gcn.model import GCN
 from slgnn.models.decoder.model import Decoder
 
@@ -65,6 +66,10 @@ def kl_div(p, q):
 
 
 def train_autoencoder(epoch, batch_size=32):
+    global encoder_optimizer
+    if (epoch + 1) % 10 == 0:
+        for param_group in encoder_optimizer.param_groups:
+            param_group['lr'] = max(param_group['lr'] * 0.1, 1e-6)
     t = time.time()
     decoder.train()
     gcn_model.train()
@@ -79,8 +84,8 @@ def train_autoencoder(epoch, batch_size=32):
         lb = lb[None, :].cuda()
         output = decoder(gcn_model(feat, adj))
         # one_step_loss = torch.abs(output - lb).sum()
-        # one_step_loss = torch.sqrt(torch.pow((output - lb), 2)).sum()
-        one_step_loss = F.binary_cross_entropy(output, lb)
+        one_step_loss = torch.sqrt(torch.pow((output - lb), 2)).sum()
+        # one_step_loss = F.binary_cross_entropy(output, lb)
         loss_train += one_step_loss
         steps += 1
         if steps % batch_size == 0:
@@ -247,24 +252,20 @@ torch.save({"gcn_model_state_dict": gcn_model.state_dict(),
             "optimizer_state_dict": encoder_optimizer.state_dict()},
            "trained_models/gcn_model_checkpoint")
 print("Encoder training finished!")
-fig2, axes2 = plt.subplots(2, 1, figsize=(8., 12.))
-reconst = decoder(
-    gcn_model(train_encoder["features"][0].cuda(),
-              train_encoder["adj"][0].cuda())).detach().cpu().numpy()
-ax1, ax2 = axes2.flatten()
-ax1.bar(list(range(reconst.shape[1])),
-        reconst[0, :])
-ax1.set_xlabel("Reconstructed Fingerprint")
-ax2.bar(list(range(len(train_encoder["labels"][0]))),
-        train_encoder["labels"][0])
-ax2.set_xlabel("PubChem Fingerprint")
-fig2.savefig("logs/autoencoder_reconstruct_filtered_bar.png",
-             dpi=300,
-             bbox_inches="tight")
-print("Autoencoder output: {}".format(
-    decoder(gcn_model(train_encoder["features"][0].cuda(),
-                      train_encoder["adj"][0].cuda()))))
-
+plot_reconstruct(decoder,
+                 gcn_model,
+                 train_encoder["features"],
+                 train_encoder["adj"],
+                 train_encoder["labels"],
+                 0,
+                 "logs/autoencoder_reconstruct_0.png")
+plot_reconstruct(decoder,
+                 gcn_model,
+                 train_encoder["features"],
+                 train_encoder["adj"],
+                 train_encoder["labels"],
+                 10,
+                 "logs/autoencoder_reconstruct_10.png")
 print("Time elapsed: {:.4f}s".format(time.time() - t_total))
 
 # fine-tune classifier
