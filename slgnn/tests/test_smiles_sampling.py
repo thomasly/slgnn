@@ -4,7 +4,7 @@ from rdkit import Chem
 from rdkit.Chem.rdMolDescriptors import GetMorganFingerprintAsBitVect
 from rdkit.DataStructs import FingerprintSimilarity
 
-from slgnn.data_processing.sample_smiles import SmilesSampler
+from slgnn.data_processing.zinc_sample_smiles import SmilesSampler
 
 
 class TestSamplingSmiles(unittest.TestCase):
@@ -17,7 +17,7 @@ class TestSamplingSmiles(unittest.TestCase):
         self.assertEqual(len(samples), 100)
 
     def test_keep_similar_samples(self):
-        samp = self.sampler.sample(60, filter_similar=False, verbose=False)
+        samp = self.sampler.sample(100, filter_similar=False, verbose=False)
         scores = list()
         i, j = 0, 0
         while i < len(samp)-1:
