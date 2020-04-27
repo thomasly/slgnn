@@ -36,10 +36,10 @@ class TrainingSettings(argparse.ArgumentParser):
                           help="Number of epochs to train the classifier.")
         self.add_argument("--batch-size", type=int, default=32,
                           help="Batch size.")
-        self.add_argument("--encoder-lr", type=float, default=0.00001,
+        self.add_argument("--encoder-lr", type=float, default=0.0001,
                           help="Initial learning rate for autoencoder"
                           " training.")
-        self.add_argument("--classifier-lr", type=float, default=0.00001,
+        self.add_argument("--classifier-lr", type=float, default=0.0001,
                           help="Initial learning rate for classifier"
                           " training.")
         self.add_argument("--weight-decay", type=float, default=5e-4,
@@ -150,7 +150,7 @@ def train_classifier(epoch, batch_size=32):
                   "loss_train: {:.4f}".format(loss_train.item()),
                   #   "acc_train: {} / {}".format(acc_train, batch_size),
                   "acc_train: {:.4f}".format(acc_train/batch_size),
-                  end="\r")
+                  end="\n")
             loss_train = torch.Tensor([0]).cuda()
             acc_train = 0.
 
