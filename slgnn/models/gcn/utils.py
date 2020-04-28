@@ -93,9 +93,18 @@ def load_encoder_data(path):
     train, valid = dict(), dict()
     sep = int(loader.total * 0.9)
     features = loader.load_atom_features()
-    features = normalize(features)
-    train["features"] = torch.FloatTensor(features[:sep, :, 3:])
-    valid["features"] = torch.FloatTensor(features[sep:, :, 3:])
+
+    def atom_feat_to_oh(features):
+        arr = np.zeros((features.shape[0], features.shape[1], 56))
+        for i, feat in enumerate(features):
+            for j, f in enumerate(feat):
+                arr[i, j, int(f[3])] = 1
+                arr[i, j, -3:] = f[-3:]
+        return arr
+    features = atom_feat_to_oh(features)
+    # features = normalize(features)
+    train["features"] = torch.FloatTensor(features[:sep])
+    valid["features"] = torch.FloatTensor(features[sep:])
     adjs = loader.load_adjacency_matrices()
     train["adj"], valid["adj"] = list(), list()
     for i, adj in enumerate(adjs):
@@ -154,8 +163,16 @@ def load_classifier_data(path,
     sep_te = int(len(graphs) * testing_ratio)  # testing
     sep_tv = int(sep_tr * 0.9)  # train/valid
 
-    feat = np.stack([g["atom_features"] for g in graphs])
-    feat = normalize(feat)
+    def atom_feat_to_oh(features):
+        arr = np.zeros((len(features), 56))
+        for i, feat in enumerate(features):
+            arr[i, features[i][0]] = 1
+            arr[i, -3:] = features[i][-3:]
+        return arr
+    # feat = np.stack([g["atom_features"] for g in graphs])
+    feat = np.stack([atom_feat_to_oh(g["atom_features"])
+                     for g in graphs])
+    # feat = normalize(feat)
     train["features"] = torch.FloatTensor(feat[:sep_tv])
     valid["features"] = torch.FloatTensor(feat[sep_tv:sep_tr])
     test["features"] = torch.FloatTensor(feat[-sep_te:])

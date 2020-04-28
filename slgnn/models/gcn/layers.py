@@ -32,7 +32,14 @@ class GraphConvolution(Module):
 
     def forward(self, input, adj):
         support = torch.mm(input, self.weight)
-        output = torch.spmm(adj, support)
+        adj = adj.to_dense()
+        degree_mat = torch.diag(torch.sum(adj, dim=1))
+        lap_mat = degree_mat - adj
+        normed_lap = torch.diag(torch.diag(torch.pow(lap_mat, -0.5)))
+        normed_lap[normed_lap == float("inf")] = 0.
+        normed_adj = torch.mm(normed_lap, adj)
+        normed_adj = torch.mm(normed_adj, normed_lap)
+        output = torch.mm(normed_adj, support)
         if self.bias is not None:
             return output + self.bias
         else:

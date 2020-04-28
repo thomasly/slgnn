@@ -39,12 +39,12 @@ class TrainingSettings(argparse.ArgumentParser):
         self.add_argument("--encoder-lr", type=float, default=0.0001,
                           help="Initial learning rate for autoencoder"
                           " training.")
-        self.add_argument("--classifier-lr", type=float, default=0.0001,
+        self.add_argument("--classifier-lr", type=float, default=0.01,
                           help="Initial learning rate for classifier"
                           " training.")
         self.add_argument("--weight-decay", type=float, default=5e-4,
                           help="Weight decay (L2 loss on parameters).")
-        self.add_argument("--gcn-hidden", type=int, default=20,
+        self.add_argument("--gcn-hidden", type=int, default=100,
                           help="Number of hidden units of the gcn model.")
         self.add_argument("--decoder-hidden", type=int, default=440,
                           help="Number of hidden units of the decoder.")
@@ -83,9 +83,11 @@ def train_autoencoder(epoch, batch_size=32):
         adj = adj.cuda()
         lb = lb[None, :].cuda()
         output = decoder(gcn_model(feat, adj))
+        # print(f"output: {output}")
+        # print(f"label: {lb}")
         # one_step_loss = torch.abs(output - lb).sum()
-        one_step_loss = torch.sqrt(torch.pow((output - lb), 2)).sum()
-        # one_step_loss = F.binary_cross_entropy(output, lb)
+        # one_step_loss = torch.sqrt(torch.pow((output - lb), 2)).sum()
+        one_step_loss = F.binary_cross_entropy_with_logits(output, lb)
         loss_train += one_step_loss
         steps += 1
         if steps % batch_size == 0:
@@ -108,10 +110,11 @@ def train_autoencoder(epoch, batch_size=32):
                              val_encoder["labels"]):
         feat = feat.cuda()
         adj = adj.cuda()
-        lb = lb.cuda()
+        lb = lb[None, :].cuda()
         output = decoder(gcn_model(feat, adj))
 
-        loss = torch.abs(output - lb).sum()
+        # loss = torch.abs(output - lb).sum()
+        loss = F.binary_cross_entropy_with_logits(output, lb)
         loss_val += loss.item()
         steps += 1
     loss_val = loss_val / steps
@@ -137,7 +140,7 @@ def train_classifier(epoch, batch_size=32):
         adj = adj.cuda()
         lb = lb[None, :].cuda()
         output = classifier(gcn_model(feat, adj))
-        loss_train_onestep = F.binary_cross_entropy(output, lb)
+        loss_train_onestep = F.binary_cross_entropy_with_logits(output, lb)
         loss_train += loss_train_onestep
         acc_train += accuracy(output, lb)
         steps += 1
@@ -150,7 +153,7 @@ def train_classifier(epoch, batch_size=32):
                   "loss_train: {:.4f}".format(loss_train.item()),
                   #   "acc_train: {} / {}".format(acc_train, batch_size),
                   "acc_train: {:.4f}".format(acc_train/batch_size),
-                  end="\n")
+                  end="\r")
             loss_train = torch.Tensor([0]).cuda()
             acc_train = 0.
 
@@ -176,7 +179,7 @@ def train_classifier(epoch, batch_size=32):
           #   "acc_val: {}/{}".format(acc_val, steps),
           "acc_val: {:.4f}".format(acc_val/steps),
           "time: {:.4f}s".format(time.time() - t),
-          end="\r")
+          end="\n")
 
 
 def test():
@@ -294,9 +297,13 @@ train_clfr, val_clfr, test_clfr, n_classes = load_classifier_data(
         # 'Nervous system disorders',
         # 'Injury, poisoning and procedural complications'
     ])
+# gcn_model = GCN(nfeat=train_clfr["features"].shape[2],
+#                 nhid=args.gcn_hidden,
+#                 nclass=args.gcn_hidden,
+#                 dropout=args.dropout)
 classifier = Decoder(n_feat=args.gcn_hidden,
                      n_hid=args.decoder_hidden,
-                     n_out=n_classes,  # dimension of pubchem fp
+                     n_out=n_classes,
                      dropout=args.dropout)
 finetune_optimizer = optim.Adam(
     chain(classifier.parameters(), gcn_model.parameters()),
