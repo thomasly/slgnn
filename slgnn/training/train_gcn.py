@@ -168,8 +168,8 @@ def train_classifier(epoch, batch_size=32):
         adj = adj.cuda()
         lb = lb[None, :].cuda()
         output = classifier(gcn_model(feat, adj))
-        loss_val_one_step = F.binary_cross_entropy(output, lb)
-        acc_val_one_step = accuracy(output, lb)
+        loss_val_one_step = F.binary_cross_entropy_with_logits(output, lb)
+        acc_val_one_step = accuracy(torch.sigmoid(output), lb)
         loss_val += loss_val_one_step
         acc_val += acc_val_one_step
         steps += 1
@@ -193,7 +193,7 @@ def test():
         adj = adj.cuda()
         lb = lb[None, :].cuda()
         output = classifier(gcn_model(feat, adj))
-        loss_test += F.binary_cross_entropy(output, lb).item()
+        loss_test += F.binary_cross_entropy_with_logits(output, lb).item()
         acc_test += accuracy(output, lb)
         steps += 1
 
