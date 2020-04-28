@@ -9,10 +9,14 @@ from chemreader.readers.readsmiles import Smiles
 from slgnn.config import PAD_ATOM, PAD_BOND
 
 
-def encode_onehot(labels):
+def encode_onehot(labels, len_label=None):
     classes = set(labels)
-    classes_dict = {c: np.identity(len(classes))[i:] for i, c in
-                    enumerate(classes)}
+    if len_label is None:
+        classes_dict = {c: np.identity(len(classes))[i] for i, c in
+                        enumerate(classes)}
+    else:
+        classes_dict = {c: np.identity(len_label)[i] for i, c in
+                        enumerate(classes)}
     labels_onehot = np.array(list(map(classes_dict.get, labels)),
                              dtype=np.int32)
     return labels_onehot
@@ -86,7 +90,14 @@ def get_filtered_fingerprint(smiles):
     return fp
 
 
-def load_encoder_data(path):
+def load_encoder_data(path, type_="txt"):
+    if type_ == "txt":
+        return load_encoder_txt_data(path)
+    elif type_ == "hdf5":
+        return load_encoder_hdf5_data(path)
+
+
+def load_encoder_hdf5_data(path):
     """ Load the data for training autoencoder
     """
     loader = Hdf5Loader(path)
@@ -123,6 +134,58 @@ def load_encoder_data(path):
     train["labels"] = torch.FloatTensor(pubchem_fps[:sep])
     valid["labels"] = torch.FloatTensor(pubchem_fps[sep:])
     return train, valid
+
+
+def feat_to_oh(features, col_num):
+    """ Convert a specific column of the features to one-hot label.
+    Args:
+        features (list): list of atom features.
+        col_num (int): the feature column number to convert to one-hot label.
+
+    Return (numpy.ndarray):
+        Converted feature with one-hot encoding
+    """
+    features = np.array(features)
+    oh = encode_onehot(list(features[:, col_num]), 53)
+    oh_features = np.concatenate([features[:, :col_num],
+                                  oh,
+                                  features[:, col_num+1:]],
+                                 axis=1)
+    return oh_features
+
+
+def load_encoder_txt_data(path):
+    import random
+    random.seed(12391)
+
+    with open(path, "r") as f:
+        smiles = [Smiles(line) for line in f.readlines()]
+    random.shuffle(smiles)
+    graphs = [s.to_graph(pad_atom=PAD_ATOM, pad_bond=PAD_BOND, sparse=True)
+              for s in smiles if s.num_atoms < 71]
+
+    train, valid = dict(), dict()
+    sep_tv = int(len(graphs) * 0.9)  # training/valid
+
+    # feat = np.stack([g["atom_features"] for g in graphs])
+    feat = np.stack([feat_to_oh(g["atom_features"], 0)
+                     for g in graphs])
+    train["features"] = torch.FloatTensor(feat[:sep_tv])
+    valid["features"] = torch.FloatTensor(feat[sep_tv:])
+
+    adjs = [g["adjacency"] for g in graphs]
+    train["adj"] = [sparse_mx_to_torch_spare_tensor(
+        adj+sp.identity(adj.shape[0])) for adj in adjs[: sep_tv]]
+    valid["adj"] = [sparse_mx_to_torch_spare_tensor(
+        adj+sp.identity(adj.shape[0])) for adj in adjs[sep_tv:]]
+
+    pubchem_fps = [get_filtered_fingerprint(sm.smiles_str) for sm in smiles]
+    pubchem_fps = np.stack(pubchem_fps)
+    len_fp = pubchem_fps.shape[1]
+    train["labels"] = torch.FloatTensor(pubchem_fps[:sep_tv])
+    valid["labels"] = torch.FloatTensor(pubchem_fps[sep_tv:])
+
+    return train, valid, len_fp
 
 
 def load_classifier_data(path,
