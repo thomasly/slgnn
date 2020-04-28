@@ -1,7 +1,11 @@
+import os
+import pickle as pk
+
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
 import torch
+from tqdm import tqdm
 
 from slgnn.data_processing.zinc_to_hdf5 import Hdf5Loader
 from PyFingerprint.All_Fingerprint import get_fingerprint
@@ -157,30 +161,48 @@ def feat_to_oh(features, col_num):
 def load_encoder_txt_data(path):
     import random
     random.seed(12391)
+    saving_path = os.path.join(
+        os.path.dirname(path),
+        os.path.basename(path).split(".")[0] + "_fingerprints.pk")
 
     with open(path, "r") as f:
         smiles = [Smiles(line) for line in f.readlines()]
     random.shuffle(smiles)
+    pbar = tqdm(smiles, ascii=True)
+    pbar.set_description("Generating graphs ")
     graphs = [s.to_graph(pad_atom=PAD_ATOM, pad_bond=PAD_BOND, sparse=True)
-              for s in smiles if s.num_atoms < PAD_ATOM+1]
+              for s in pbar if s.num_atoms < PAD_ATOM+1]
 
     train, valid = dict(), dict()
     sep_tv = int(len(graphs) * 0.9)  # training/valid
 
     # feat = np.stack([g["atom_features"] for g in graphs])
+    pbar = tqdm(graphs, ascii=True)
+    pbar.set_description("Getting atom features ")
     feat = np.stack([feat_to_oh(g["atom_features"], 0)
-                     for g in graphs])
+                     for g in pbar])
     train["features"] = torch.FloatTensor(feat[:sep_tv])
     valid["features"] = torch.FloatTensor(feat[sep_tv:])
 
-    adjs = [g["adjacency"] for g in graphs]
+    pbar = tqdm(graphs, ascii=True)
+    pbar.set_description("Getting adjacency matrices ")
+    adjs = [g["adjacency"] for g in pbar]
     train["adj"] = [sparse_mx_to_torch_spare_tensor(
         adj+sp.identity(adj.shape[0])) for adj in adjs[: sep_tv]]
     valid["adj"] = [sparse_mx_to_torch_spare_tensor(
         adj+sp.identity(adj.shape[0])) for adj in adjs[sep_tv:]]
 
-    pubchem_fps = [get_filtered_fingerprint(sm.smiles_str) for sm in smiles]
-    pubchem_fps = np.stack(pubchem_fps)
+    if os.path.isfile(saving_path):
+        with open(saving_path, "rb") as f:
+            pubchem_fps = pk.load(f)
+    else:
+        pbar = tqdm(smiles, ascii=True)
+        pbar.set_description("Generating PubChem Fingerprints ")
+        pubchem_fps = [get_filtered_fingerprint(sm.smiles_str)
+                       for sm in pbar]
+        pubchem_fps = np.stack(pubchem_fps)
+        with open(saving_path, "wb") as f:
+            pk.dump(pubchem_fps, f)
     len_fp = pubchem_fps.shape[1]
     train["labels"] = torch.FloatTensor(pubchem_fps[:sep_tv])
     valid["labels"] = torch.FloatTensor(pubchem_fps[sep_tv:])
