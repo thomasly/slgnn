@@ -162,7 +162,7 @@ def load_encoder_txt_data(path):
         smiles = [Smiles(line) for line in f.readlines()]
     random.shuffle(smiles)
     graphs = [s.to_graph(pad_atom=PAD_ATOM, pad_bond=PAD_BOND, sparse=True)
-              for s in smiles if s.num_atoms < 71]
+              for s in smiles if s.num_atoms < PAD_ATOM+1]
 
     train, valid = dict(), dict()
     sep_tv = int(len(graphs) * 0.9)  # training/valid
