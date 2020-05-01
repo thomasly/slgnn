@@ -24,7 +24,7 @@ def filter(path):
     lt_10um = jak["Standard Value"] < 100000
     filtered = jak.drop(jak.loc[not_eq & lt_10um].index)
     gt = jak["Standard Relation"] == "'>'"
-    eq_1um = jak["Standard Value"] == 1000
+    eq_1um = jak["Standard Value"] >= 1000
     add_back = jak.loc[gt & eq_1um]
     filtered = filtered.append(add_back)
     filtered["Activity"] = filtered["Standard Value"].apply(_is_active)
