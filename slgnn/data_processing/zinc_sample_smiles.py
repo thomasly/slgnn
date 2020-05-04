@@ -15,7 +15,6 @@ class SmilesSampler:
     are comments for the SMILES, they should be seperated with the SMIELS by a
     comma.
     """
-
     def __init__(self, path):
         """ Sampler initializer.
 
@@ -75,7 +74,7 @@ class SmilesSampler:
             if mol is None:
                 data[idx] = data.pop()
                 continue
-            fp = GetMorganFingerprintAsBitVect(mol, 4, nBits=2048)
+            fp = GetMorganFingerprintAsBitVect(mol, 4, nBits=1024)
             flag = 0
             for fp2 in selected_mols_fp:
                 score = DataStructs.FingerprintSimilarity(fp, fp2)
