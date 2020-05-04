@@ -16,11 +16,15 @@ from slgnn.config import PAD_ATOM, PAD_BOND
 def encode_onehot(labels, len_label=None):
     classes = set(labels)
     if len_label is None:
-        classes_dict = {c: np.identity(len(classes))[i] for i, c in
-                        enumerate(classes)}
+        classes_dict = {
+            c: np.identity(len(classes))[i]
+            for i, c in enumerate(classes)
+        }
     else:
-        classes_dict = {c: np.identity(len_label)[i] for i, c in
-                        enumerate(classes)}
+        classes_dict = {
+            c: np.identity(len_label)[i]
+            for i, c in enumerate(classes)
+        }
     labels_onehot = np.array(list(map(classes_dict.get, labels)),
                              dtype=np.int32)
     return labels_onehot
@@ -110,12 +114,13 @@ def load_encoder_hdf5_data(path):
     features = loader.load_atom_features()
 
     def atom_feat_to_oh(features):
-        arr = np.zeros((features.shape[0], features.shape[1], 56))
+        arr = np.zeros((features.shape[0], features.shape[1], 59))
         for i, feat in enumerate(features):
             for j, f in enumerate(feat):
                 arr[i, j, int(f[3])] = 1
-                arr[i, j, -3:] = f[-3:]
+                arr[i, j, -6:] = f[-6:]
         return arr
+
     features = atom_feat_to_oh(features)
     # features = normalize(features)
     train["features"] = torch.FloatTensor(features[:sep])
@@ -151,10 +156,8 @@ def feat_to_oh(features, col_num):
     """
     features = np.array(features)
     oh = encode_onehot(list(features[:, col_num]), 53)
-    oh_features = np.concatenate([features[:, :col_num],
-                                  oh,
-                                  features[:, col_num+1:]],
-                                 axis=1)
+    oh_features = np.concatenate(
+        [features[:, :col_num], oh, features[:, col_num + 1:]], axis=1)
     return oh_features
 
 
@@ -170,8 +173,10 @@ def load_encoder_txt_data(path):
     random.shuffle(smiles)
     pbar = tqdm(smiles, ascii=True)
     pbar.set_description("Generating graphs ")
-    graphs = [s.to_graph(pad_atom=PAD_ATOM, pad_bond=PAD_BOND, sparse=True)
-              for s in pbar if s.num_atoms < PAD_ATOM+1]
+    graphs = [
+        s.to_graph(pad_atom=PAD_ATOM, pad_bond=PAD_BOND, sparse=True)
+        for s in pbar if s.num_atoms < PAD_ATOM + 1
+    ]
 
     train, valid = dict(), dict()
     sep_tv = int(len(graphs) * 0.9)  # training/valid
@@ -179,18 +184,21 @@ def load_encoder_txt_data(path):
     # feat = np.stack([g["atom_features"] for g in graphs])
     pbar = tqdm(graphs, ascii=True)
     pbar.set_description("Getting atom features ")
-    feat = np.stack([feat_to_oh(g["atom_features"], 0)
-                     for g in pbar])
+    feat = np.stack([feat_to_oh(g["atom_features"], 0) for g in pbar])
     train["features"] = torch.FloatTensor(feat[:sep_tv])
     valid["features"] = torch.FloatTensor(feat[sep_tv:])
 
     pbar = tqdm(graphs, ascii=True)
     pbar.set_description("Getting adjacency matrices ")
     adjs = [g["adjacency"] for g in pbar]
-    train["adj"] = [sparse_mx_to_torch_spare_tensor(
-        adj+sp.identity(adj.shape[0])) for adj in adjs[: sep_tv]]
-    valid["adj"] = [sparse_mx_to_torch_spare_tensor(
-        adj+sp.identity(adj.shape[0])) for adj in adjs[sep_tv:]]
+    train["adj"] = [
+        sparse_mx_to_torch_spare_tensor(adj + sp.identity(adj.shape[0]))
+        for adj in adjs[:sep_tv]
+    ]
+    valid["adj"] = [
+        sparse_mx_to_torch_spare_tensor(adj + sp.identity(adj.shape[0]))
+        for adj in adjs[sep_tv:]
+    ]
 
     if os.path.isfile(saving_path):
         with open(saving_path, "rb") as f:
@@ -198,8 +206,7 @@ def load_encoder_txt_data(path):
     else:
         pbar = tqdm(smiles, ascii=True)
         pbar.set_description("Generating PubChem Fingerprints ")
-        pubchem_fps = [get_filtered_fingerprint(sm.smiles_str)
-                       for sm in pbar]
+        pubchem_fps = [get_filtered_fingerprint(sm.smiles_str) for sm in pbar]
         pubchem_fps = np.stack(pubchem_fps)
         with open(saving_path, "wb") as f:
             pk.dump(pubchem_fps, f)
@@ -241,34 +248,42 @@ def load_classifier_data(path,
     df = pd.read_csv(path)
     smiles = list(df[smiles_col].map(Smiles))
     random.shuffle(smiles)
-    graphs = [s.to_graph(pad_atom=PAD_ATOM, pad_bond=PAD_BOND, sparse=True)
-              for s in smiles if s.num_atoms < 71]
+    graphs = [
+        s.to_graph(pad_atom=PAD_ATOM, pad_bond=PAD_BOND, sparse=True)
+        for s in smiles if s.num_atoms < 71
+    ]
 
     sep_tr = int(len(graphs) * training_ratio)  # training
     sep_te = int(len(graphs) * testing_ratio)  # testing
     sep_tv = int(sep_tr * 0.9)  # train/valid
 
     def atom_feat_to_oh(features):
-        arr = np.zeros((len(features), 56))
+        arr = np.zeros((len(features), 59))
         for i, feat in enumerate(features):
             arr[i, features[i][0]] = 1
-            arr[i, -3:] = features[i][-3:]
+            arr[i, -6:] = features[i][-6:]
         return arr
+
     # feat = np.stack([g["atom_features"] for g in graphs])
-    feat = np.stack([atom_feat_to_oh(g["atom_features"])
-                     for g in graphs])
+    feat = np.stack([atom_feat_to_oh(g["atom_features"]) for g in graphs])
     # feat = normalize(feat)
     train["features"] = torch.FloatTensor(feat[:sep_tv])
     valid["features"] = torch.FloatTensor(feat[sep_tv:sep_tr])
     test["features"] = torch.FloatTensor(feat[-sep_te:])
 
     adjs = [g["adjacency"] for g in graphs]
-    train["adj"] = [sparse_mx_to_torch_spare_tensor(
-        adj+sp.identity(adj.shape[0])) for adj in adjs[: sep_tv]]
-    valid["adj"] = [sparse_mx_to_torch_spare_tensor(
-        adj+sp.identity(adj.shape[0])) for adj in adjs[sep_tv: sep_tr]]
-    test["adj"] = [sparse_mx_to_torch_spare_tensor(
-        adj+sp.identity(adj.shape[0])) for adj in adjs[-sep_te:]]
+    train["adj"] = [
+        sparse_mx_to_torch_spare_tensor(adj + sp.identity(adj.shape[0]))
+        for adj in adjs[:sep_tv]
+    ]
+    valid["adj"] = [
+        sparse_mx_to_torch_spare_tensor(adj + sp.identity(adj.shape[0]))
+        for adj in adjs[sep_tv:sep_tr]
+    ]
+    test["adj"] = [
+        sparse_mx_to_torch_spare_tensor(adj + sp.identity(adj.shape[0]))
+        for adj in adjs[-sep_te:]
+    ]
     labels = df[label_cols].fillna(0).to_numpy()
     n_classes = labels.shape[1]
     train["labels"] = torch.FloatTensor(labels[:sep_tv])
