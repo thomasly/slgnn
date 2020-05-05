@@ -145,7 +145,7 @@ def load_encoder_hdf5_data(path):
     return train, valid
 
 
-def feat_to_oh(features, col_num):
+def feat_to_oh(features, col_num, label_len):
     """ Convert a specific column of the features to one-hot label.
     Args:
         features (list): list of atom features.
@@ -155,7 +155,7 @@ def feat_to_oh(features, col_num):
         Converted feature with one-hot encoding
     """
     features = np.array(features)
-    oh = encode_onehot(list(features[:, col_num]), 53)
+    oh = encode_onehot(list(features[:, col_num]), label_len)
     oh_features = np.concatenate(
         [features[:, :col_num], oh, features[:, col_num + 1:]], axis=1)
     return oh_features
@@ -167,16 +167,26 @@ def load_encoder_txt_data(path):
     saving_path = os.path.join(
         os.path.dirname(path),
         os.path.basename(path).split(".")[0] + "_fingerprints.pk")
+    graph_saving_path = os.path.join(
+        os.path.dirname(path),
+        os.path.basename(path).split(".")[0] + "_graphs.pk"
+    )
 
-    with open(path, "r") as f:
-        smiles = [Smiles(line) for line in f.readlines()]
-    random.shuffle(smiles)
-    pbar = tqdm(smiles, ascii=True)
-    pbar.set_description("Generating graphs ")
-    graphs = [
-        s.to_graph(pad_atom=PAD_ATOM, pad_bond=PAD_BOND, sparse=True)
-        for s in pbar if s.num_atoms < PAD_ATOM + 1
-    ]
+    if os.path.isfile(graph_saving_path):
+        with open(graph_saving_path, "rb") as f:
+            graphs = pk.load(f)
+    else:
+        with open(path, "r") as f:
+            smiles = [Smiles(line) for line in f.readlines()]
+        random.shuffle(smiles)
+        pbar = tqdm(smiles, ascii=True)
+        pbar.set_description("Generating graphs ")
+        graphs = [
+            s.to_graph(pad_atom=PAD_ATOM, pad_bond=PAD_BOND, sparse=True)
+            for s in pbar if s.num_atoms < PAD_ATOM + 1
+        ]
+        with open(graph_saving_path, "wb") as f:
+            pk.dump(graphs, f)
 
     train, valid = dict(), dict()
     sep_tv = int(len(graphs) * 0.9)  # training/valid
@@ -184,7 +194,15 @@ def load_encoder_txt_data(path):
     # feat = np.stack([g["atom_features"] for g in graphs])
     pbar = tqdm(graphs, ascii=True)
     pbar.set_description("Getting atom features ")
-    feat = np.stack([feat_to_oh(g["atom_features"], 0) for g in pbar])
+    feat = list()
+    for g in pbar:
+        features = g["atom_features"]
+        features = feat_to_oh(features, 5, 5)
+        features = feat_to_oh(features, 2, 7)
+        features = feat_to_oh(features, 1, 11)
+        features = feat_to_oh(features, 0, 53)
+        feat.append(features)
+    feat = np.stack(feat)
     train["features"] = torch.FloatTensor(feat[:sep_tv])
     valid["features"] = torch.FloatTensor(feat[sep_tv:])
 
@@ -204,6 +222,11 @@ def load_encoder_txt_data(path):
         with open(saving_path, "rb") as f:
             pubchem_fps = pk.load(f)
     else:
+        try:
+            smiles
+        except NameError:
+            with open(path, "r") as f:
+                smiles = [Smiles(line) for line in f.readlines()]
         pbar = tqdm(smiles, ascii=True)
         pbar.set_description("Generating PubChem Fingerprints ")
         pubchem_fps = [get_filtered_fingerprint(sm.smiles_str) for sm in pbar]
@@ -257,16 +280,27 @@ def load_classifier_data(path,
     sep_te = int(len(graphs) * testing_ratio)  # testing
     sep_tv = int(sep_tr * 0.9)  # train/valid
 
-    def atom_feat_to_oh(features):
-        arr = np.zeros((len(features), 59))
-        for i, feat in enumerate(features):
-            arr[i, features[i][0]] = 1
-            arr[i, -6:] = features[i][-6:]
-        return arr
+    # def atom_feat_to_oh(features):
+    #     arr = np.zeros((len(features), 79))
+    #     for i, feat in enumerate(features):
+    #         arr[i, features[i][0]] = 1
+    #         arr[i, -6:] = features[i][-6:]
+    #     return arr
 
     # feat = np.stack([g["atom_features"] for g in graphs])
-    feat = np.stack([atom_feat_to_oh(g["atom_features"]) for g in graphs])
+    # feat = np.stack([atom_feat_to_oh(g["atom_features"]) for g in graphs])
     # feat = normalize(feat)
+    pbar = tqdm(graphs, ascii=True)
+    pbar.set_description("Getting atom features ")
+    feat = list()
+    for g in pbar:
+        features = g["atom_features"]
+        features = feat_to_oh(features, 5, 5)
+        features = feat_to_oh(features, 2, 7)
+        features = feat_to_oh(features, 1, 11)
+        features = feat_to_oh(features, 0, 53)
+        feat.append(features)
+    feat = np.stack(feat)
     train["features"] = torch.FloatTensor(feat[:sep_tv])
     valid["features"] = torch.FloatTensor(feat[sep_tv:sep_tr])
     test["features"] = torch.FloatTensor(feat[-sep_te:])
