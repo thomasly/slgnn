@@ -164,7 +164,12 @@ def train_classifier(epoch, batch_size=32):
         feat = feat.cuda()
         adj = adj.cuda()
         lb = lb[None, :].cuda()
-        output = classifier(gcn_model(feat, adj))
+        if epoch < 2:
+            with torch.no_grad():
+                output = gcn_model(feat, adj)
+        else:
+            output = gcn_model(feat, adj)
+        output = classifier(output)
         loss_train_onestep = F.binary_cross_entropy_with_logits(output, lb)
         loss_train += loss_train_onestep
         acc_train += accuracy(output, lb)
