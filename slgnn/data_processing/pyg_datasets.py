@@ -111,7 +111,11 @@ class ZINCDataset(TUDataset):
 
     @property
     def raw_file_names(self):
-        names = ["_A.txt", "_graph_indicator.txt", "_node_attributes.txt"]
+        names = [
+            "_A.txt",
+            "_graph_indicator.txt",
+            "_node_attributes.txt",
+            "_graph_labels.txt"]
         return [self.name+name for name in names]
 
     @property
