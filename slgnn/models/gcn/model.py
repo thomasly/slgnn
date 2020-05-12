@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.nn import BatchNorm1d
 from torch.nn import Sequential, Linear, ReLU
 import torch.nn.functional as F
-from torch_geometric.nn import GinConv, global_add_pool, global_mean_pool
+from torch_geometric.nn import GINConv, global_add_pool, global_mean_pool
 
 from slgnn.models.gcn.layers import GraphConvolution
 
@@ -65,7 +65,7 @@ class GIN(nn.Module):
                         Linear(out_emb_dim, out_emb_dim),
                         BatchNorm1d(out_emb_dim),
                         ReLU()))
-                self.convs.append(GinConv(self.nns[-1], train_eps(train_eps)))
+                self.convs.append(GINConv(self.nns[-1], train_eps(train_eps)))
                 self.linears.append(Linear(out_emb_dim, dim_target))
 
         self.nns = torch.nn.ModuleList(self.nns)
