@@ -35,3 +35,5 @@ class TestTUData(TestCase):
         self.assertTrue(batch.is_undirected, True)
         self.assertTrue(batch.contains_self_loops, True)
         self.assertEqual(len(self.dataset), 1000)
+        self.assertEqual(batch.y.shape[0], batch.num_graphs)
+        self.assertEqual(batch.y.shape[1], 740)
