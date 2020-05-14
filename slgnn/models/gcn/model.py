@@ -151,4 +151,4 @@ class GIN_EASY(nn.Module):
                 x = self.convs[layer-1](x, edge_index)
                 out += F.dropout(self.linears[layer](self.pooling(x, batch)),
                                  p=self.dropout, training=self.training)
-        return F.sigmoid(out)
+        return out
