@@ -1,6 +1,9 @@
 """ A easy script to run GIN model.
 """
+import os
 import os.path as osp
+from shutil import copy2
+from datetime import datetime
 
 from torch_geometric.data import DataLoader
 import torch
@@ -12,12 +15,16 @@ from slgnn.models.gcn.model import GIN_EASY
 from slgnn.training.utils import plot_train_val_losses
 
 
+time_stamp = datetime.now().strftime(r"%Y%m%d_%H%M%S")
 args = ModelTrainingArgs().parse_args()
 
 config = Config.from_dict(Grid(args.config)[0])
 
 device = torch.device(config["device"])
 dataset = config["dataset"]()
+log_dir = osp.join("logs", "GIN", str(dataset), time_stamp)
+os.makedirs(log_dir)
+copy2(args.config, osp.join(log_dir, osp.basename(args.config)))
 
 sep = int(len(dataset) * 0.9)
 batch_size = config["batch_size"]
@@ -32,6 +39,8 @@ dim_features = dataset.data.x.size(1)
 model = GIN_EASY(dim_features, dim_target).to(device)
 criterion = config["loss"]()
 optimizer = config["optimizer"](model.parameters(), lr=config["learning_rate"])
+lr_scheduler = config["scheduler"](optimizer)
+early_stopper = config["early_stopper"]()
 epochs = config["classifier_epochs"]
 
 model.train()
@@ -59,13 +68,17 @@ for e in range(epochs):
         optimizer.step()
         print("epoch: {}, batch: {}, train_loss: {}, val_loss: {}".format(
             e+1, i+1, train_loss.item(), validating_losses[-1]), end="\r")
+        lr_scheduler.step()
     print()
+    if early_stopper.stop(e, validating_losses[-1]):
+        print("Early stopped at epoch {}".format(e+1))
+        break
 
 
 plot_train_val_losses(
     training_losses,
     validating_losses,
-    osp.join("logs", "GIN", "train_val_losses.png")
+    osp.join(log_dir, "train_val_losses.png")
 )
 
 model.eval()
@@ -78,8 +91,7 @@ ax1.bar(list(range(out_y.shape[0])), out_y)
 ax1.set_xlabel("Reconstructed Fingerprint")
 ax2.bar(list(range(out_y.shape[0])), label)
 ax2.set_xlabel("PubChem Fingerprint")
-fig.savefig(
-    osp.join("logs", "GIN", "gin_rec_1.png"), dpi=300, bbox_inches="tight")
+fig.savefig(osp.join(log_dir, "gin_rec_1.png"), dpi=300, bbox_inches="tight")
 
 label = val_batch.y[1].to("cpu").detach()
 out = torch.round(torch.sigmoid(model(val_batch)))
@@ -90,5 +102,4 @@ ax1.bar(list(range(out_y.shape[0])), out_y)
 ax1.set_xlabel("Reconstructed Fingerprint")
 ax2.bar(list(range(out_y.shape[0])), label)
 ax2.set_xlabel("PubChem Fingerprint")
-fig.savefig(
-    osp.join("logs", "GIN", "gin_rec_2.png"), dpi=300, bbox_inches="tight")
+fig.savefig(osp.join(log_dir, "gin_rec_2.png"), dpi=300, bbox_inches="tight")

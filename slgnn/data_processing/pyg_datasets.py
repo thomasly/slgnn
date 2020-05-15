@@ -155,6 +155,9 @@ class ZINC1k(ZINCDataset):
     def process(self):
         super().process()
 
+    def __str__(self):
+        return "ZINC1k"
+
 
 class ZINC10k(ZINCDataset):
     def __init__(self):
@@ -165,6 +168,9 @@ class ZINC10k(ZINCDataset):
     def process(self):
         super().process()
 
+    def __str__(self):
+        return "ZINC10k"
+
 
 class ZINC100k(ZINCDataset):
     def __init__(self):
@@ -174,3 +180,6 @@ class ZINC100k(ZINCDataset):
 
     def process(self):
         super().process()
+
+    def __str__(self):
+        return "ZINC100k"

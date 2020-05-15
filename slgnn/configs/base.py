@@ -9,7 +9,7 @@ from torch.optim.lr_scheduler import StepLR  # , ReduceLROnPlateau
 import yaml
 
 from slgnn.data_processing.pyg_datasets import ZINC1k, ZINC10k, ZINC100k
-# from models.utils.EarlyStopper import Patience
+from slgnn.training.utils import Patience
 # from models.graph_classifiers.GIN import GIN
 # from models.graph_classifiers.DiffPool import DiffPool
 # from models.graph_classifiers.ECC import ECC
@@ -95,7 +95,7 @@ class Config:
 
     early_stoppers = {
         # 'GLStopper': GLStopper,
-        # 'Patience': Patience
+        'Patience': Patience
     }
 
     def __init__(self, **attrs):
