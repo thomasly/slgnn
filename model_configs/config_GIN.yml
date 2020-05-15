@@ -1,16 +1,19 @@
-model:
-  - GIN
+dataset:
+  - ZINC10k
+# model:
+#   - GIN
 device:
-  - gpu
+  - cuda:0
 batch_size:
-  # - 32
-  - 128
+  - 32
+  # - 128
 learning_rate:
-  - 0.01
-  - 0.001
+  # - 0.01
+  # - 0.001
   - 0.0001
 classifier_epochs:
-  - 1000
+  - 100
+  # - 1000
 hidden_units:  # Note: GIN add a first layer that simply adds up all node features
   - [64, 64, 64, 64]
   # - [32, 32, 32, 32]
@@ -18,18 +21,18 @@ hidden_units:  # Note: GIN add a first layer that simply adds up all node featur
   # - [32, 32]
 optimizer:
   - Adam
-scheduler:
-  -
-    class: StepLR
-    args:
-      step_size: 50
-      gamma: 0.5
+# scheduler:
+#   -
+#     class: StepLR
+#     args:
+#       step_size: 50
+#       gamma: 0.5
 loss:
-  - BinaryClassificationLoss
-  - MulticlassClassificationLoss
+  - BCELoss
+  # - MulticlassClassificationLoss
 train_eps:
   - true
-  - false
+  # - false
 l2:
   - 0.
 aggregation:
@@ -39,18 +42,18 @@ gradient_clipping:
   - null
 dropout:
   - 0.5
-  - 0.
-early_stopper:
-  # -
-  #   class: Patience
-  #   args:
-  #     patience: 500
-  #     use_loss: False
-  -
-    class: Patience
-    args:
-      patience: 500
-      use_loss: True
+  # - 0.
+# early_stopper:
+#   # -
+#   #   class: Patience
+#   #   args:
+#   #     patience: 500
+#   #     use_loss: False
+#   -
+#     class: Patience
+#     args:
+#       patience: 500
+#       use_loss: True
 shuffle:
   - True
 resume:

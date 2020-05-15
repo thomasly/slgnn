@@ -1,3 +1,5 @@
+import os
+
 import torch
 import matplotlib.pyplot as plt
 
@@ -27,4 +29,5 @@ def plot_train_val_losses(train_losses: list, val_losses: list, output):
     axe.set_ylabel("BCE loss")
     axe.set_xlabel("Steps")
     axe.legend()
+    os.makedirs(os.path.dirname(output), exist_ok=True)
     fig.savefig(output, dpi=300, bbox_inches="tight")

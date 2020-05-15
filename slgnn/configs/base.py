@@ -1,25 +1,44 @@
-from torch.optim import Adam  # , SGD
-from torch.optim.lr_scheduler import StepLR  # , ReduceLROnPlateau
+from pathlib import Path
+import json
+import pickle
+from copy import deepcopy
 
-from datasets import ZINC
+from torch.optim import Adam
+from torch.nn import BCELoss
+from torch.optim.lr_scheduler import StepLR  # , ReduceLROnPlateau
+import yaml
+
+from slgnn.data_processing.pyg_datasets import ZINC1k, ZINC10k, ZINC100k
+# from models.utils.EarlyStopper import Patience
+# from models.graph_classifiers.GIN import GIN
+# from models.graph_classifiers.DiffPool import DiffPool
+# from models.graph_classifiers.ECC import ECC
+# from models.graph_classifiers.GraphSAGE import GraphSAGE
+# from models.modules import (BinaryClassificationLoss,)
+# MulticlassClassificationLoss,
+# NN4GMulticlassClassificationLoss,
+# DiffPoolMulticlassClassificationLoss)
 # from models.graph_classifiers.DGCNN import DGCNN
 # from models.graph_classifiers.DeepMultisets import DeepMultisets
 # from models.graph_classifiers.MolecularFingerprint import \
 # MolecularFingerprint
 # from models.schedulers.ECCScheduler import ECCLR
 # from models.utils.EarlyStopper import Patience, GLStopper
-from models.utils.EarlyStopper import Patience
-from models.graph_classifiers.GIN import GIN
-# from models.graph_classifiers.DiffPool import DiffPool
-# from models.graph_classifiers.ECC import ECC
-# from models.graph_classifiers.GraphSAGE import GraphSAGE
-from models.modules import (BinaryClassificationLoss,)
-# MulticlassClassificationLoss,
-# NN4GMulticlassClassificationLoss,
-# DiffPoolMulticlassClassificationLoss)
 
-from copy import deepcopy
-from .utils import read_config_file
+
+def read_config_file(dict_or_filelike):
+    if isinstance(dict_or_filelike, dict):
+        return dict_or_filelike
+
+    path = Path(dict_or_filelike)
+    if path.suffix == ".json":
+        return json.load(open(path, "r"))
+    elif path.suffix in [".yaml", ".yml"]:
+        return yaml.load(open(path, "r"), Loader=yaml.FullLoader)
+    elif path.suffix in [".pkl", ".pickle"]:
+        return pickle.load(open(path, "rb"))
+
+    raise ValueError("Only JSON, YaML and pickle files supported.")
 
 
 class ConfigError(Exception):
@@ -31,7 +50,9 @@ class Config:
     Specifies the configuration for a single model.
     """
     datasets = {
-        'ZINC': ZINC,
+        'ZINC1k': ZINC1k,
+        'ZINC10k': ZINC10k,
+        'ZINC100k': ZINC100k,
         # 'NCI1': NCI1,
         # 'IMDB-BINARY': IMDBBinary,
         # 'IMDB-MULTI': IMDBMulti,
@@ -43,18 +64,18 @@ class Config:
         # 'DD': DD,
     }
 
-    models = {
-        'GIN': GIN,
-        # 'ECC': ECC,
-        # "DiffPool": DiffPool,
-        # "DGCNN": DGCNN,
-        # "MolecularFingerprint": MolecularFingerprint,
-        # "DeepMultisets": DeepMultisets,
-        # "GraphSAGE": GraphSAGE
-    }
+    # models = {
+    # 'GIN': GIN,
+    # 'ECC': ECC,
+    # "DiffPool": DiffPool,
+    # "DGCNN": DGCNN,
+    # "MolecularFingerprint": MolecularFingerprint,
+    # "DeepMultisets": DeepMultisets,
+    # "GraphSAGE": GraphSAGE
+    # }
 
     losses = {
-        'BinaryClassificationLoss': BinaryClassificationLoss,
+        'BCELoss': BCELoss,
         # 'MulticlassClassificationLoss': MulticlassClassificationLoss,
         # 'NN4GMCLoss': NN4GMulticlassClassificationLoss,
         # 'DMCL': DiffPoolMulticlassClassificationLoss,
@@ -74,7 +95,7 @@ class Config:
 
     early_stoppers = {
         # 'GLStopper': GLStopper,
-        'Patience': Patience
+        # 'Patience': Patience
     }
 
     def __init__(self, **attrs):
@@ -177,9 +198,8 @@ class Grid:
     Specifies the configuration for multiple models.
     """
 
-    def __init__(self, path_or_dict, dataset_name):
+    def __init__(self, path_or_dict):
         self.configs_dict = read_config_file(path_or_dict)
-        self.configs_dict['dataset'] = [dataset_name]
         self.num_configs = 0  # must be computed by _create_grid
         self._configs = self._create_grid()
 

@@ -144,3 +144,33 @@ class ZINCDataset(TUDataset):
             self.data, self.slices = self.collate(data_list)
 
         torch.save((self.data, self.slices), self.processed_paths[0])
+
+
+class ZINC1k(ZINCDataset):
+    def __init__(self):
+        root = osp.join("data", "ZINC", "graphs")
+        name = "ZINC1k"
+        super().__init__(root=root, name=name, use_node_attr=True)
+
+    def process(self):
+        super().process()
+
+
+class ZINC10k(ZINCDataset):
+    def __init__(self):
+        root = osp.join("data", "ZINC", "graphs")
+        name = "ZINC10k"
+        super().__init__(root=root, name=name, use_node_attr=True)
+
+    def process(self):
+        super().process()
+
+
+class ZINC100k(ZINCDataset):
+    def __init__(self):
+        root = osp.join("data", "ZINC", "graph")
+        name = "ZINC100k"
+        super().__init__(root=root, name=name, use_node_attr=True)
+
+    def process(self):
+        super().process()
