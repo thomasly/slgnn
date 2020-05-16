@@ -24,36 +24,47 @@ def load_data(dataset, batch_size):
 
 
 def train_one_epoch(model, train_loader, val_loader, epoch, criterion,
-                    optimizer, device):
+                    optimizer, device, train_losses, val_losses):
     for i, batch in enumerate(train_loader):
         model.train()
         batch = batch.to(device)
         out = model(batch)
         train_loss = criterion(torch.sigmoid(out), batch.y.float())
-
-        with torch.no_grad():
-            model.eval()
-            counter = 0
-            val_batch_losses = list()
-            for val_batch in val_loader:
-                val_batch = val_batch.to(device)
-                val_out = model(val_batch)
-                validate_loss = criterion(
-                    torch.sigmoid(val_out), val_batch.y.float())
-                val_batch_losses.append(validate_loss.item())
-                counter += 1
-            val_loss = sum(val_batch_losses) / counter
+        train_losses.append(train_loss.item())
         optimizer.zero_grad()
         train_loss.backward()
         optimizer.step()
         print(
-            "epoch: {}, batch: {}, "
-            "train_loss: {:.4f}, val_loss: {:.4f}".format(
-                epoch+1, i+1, train_loss.item(), val_loss),
-            end="\r"
+            "\repoch: {}, batch: {}, train_loss: {:.4f} ".format(
+                epoch+1, i+1, train_loss.item()),
+            end=""
         )
-    print()
+    with torch.no_grad():
+        model.eval()
+        counter = 0
+        val_batch_losses = list()
+        for val_batch in val_loader:
+            val_batch = val_batch.to(device)
+            val_out = model(val_batch)
+            validate_loss = criterion(
+                torch.sigmoid(val_out), val_batch.y.float())
+            val_batch_losses.append(validate_loss.item())
+            counter += 1
+        val_loss = sum(val_batch_losses) / counter
+        val_losses.append(val_loss)
+    print("val_loss: {:.4f}".format(val_loss))
     return train_loss.item(), val_loss
+
+
+def loss_before_training(model, train_loader, val_loader, config):
+    device = torch.device(config["device"])
+    tr_batch = next(iter(train_loader)).to(device)
+    val_batch = next(iter(val_loader)).to(device)
+    model.eval()
+    criterion = config["loss"]()
+    train_loss = criterion(torch.sigmoid(model(tr_batch)), tr_batch.y.float())
+    val_loss = criterion(torch.sigmoid(model(val_batch)), val_batch.y.float())
+    return train_loss, val_loss
 
 
 def train_model(model, config, log_dir, train_loader, val_loader):
@@ -69,14 +80,16 @@ def train_model(model, config, log_dir, train_loader, val_loader):
 
     training_losses = list()
     validating_losses = list()
+    tr_bf_train, val_bf_train = loss_before_training(
+        model, train_loader, val_loader, config)
+    training_losses.append(tr_bf_train)
+    validating_losses.append(val_bf_train)
     best_loss_logged = False
     for e in range(epochs):
         train_loss, val_loss = train_one_epoch(
             model, train_loader, val_loader, e, criterion,
-            optimizer, device
+            optimizer, device, training_losses, validating_losses
         )
-        training_losses.append(train_loss)
-        validating_losses.append(val_loss)
         lr_scheduler.step()
         if early_stopper.stop(e, val_loss, train_loss=train_loss):
             print("Early stopped at epoch {}".format(e+1))

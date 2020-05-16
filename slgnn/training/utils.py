@@ -20,11 +20,11 @@ def plot_reconstruct(model, data, index, output):
 
 
 def plot_train_val_losses(train_losses: list, val_losses: list, output):
-    assert(len(train_losses) == len(val_losses))
+    dif = int((len(train_losses)-1) / (len(val_losses)-1))
     fig, axe = plt.subplots(figsize=(8., 6.))
     x = list(range(len(train_losses)))
     axe.plot(x, train_losses, label="train_loss")
-    axe.plot(x, val_losses, label="val_loss")
+    axe.plot(x[::dif], val_losses, label="val_loss")
     axe.set_ylabel("BCE loss")
     axe.set_xlabel("Steps")
     axe.legend()

@@ -1,5 +1,5 @@
 dataset:
-  - ZINC1k
+  - ZINC100k
 # model:
 #   - GIN
 device:
