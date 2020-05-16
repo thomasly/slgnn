@@ -35,8 +35,20 @@ validating_dataloader = DataLoader(
 
 dim_target = dataset.data.y.size(1)
 dim_features = dataset.data.x.size(1)
+hidden_units = config["hidden_units"]
+dropout = config["dropout"]
+train_eps = config["train_eps"]
+aggregation = config["aggregation"]
 
-model = GIN_EASY(dim_features, dim_target).to(device)
+model = GIN_EASY(
+    dim_features=dim_features,
+    dim_target=dim_target,
+    dropout=dropout,
+    train_eps=train_eps,
+    hidden_units=hidden_units,
+    aggregation=aggregation
+)
+model = model.to(device)
 criterion = config["loss"]()
 optimizer = config["optimizer"](model.parameters(), lr=config["learning_rate"])
 lr_scheduler = config["scheduler"](optimizer)
@@ -68,7 +80,7 @@ for e in range(epochs):
         optimizer.step()
         print("epoch: {}, batch: {}, train_loss: {}, val_loss: {}".format(
             e+1, i+1, train_loss.item(), validating_losses[-1]), end="\r")
-        lr_scheduler.step()
+    lr_scheduler.step()
     print()
     if early_stopper.stop(e, validating_losses[-1]):
         print("Early stopped at epoch {}".format(e+1))

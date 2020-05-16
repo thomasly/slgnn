@@ -174,7 +174,7 @@ class ZINC10k(ZINCDataset):
 
 class ZINC100k(ZINCDataset):
     def __init__(self):
-        root = osp.join("data", "ZINC", "graph")
+        root = osp.join("data", "ZINC", "graphs")
         name = "ZINC100k"
         super().__init__(root=root, name=name, use_node_attr=True)
 

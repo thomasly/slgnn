@@ -1,5 +1,5 @@
 dataset:
-  - ZINC1k
+  - ZINC100k
 # model:
 #   - GIN
 device:
@@ -9,8 +9,8 @@ batch_size:
   # - 128
 learning_rate:
   # - 0.01
-  # - 0.001
-  - 0.0001
+  - 0.001
+  # - 0.0001
 classifier_epochs:
   - 100
   # - 1000
@@ -25,7 +25,7 @@ scheduler:
   -
     class: StepLR
     args:
-      step_size: 50
+      step_size: 20
       gamma: 0.5
 loss:
   - BCELoss
@@ -36,7 +36,7 @@ train_eps:
 l2:
   - 0.
 aggregation:
-  - mean
+  # - mean
   - sum
 gradient_clipping:
   - null
@@ -52,7 +52,7 @@ early_stopper:
   -
     class: Patience
     args:
-      patience: 10
+      patience: 20
       use_loss: True
 shuffle:
   - True
