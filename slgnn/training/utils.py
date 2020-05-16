@@ -4,20 +4,19 @@ import torch
 import matplotlib.pyplot as plt
 
 
-def plot_reconstruct(decoder, encoder, features, adj, labels, index, output):
+def plot_reconstruct(model, data, index, output):
+    model.eval()
+    label = data.y[0].to("cpu").detach()
+    out = torch.round(torch.sigmoid(model(data)))
+    out_y = out[0].to("cpu").detach()
     fig, axes = plt.subplots(2, 1, figsize=(8., 12.))
-    encoder.eval()
-    decoder.eval()
-    reconst = torch.sigmoid(decoder(
-        encoder(
-            features[index].cuda(), adj[index].cuda()))).detach().cpu().numpy()
-
     ax1, ax2 = axes.flatten()
-    ax1.bar(list(range(reconst.shape[1])), reconst[0, :])
+    ax1.bar(list(range(out_y.shape[0])), out_y)
     ax1.set_xlabel("Reconstructed Fingerprint")
-    ax2.bar(list(range(reconst.shape[1])), labels[index])
+    ax2.bar(list(range(out_y.shape[0])), label)
     ax2.set_xlabel("PubChem Fingerprint")
     fig.savefig(output, dpi=300, bbox_inches="tight")
+    plt.clf()
 
 
 def plot_train_val_losses(train_losses: list, val_losses: list, output):
@@ -31,6 +30,7 @@ def plot_train_val_losses(train_losses: list, val_losses: list, output):
     axe.legend()
     os.makedirs(os.path.dirname(output), exist_ok=True)
     fig.savefig(output, dpi=300, bbox_inches="tight")
+    plt.clf()
 
 
 class EarlyStopper:
