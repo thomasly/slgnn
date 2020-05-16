@@ -41,7 +41,6 @@ def train_one_epoch(model, train_loader, val_loader, epoch, criterion,
         )
     with torch.no_grad():
         model.eval()
-        counter = 0
         val_batch_losses = list()
         for val_batch in val_loader:
             val_batch = val_batch.to(device)
@@ -49,8 +48,7 @@ def train_one_epoch(model, train_loader, val_loader, epoch, criterion,
             validate_loss = criterion(
                 torch.sigmoid(val_out), val_batch.y.float())
             val_batch_losses.append(validate_loss.item())
-            counter += 1
-        val_loss = sum(val_batch_losses) / counter
+        val_loss = sum(val_batch_losses) / len(val_batch_losses)
         val_losses.append(val_loss)
     print("val_loss: {:.4f}".format(val_loss))
     return train_loss.item(), val_loss
