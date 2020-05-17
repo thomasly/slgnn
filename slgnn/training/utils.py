@@ -16,7 +16,7 @@ def plot_reconstruct(model, data, index, output):
     ax2.bar(list(range(out_y.shape[0])), label)
     ax2.set_xlabel("PubChem Fingerprint")
     fig.savefig(output, dpi=300, bbox_inches="tight")
-    plt.clf()
+    plt.close()
 
 
 def plot_train_val_losses(train_losses: list, val_losses: list, output):
@@ -30,7 +30,7 @@ def plot_train_val_losses(train_losses: list, val_losses: list, output):
     axe.legend()
     os.makedirs(os.path.dirname(output), exist_ok=True)
     fig.savefig(output, dpi=300, bbox_inches="tight")
-    plt.clf()
+    plt.close()
 
 
 class EarlyStopper:
