@@ -27,3 +27,23 @@ class Decoder(nn.Module):
         # x = F.dropout(x, self.dropout, training=self.training)
         x = self.dense(x)
         return x
+
+
+class GINDecoder(nn.Module):
+
+    def __init__(self, n_in, n_out, dropout):
+        super().__init__()
+        if n_out > n_in:
+            n_hidden = int(n_out / 2)
+        else:
+            n_hidden = int(n_in / 2)
+        self.fc1 = nn.Linear(n_in, n_hidden)
+        self.fc2 = nn.Linear(n_hidden, n_out)
+        self.dropout = dropout
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = F.dropout(x, self.dropout, training=self.training)
+        x = self.fc2(x)
+        return x

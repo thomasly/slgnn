@@ -146,6 +146,28 @@ class ZINCDataset(TUDataset):
         torch.save((self.data, self.slices), self.processed_paths[0])
 
 
+class JAKDataset(TUDataset):
+
+    @property
+    def raw_file_names(self):
+        names = [
+            "_A.txt",
+            "_graph_indicator.txt",
+            "_node_attributes.txt",
+            "_graph_labels.txt"]
+        return [self.name+name for name in names]
+
+    @property
+    def processed_file_names(self):
+        return 'data.pt'
+
+    def download(self):
+        pass
+
+    def process(self):
+        super().process()
+
+
 class ZINC1k(ZINCDataset):
     def __init__(self):
         root = osp.join("data", "ZINC", "graphs")
@@ -183,3 +205,45 @@ class ZINC100k(ZINCDataset):
 
     def __str__(self):
         return "ZINC100k"
+
+
+class JAK1(JAKDataset):
+
+    def __init__(self):
+        root = osp.join("data", "JAK", "graphs")
+        name = "JAK1"
+        super().__init__(root=root, name=name, use_node_attr=True)
+
+    def process(self):
+        super().process()
+
+    def __str__(self):
+        return "JAK1"
+
+
+class JAK2(JAKDataset):
+
+    def __init__(self):
+        root = osp.join("data", "JAK", "graphs")
+        name = "JAK2"
+        super().__init__(root=root, name=name, use_node_attr=True)
+
+    def process(self):
+        super().process()
+
+    def __str__(self):
+        return "JAK2"
+
+
+class JAK3(JAKDataset):
+
+    def __init__(self):
+        root = osp.join("data", "JAK", "graphs")
+        name = "JAK3"
+        super().__init__(root=root, name=name, use_node_attr=True)
+
+    def process(self):
+        super().process()
+
+    def __str__(self):
+        return "JAK3"

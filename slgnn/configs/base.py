@@ -4,11 +4,12 @@ import pickle
 from copy import deepcopy
 
 from torch.optim import Adam
-from torch.nn import BCELoss
+from torch.nn import BCELoss, NLLLoss
 from torch.optim.lr_scheduler import StepLR  # , ReduceLROnPlateau
 import yaml
 
-from slgnn.data_processing.pyg_datasets import ZINC1k, ZINC10k, ZINC100k
+from slgnn.data_processing.pyg_datasets import (
+    ZINC1k, ZINC10k, ZINC100k, JAK1, JAK2, JAK3)
 from slgnn.training.utils import Patience
 # from models.graph_classifiers.GIN import GIN
 # from models.graph_classifiers.DiffPool import DiffPool
@@ -49,7 +50,7 @@ class Config:
     """
     Specifies the configuration for a single model.
     """
-    datasets = {
+    encoder_datasets = {
         'ZINC1k': ZINC1k,
         'ZINC10k': ZINC10k,
         'ZINC100k': ZINC100k,
@@ -64,6 +65,12 @@ class Config:
         # 'DD': DD,
     }
 
+    classifier_datasets = {
+        'JAK1': JAK1,
+        'JAK2': JAK2,
+        'JAK3': JAK3,
+    }
+
     # models = {
     # 'GIN': GIN,
     # 'ECC': ECC,
@@ -74,12 +81,17 @@ class Config:
     # "GraphSAGE": GraphSAGE
     # }
 
-    losses = {
+    encoder_losses = {
         'BCELoss': BCELoss,
         # 'MulticlassClassificationLoss': MulticlassClassificationLoss,
         # 'NN4GMCLoss': NN4GMulticlassClassificationLoss,
         # 'DMCL': DiffPoolMulticlassClassificationLoss,
 
+    }
+
+    classifier_losses = {
+        'BCELoss': BCELoss,
+        'NLLLoss': NLLLoss,
     }
 
     optimizers = {
@@ -104,13 +116,20 @@ class Config:
         self.config = dict(attrs)
 
         for attrname, value in attrs.items():
-            attrnames = ['dataset', 'model', 'loss', 'optimizer',
+            attrnames = ['encoder_dataset', 'classifier_dataset', 'model',
+                         'encoder_loss', 'classifier_loss', 'optimizer',
                          'scheduler', 'early_stopper']
             if attrname in attrnames:
-                if attrname == 'dataset':
-                    setattr(self, 'dataset_name', value)
+                if attrname == 'encoder_dataset':
+                    setattr(self, 'encoder_dataset_name', value)
+                if attrname == 'classifier_dataset':
+                    setattr(self, 'classifier_dataset_name', value)
                 if attrname == 'model':
                     setattr(self, 'model_name', value)
+                if attrname == 'encoder_loss':
+                    setattr(self, 'encoder_loss_name', value)
+                if attrname == 'classifier_loss':
+                    setattr(self, 'classifier_loss_name', value)
                 fn = getattr(self, f'parse_{attrname}')
                 setattr(self, attrname, fn(value))
             else:
@@ -136,9 +155,16 @@ class Config:
         return self.config
 
     @staticmethod
-    def parse_dataset(dataset_s):
-        assert dataset_s in Config.datasets, f'Could not find {dataset_s}'
-        return Config.datasets[dataset_s]
+    def parse_encoder_dataset(dataset_s):
+        assert dataset_s in Config.encoder_datasets, \
+            f'Could not find {dataset_s}'
+        return Config.encoder_datasets[dataset_s]
+
+    @staticmethod
+    def parse_classifier_dataset(dataset_s):
+        assert dataset_s in Config.classifier_datasets, \
+            f'Could not find {dataset_s}'
+        return Config.classifier_datasets[dataset_s]
 
     @staticmethod
     def parse_model(model_s):
@@ -146,9 +172,14 @@ class Config:
         return Config.models[model_s]
 
     @staticmethod
-    def parse_loss(loss_s):
-        assert loss_s in Config.losses, f'Could not find {loss_s}'
-        return Config.losses[loss_s]
+    def parse_encoder_loss(loss_s):
+        assert loss_s in Config.encoder_losses, f'Could not find {loss_s}'
+        return Config.encoder_losses[loss_s]
+
+    @staticmethod
+    def parse_classifier_loss(loss_s):
+        assert loss_s in Config.classifier_losses, f'Could not find {loss_s}'
+        return Config.classifier_losses[loss_s]
 
     @staticmethod
     def parse_optimizer(optim_s):
