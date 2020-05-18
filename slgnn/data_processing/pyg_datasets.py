@@ -169,8 +169,9 @@ class JAKDataset(TUDataset):
 
 
 class ZINC1k(ZINCDataset):
-    def __init__(self):
-        root = osp.join("data", "ZINC", "graphs")
+    def __init__(self, root=None):
+        if root is None:
+            root = osp.join("data", "ZINC", "graphs")
         name = "ZINC1k"
         super().__init__(root=root, name=name, use_node_attr=True)
 
