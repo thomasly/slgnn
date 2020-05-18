@@ -1,7 +1,16 @@
-dataset:
-  - ZINC100k
+encoder_dataset:
+  - ZINC1k
+classifier_dataset:
+  - JAK1
 # model:
 #   - GIN
+use_encoder:
+   - true
+   - false
+embedding_dim:
+  - 128
+  - 256
+  - 512
 device:
   - cuda:0
 batch_size:
@@ -11,9 +20,13 @@ learning_rate:
   # - 0.01
   - 0.001
   - 0.0001
+encoder_epochs:
+  - 1
 classifier_epochs:
-  - 10
-  # - 1000
+  # - 100
+  - 1000
+frozen_epochs:
+  - 3
 hidden_units:  # Note: GIN add a first layer that simply adds up all node features
   - [64, 64, 64, 64]
   - [32, 32, 32, 32]
@@ -27,9 +40,11 @@ scheduler:
     args:
       step_size: 20
       gamma: 0.5
-loss:
+encoder_loss:
   - BCELoss
   # - MulticlassClassificationLoss
+classifier_loss:
+  - NLLLoss
 train_eps:
   - true
   # - false
@@ -37,7 +52,7 @@ l2:
   - 0.
 aggregation:
   - mean
-  - sum
+  # - sum
 gradient_clipping:
   - null
 dropout:

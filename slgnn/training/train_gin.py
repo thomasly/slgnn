@@ -15,7 +15,8 @@ from slgnn.configs.base import Grid, Config
 from slgnn.configs.arg_parsers import ModelTrainingArgs
 from slgnn.models.gcn.model import GIN
 from slgnn.models.decoder.model import GINDecoder
-from slgnn.training.utils import plot_train_val_losses, plot_reconstruct
+from slgnn.training.utils import (
+    plot_train_val_losses, plot_reconstruct, plot_train_val_acc)
 
 
 def load_data(dataset, batch_size, shuffle_=True):
@@ -269,7 +270,11 @@ def train_classifier(encoder, classifier, config, log_dir, train_loader,
         osp.join(log_dir, "classifier_losses.png")
     )
 
-    # plot_train_val_acc()
+    plot_train_val_acc(
+        training_accs,
+        validating_accs,
+        osp.join(log_dir, "classifier_accuracies.png")
+    )
 
 
 if __name__ == "__main__":

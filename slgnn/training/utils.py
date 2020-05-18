@@ -33,6 +33,20 @@ def plot_train_val_losses(train_losses: list, val_losses: list, output):
     plt.close()
 
 
+def plot_train_val_acc(train_accs: list, val_accs: list, output):
+    dif = int((len(train_accs)-1) / (len(val_accs)-1))
+    fig, axe = plt.subplots(figsize=(8., 6.))
+    x = list(range(len(train_accs)))
+    axe.plot(x, train_accs, label="train_acc")
+    axe.plot(x[::dif], val_accs, label="val_acc")
+    axe.set_ylabel("Accuracy Score")
+    axe.set_xlabel("Steps")
+    axe.legend()
+    os.makedirs(os.path.dirname(output), exist_ok=True)
+    fig.savefig(output, dpi=300, bbox_inches="tight")
+    plt.close()
+
+
 class EarlyStopper:
 
     def stop(self, epoch, val_loss, val_acc=None, test_loss=None,
