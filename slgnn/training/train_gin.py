@@ -136,6 +136,8 @@ def loss_before_training(model, train_loader, val_loader, criterion, config,
 
 
 def train_encoder(model, config, log_dir, train_loader, val_loader):
+    if config["encoder_epochs"] == 0:
+        return
     device = torch.device(config["device"])
 
     model = model.to(device)
@@ -164,13 +166,13 @@ def train_encoder(model, config, log_dir, train_loader, val_loader):
             metrics = early_stopper.get_best_vl_metrics()
             print("Best train loss: {:.4f}, best validate loss: {:.4f}".format(
                 metrics[0], metrics[2]))
-            with open(osp.join(log_dir, "best_losses.txt"), "w") as f:
+            with open(osp.join(log_dir, "best_losses.txt"), "a") as f:
                 f.write("Best train loss: {}, best validate loss: {}".format(
                     metrics[0], metrics[2]))
             best_loss_logged = True
             break
     if not best_loss_logged:
-        with open(osp.join(log_dir, "best_losses.txt"), "w") as f:
+        with open(osp.join(log_dir, "best_losses.txt"), "a") as f:
             best_val_loss = min(validating_losses)
             best_train_loss = training_losses[
                 validating_losses.index(best_val_loss)]
@@ -256,7 +258,7 @@ def train_classifier(encoder, classifier, config, log_dir, train_loader,
                 break
 
     if not best_loss_logged:
-        with open(osp.join(log_dir, "best_losses.txt"), "w") as f:
+        with open(osp.join(log_dir, "best_losses.txt"), "a") as f:
             best_val_loss = min(validating_losses)
             best_train_loss = training_losses[
                 validating_losses.index(best_val_loss)]
@@ -308,12 +310,13 @@ if __name__ == "__main__":
         train_encoder(
             model, config, log_dir, train_loader, val_loader)
         data = next(iter(val_loader)).to(config["device"])
-        for index in range(5):
-            plot_reconstruct(
-                model, data,
-                index=index,
-                output=osp.join(log_dir, "gin_rec_{}.png".format(index))
-            )
+        if config["encoder_epochs"] != 0:
+            for index in range(5):
+                plot_reconstruct(
+                    model, data,
+                    index=index,
+                    output=osp.join(log_dir, "gin_rec_{}.png".format(index))
+                )
 
         cls_dataset = config["classifier_dataset"]()
         classifier = GINDecoder(

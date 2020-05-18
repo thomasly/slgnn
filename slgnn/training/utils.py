@@ -41,6 +41,7 @@ def plot_train_val_acc(train_accs: list, val_accs: list, output):
     axe.plot(x[::dif], val_accs, label="val_acc")
     axe.set_ylabel("Accuracy Score")
     axe.set_xlabel("Steps")
+    axe.set_ylim(0, 1)
     axe.legend()
     os.makedirs(os.path.dirname(output), exist_ok=True)
     fig.savefig(output, dpi=300, bbox_inches="tight")
