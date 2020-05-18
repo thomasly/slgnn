@@ -4,6 +4,7 @@ import os
 import os.path as osp
 from datetime import datetime
 from random import shuffle
+import pickle as pk
 
 from torch_geometric.data import DataLoader
 from torch import nn
@@ -185,6 +186,12 @@ def train_encoder(model, config, log_dir, train_loader, val_loader):
         validating_losses,
         osp.join(log_dir, "encoder_losses.png")
     )
+    with open(osp.join(log_dir, "encoder_losses.pk"), "wb") as f:
+        pk.dump(
+            {"training_losses": training_losses,
+             "validating_losses": validating_losses},
+            f
+        )
 
 
 def train_classifier(encoder, classifier, config, log_dir, train_loader,
@@ -277,6 +284,14 @@ def train_classifier(encoder, classifier, config, log_dir, train_loader,
         validating_accs,
         osp.join(log_dir, "classifier_accuracies.png")
     )
+    with open(osp.join(log_dir, "classifier_metrics.pk"), "wb") as f:
+        m_dic = {
+            "training_losses": training_losses,
+            "validating_losses": validating_losses,
+            "training_accs": training_accs,
+            "validating_accs": validating_accs
+        }
+        pk.dump(m_dic, f)
 
 
 if __name__ == "__main__":
