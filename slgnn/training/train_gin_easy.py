@@ -13,7 +13,7 @@ import yaml
 
 from slgnn.configs.base import Grid, Config
 from slgnn.configs.arg_parsers import ModelTrainingArgs
-from slgnn.models.gcn.model import GIN_EASY
+from slgnn.models.gcn.model import GIN
 from slgnn.models.decoder.model import GINDecoder
 from slgnn.training.utils import plot_train_val_losses, plot_reconstruct
 
@@ -292,13 +292,10 @@ if __name__ == "__main__":
         dropout = config["dropout"]
         train_eps = config["train_eps"]
         aggregation = config["aggregation"]
-        encoder = GIN_EASY(
+        encoder = GIN(
             dim_features=dim_features,
             dim_target=dim_encoder_target,
-            dropout=dropout,
-            train_eps=train_eps,
-            hidden_units=hidden_units,
-            aggregation=aggregation
+            config=config
         )
         decoder = GINDecoder(dim_encoder_target, dim_decoder_target, dropout)
         model = nn.Sequential(encoder, decoder)
