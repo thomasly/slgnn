@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 
 def plot_reconstruct(model, data, index, output):
     model.eval()
-    label = data.y[0].to("cpu").detach()
+    label = data.y[index].to("cpu").detach()
     out = torch.round(torch.sigmoid(model(data)))
-    out_y = out[0].to("cpu").detach()
+    out_y = out[index].to("cpu").detach()
     fig, axes = plt.subplots(2, 1, figsize=(8., 12.))
     ax1, ax2 = axes.flatten()
     ax1.bar(list(range(out_y.shape[0])), out_y)
