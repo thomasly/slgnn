@@ -7,6 +7,9 @@ from scipy import sparse
 
 from ..data_processing.zinc_to_hdf5 import ZincToHdf5, Hdf5Loader
 from ..data_processing import zinc_to_graph as zg
+from ..data_processing.pyg_datasets import JAK1
+from ..data_processing.pyg_datasets import ZINC1k
+from torch_geometric.data import DataLoader
 
 
 class TestZincReading(unittest.TestCase):
@@ -122,10 +125,29 @@ class TestHdf5Loader(unittest.TestCase):
 class TestGraphConverting(unittest.TestCase):
 
     def test_convert_sampled_smiles_to_graphs(self):
-        inpath = "test_data/sampled_smiles_1000.txt"
+        inpath = "test_data/sampled_smiles_100.txt"
         pre = os.path.basename(inpath).split(".")[0]
         outpath = os.path.join(os.path.dirname(inpath), "graphs")
         zg.write_graphs(inpath, outpath, pre)
         self.assertTrue(
-            os.path.isfile("test_data/graphs/sampled_smiles_1000_A.txt"))
+            os.path.isfile("test_data/graphs/sampled_smiles_100_A.txt"))
         shutil.rmtree(outpath)
+
+
+class TestPygDatasets(unittest.TestCase):
+
+    def test_JAK1_dataset(self):
+        dataset = JAK1()
+        dataloader = DataLoader(dataset, batch_size=32)
+        data = next(iter(dataloader))
+        self.assertEqual(data.num_graphs, 32)
+        self.assertEqual(data.x.size()[1], 6)
+        self.assertEqual(data.y.size(), (32,))
+
+    def test_ZINC_dataset(self):
+        dataset = ZINC1k()
+        dataloader = DataLoader(dataset, batch_size=32)
+        data = next(iter(dataloader))
+        self.assertEqual(data.num_graphs, 32)
+        self.assertEqual(data.x.size()[1], 6)
+        self.assertEqual(data.y.size(), (32, 740))
