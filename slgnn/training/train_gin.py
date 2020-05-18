@@ -4,6 +4,7 @@ import os
 import os.path as osp
 from datetime import datetime
 from random import shuffle
+import random
 import pickle as pk
 
 from torch_geometric.data import DataLoader
@@ -318,14 +319,15 @@ def train_classifier(encoder, classifier, config, log_dir, train_loader,
 
 if __name__ == "__main__":
     torch.manual_seed(0)
+    random.seed(0)
     args = ModelTrainingArgs().parse_args()
     config_grid = Grid(args.config)
     time_stamp = datetime.now().strftime(r"%Y%m%d_%H%M%S")
     for config_idx, config_dict in enumerate(config_grid):
         config = Config.from_dict(config_dict)
         datasets = config["encoder_dataset"]
-        log_dir = osp.join("logs", "GIN", config["encoder_dataset_name"],
-                           time_stamp, str(config_idx))
+        log_dir = osp.join("logs", "GIN", time_stamp,
+                           config["encoder_dataset_name"], str(config_idx))
         os.makedirs(log_dir)
         with open(osp.join(log_dir, "configs.yml"), "w") as f:
             f.write(yaml.dump(config_dict))

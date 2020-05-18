@@ -25,7 +25,7 @@ learning_rate:
   - 0.0001
 encoder_epochs:
   - 0
-  - 100
+  - 1000
 classifier_epochs:
   # - 100
   - 1000
