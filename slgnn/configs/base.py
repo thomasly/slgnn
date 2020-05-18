@@ -9,7 +9,7 @@ from torch.optim.lr_scheduler import StepLR  # , ReduceLROnPlateau
 import yaml
 
 from slgnn.data_processing.pyg_datasets import (
-    ZINC1k, ZINC10k, ZINC100k, JAK1, JAK2, JAK3)
+    ZINC1k, ZINC10k, ZINC100k, JAK1, JAK2, JAK3, JAK1FP, JAK2FP, JAK3FP)
 from slgnn.training.utils import Patience
 # from models.graph_classifiers.GIN import GIN
 # from models.graph_classifiers.DiffPool import DiffPool
@@ -54,6 +54,9 @@ class Config:
         'ZINC1k': ZINC1k,
         'ZINC10k': ZINC10k,
         'ZINC100k': ZINC100k,
+        'JAK1': JAK1FP,
+        'JAK2': JAK2FP,
+        'JAK3': JAK3FP,
         # 'NCI1': NCI1,
         # 'IMDB-BINARY': IMDBBinary,
         # 'IMDB-MULTI': IMDBMulti,
@@ -121,7 +124,7 @@ class Config:
                          'scheduler', 'early_stopper']
             if attrname in attrnames:
                 if attrname == 'encoder_dataset':
-                    setattr(self, 'encoder_dataset_name', value)
+                    setattr(self, 'encoder_dataset_name', "_".join(value))
                 if attrname == 'classifier_dataset':
                     setattr(self, 'classifier_dataset_name', value)
                 if attrname == 'model':
@@ -155,10 +158,11 @@ class Config:
         return self.config
 
     @staticmethod
-    def parse_encoder_dataset(dataset_s):
-        assert dataset_s in Config.encoder_datasets, \
-            f'Could not find {dataset_s}'
-        return Config.encoder_datasets[dataset_s]
+    def parse_encoder_dataset(dataset_l):
+        for dataset_s in dataset_l:
+            assert dataset_s in Config.encoder_datasets, \
+                f'Could not find {dataset_s}'
+        return [Config.encoder_datasets[s]() for s in dataset_l]
 
     @staticmethod
     def parse_classifier_dataset(dataset_s):

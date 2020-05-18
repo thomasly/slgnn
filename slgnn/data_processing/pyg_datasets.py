@@ -248,3 +248,45 @@ class JAK3(JAKDataset):
 
     def __str__(self):
         return "JAK3"
+
+
+class JAK1FP(JAKDataset):
+
+    def __init__(self):
+        root = osp.join("data", "JAK", "graphs")
+        name = "JAK1FP"
+        super().__init__(root=root, name=name, use_node_attr=True)
+
+    def process(self):
+        super().process()
+
+    def __str__(self):
+        return "JAK1FP"
+
+
+class JAK2FP(JAKDataset):
+
+    def __init__(self):
+        root = osp.join("data", "JAK", "graphs")
+        name = "JAK2FP"
+        super().__init__(root=root, name=name, use_node_attr=True)
+
+    def process(self):
+        super().process()
+
+    def __str__(self):
+        return "JAK2FP"
+
+
+class JAK3FP(JAKDataset):
+
+    def __init__(self):
+        root = osp.join("data", "JAK", "graphs")
+        name = "JAK3FP"
+        super().__init__(root=root, name=name, use_node_attr=True)
+
+    def process(self):
+        super().process()
+
+    def __str__(self):
+        return "JAK3FP"

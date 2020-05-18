@@ -1,8 +1,10 @@
 encoder_dataset:
-  - ZINC1k
-  - ZINC10k
+  - [ZINC1k]
+  - [JAK3]
+  - [ZINC1k, JAK3]
+  # - [ZINC10k, JAK3]
 classifier_dataset:
-  - JAK1
+  - JAK3
 # model:
 #   - GIN
 use_encoder:
@@ -28,7 +30,7 @@ classifier_epochs:
   # - 100
   - 1000
 frozen_epochs:
-  - 3
+  # - 3
   - 10
 hidden_units:  # Note: GIN add a first layer that simply adds up all node features
   - [64, 64, 64, 64]

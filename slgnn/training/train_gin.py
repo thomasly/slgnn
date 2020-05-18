@@ -7,6 +7,7 @@ from random import shuffle
 import pickle as pk
 
 from torch_geometric.data import DataLoader
+from torch.utils.data import ConcatDataset
 from torch import nn
 import torch.nn.functional as F
 import torch
@@ -21,15 +22,36 @@ from slgnn.training.utils import (
 
 
 def load_data(dataset, batch_size, shuffle_=True):
+    if isinstance(dataset, list):
+        return load_data_from_list(dataset, batch_size, shuffle_)
+    else:
+        if shuffle_:
+            indices = list(range(len(dataset)))
+            shuffle(indices)
+            dataset = dataset[indices]
+        sep = int(len(dataset) * 0.9)
+        train_loader = DataLoader(
+            dataset[:sep], batch_size=batch_size, shuffle=True)
+        val_loader = DataLoader(
+            dataset[sep:], batch_size=batch_size, shuffle=False)
+        return train_loader, val_loader
+
+
+def load_data_from_list(datasets: list, batch_size, shuffle_=True):
     if shuffle_:
-        indices = list(range(len(dataset)))
-        shuffle(indices)
-        dataset = dataset[indices]
-    sep = int(len(dataset) * 0.9)
+        for i, dataset in enumerate(datasets):
+            indices = list(range(len(dataset)))
+            shuffle(indices)
+            datasets[i] = dataset[indices]
+    train_l, val_l = list(), list()
+    for dataset in datasets:
+        sep = int(len(dataset) * 0.9)
+        train_l.append(dataset[:sep])
+        val_l.append(dataset[sep:])
     train_loader = DataLoader(
-        dataset[:sep], batch_size=batch_size, shuffle=True)
+        ConcatDataset(train_l), batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(
-        dataset[sep:], batch_size=batch_size, shuffle=False)
+        ConcatDataset(val_l), batch_size=batch_size, shuffle=False)
     return train_loader, val_loader
 
 
@@ -295,21 +317,22 @@ def train_classifier(encoder, classifier, config, log_dir, train_loader,
 
 
 if __name__ == "__main__":
+    torch.manual_seed(0)
     args = ModelTrainingArgs().parse_args()
     config_grid = Grid(args.config)
     time_stamp = datetime.now().strftime(r"%Y%m%d_%H%M%S")
     for config_idx, config_dict in enumerate(config_grid):
         config = Config.from_dict(config_dict)
-        dataset = config["encoder_dataset"]()
-        log_dir = osp.join(
-            "logs", "GIN", str(dataset), time_stamp, str(config_idx))
+        datasets = config["encoder_dataset"]
+        log_dir = osp.join("logs", "GIN", config["encoder_dataset_name"],
+                           time_stamp, str(config_idx))
         os.makedirs(log_dir)
         with open(osp.join(log_dir, "configs.yml"), "w") as f:
             f.write(yaml.dump(config_dict))
 
         dim_encoder_target = config["embedding_dim"]
-        dim_decoder_target = dataset.data.y.size(1)
-        dim_features = dataset.data.x.size(1)
+        dim_decoder_target = datasets[0].data.y.size(1)
+        dim_features = datasets[0].data.x.size(1)
         hidden_units = config["hidden_units"]
         dropout = config["dropout"]
         train_eps = config["train_eps"]
@@ -321,7 +344,7 @@ if __name__ == "__main__":
         )
         decoder = GINDecoder(dim_encoder_target, dim_decoder_target, dropout)
         model = nn.Sequential(encoder, decoder)
-        train_loader, val_loader = load_data(dataset, config["batch_size"])
+        train_loader, val_loader = load_data(datasets, config["batch_size"])
         train_encoder(
             model, config, log_dir, train_loader, val_loader)
         data = next(iter(val_loader)).to(config["device"])

@@ -4,6 +4,8 @@ import pandas as pd
 from chemreader.writers import GraphWriter
 from chemreader.readers import Smiles
 from rdkit.Chem import MolFromSmiles
+from slgnn.models.gcn.utils import get_filtered_fingerprint
+from tqdm import tqdm
 
 
 def _is_active(value):
@@ -37,19 +39,21 @@ def write_graphs(inpath, outpath, prefix=None):
     """ Convert JAK dataset to graphs
     """
     smiles = list()
-    labels = list()
+    fps = list()
+    pb = tqdm()
     with open(inpath, "r") as inf:
         line = inf.readline()
         while line:
-            _, sm, lb = line.strip().split(",")
+            _, sm, _ = line.strip().split(",")
             if MolFromSmiles(sm) is None:
                 line = inf.readline()
                 continue
             smiles.append(Smiles(sm))
-            labels.append(lb)
+            fps.append(",".join(map(str, get_filtered_fingerprint(sm))))
+            pb.update(1)
             line = inf.readline()
     writer = GraphWriter(smiles)
-    writer.write(outpath, prefix=prefix, graph_labels=labels)
+    writer.write(outpath, prefix=prefix, graph_labels=fps)
 
 
 if __name__ == "__main__":
@@ -60,7 +64,7 @@ if __name__ == "__main__":
     filter_(args.path)
     inpath = os.path.join(
         os.path.dirname(args.path), "filtered_"+os.path.basename(args.path))
-    pre = os.path.basename(args.path).split(".")[0]
+    pre = os.path.basename(args.path).split(".")[0]+"FP"
     write_graphs(inpath,
                  os.path.join(os.path.dirname(args.path), "graphs"),
                  prefix=pre)
