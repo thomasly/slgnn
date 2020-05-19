@@ -22,6 +22,70 @@ from slgnn.training.utils import (
     plot_train_val_losses, plot_reconstruct, plot_train_val_acc)
 
 
+class BaseTrainer:
+    """ The base class for trainers
+    """
+
+
+class EncoderTrainer(BaseTrainer):
+
+    def __init__(self, encoder=None, decoder=None, train_loader=None,
+                 val_loader=None, config=None):
+        self._encoder = encoder
+        self._decoder = decoder
+        self._train_loader = train_loader
+        self._val_loader = val_loader
+        self._config = config
+
+    def set_encoder(self, model):
+        self._encoder = model
+
+    def set_decoder(self, model):
+        self._decoder = model
+
+    def set_train_loader(self, dataloader):
+        self._train_loader = dataloader
+
+    def set_val_loader(self, dataloader):
+        self._val_loader = dataloader
+
+    def set_config(self, config):
+        self._config = config
+
+    @property
+    def encoder(self):
+        return self._encoder
+
+    @property
+    def decoder(self):
+        return self._decoder
+
+    @property
+    def train_loader(self):
+        return self._train_loader
+
+    @property
+    def val_loader(self):
+        return self._val_loader
+
+    @property
+    def config(self):
+        return self._config
+
+    def train(self):
+        for e in range(config["encoder_epochs"]):
+            ...
+
+    def train_one_epoch(self):
+        ...
+
+    def plot_training_metrics(self, out=None):
+        ...
+
+    def plot_reconstructions(self, out=None):
+        ...
+
+
 def load_data(dataset, batch_size, shuffle_=True):
     if isinstance(dataset, list):
         return load_data_from_list(dataset, batch_size, shuffle_)
