@@ -4,7 +4,7 @@ import pickle
 from copy import deepcopy
 
 from torch.optim import Adam
-from torch.nn import BCELoss, NLLLoss
+from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss
 from torch.optim.lr_scheduler import StepLR  # , ReduceLROnPlateau
 import yaml
 
@@ -85,7 +85,7 @@ class Config:
     # }
 
     encoder_losses = {
-        'BCELoss': BCELoss,
+        'BCEWithLogitsLoss': BCEWithLogitsLoss,
         # 'MulticlassClassificationLoss': MulticlassClassificationLoss,
         # 'NN4GMCLoss': NN4GMulticlassClassificationLoss,
         # 'DMCL': DiffPoolMulticlassClassificationLoss,
@@ -93,8 +93,8 @@ class Config:
     }
 
     classifier_losses = {
-        'BCELoss': BCELoss,
-        'NLLLoss': NLLLoss,
+        'BCEWithLogitsLoss': BCEWithLogitsLoss,
+        'CrossEntropyLoss': CrossEntropyLoss,
     }
 
     optimizers = {
