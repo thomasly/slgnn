@@ -9,8 +9,18 @@ from torch.optim.lr_scheduler import StepLR  # , ReduceLROnPlateau
 import yaml
 
 from slgnn.data_processing.pyg_datasets import (
-    ZINC1k, ZINC10k, ZINC100k, JAK1, JAK2, JAK3, JAK1FP, JAK2FP, JAK3FP)
+    ZINC1k,
+    ZINC10k,
+    ZINC100k,
+    JAK1,
+    JAK2,
+    JAK3,
+    JAK1FP,
+    JAK2FP,
+    JAK3FP,
+)
 from slgnn.training.utils import Patience
+
 # from models.graph_classifiers.GIN import GIN
 # from models.graph_classifiers.DiffPool import DiffPool
 # from models.graph_classifiers.ECC import ECC
@@ -50,13 +60,14 @@ class Config:
     """
     Specifies the configuration for a single model.
     """
+
     encoder_datasets = {
-        'ZINC1k': ZINC1k,
-        'ZINC10k': ZINC10k,
-        'ZINC100k': ZINC100k,
-        'JAK1': JAK1FP,
-        'JAK2': JAK2FP,
-        'JAK3': JAK3FP,
+        "ZINC1k": ZINC1k,
+        "ZINC10k": ZINC10k,
+        "ZINC100k": ZINC100k,
+        "JAK1": JAK1FP,
+        "JAK2": JAK2FP,
+        "JAK3": JAK3FP,
         # 'NCI1': NCI1,
         # 'IMDB-BINARY': IMDBBinary,
         # 'IMDB-MULTI': IMDBMulti,
@@ -69,9 +80,9 @@ class Config:
     }
 
     classifier_datasets = {
-        'JAK1': JAK1,
-        'JAK2': JAK2,
-        'JAK3': JAK3,
+        "JAK1": JAK1,
+        "JAK2": JAK2,
+        "JAK3": JAK3,
     }
 
     # models = {
@@ -85,32 +96,31 @@ class Config:
     # }
 
     encoder_losses = {
-        'BCEWithLogitsLoss': BCEWithLogitsLoss,
+        "BCEWithLogitsLoss": BCEWithLogitsLoss,
         # 'MulticlassClassificationLoss': MulticlassClassificationLoss,
         # 'NN4GMCLoss': NN4GMulticlassClassificationLoss,
         # 'DMCL': DiffPoolMulticlassClassificationLoss,
-
     }
 
     classifier_losses = {
-        'BCEWithLogitsLoss': BCEWithLogitsLoss,
-        'CrossEntropyLoss': CrossEntropyLoss,
+        "BCEWithLogitsLoss": BCEWithLogitsLoss,
+        "CrossEntropyLoss": CrossEntropyLoss,
     }
 
     optimizers = {
-        'Adam': Adam,
+        "Adam": Adam,
         # 'SGD': SGD
     }
 
     schedulers = {
-        'StepLR': StepLR,
+        "StepLR": StepLR,
         # 'ECCLR': ECCLR,
         # 'ReduceLROnPlateau': ReduceLROnPlateau
     }
 
     early_stoppers = {
         # 'GLStopper': GLStopper,
-        'Patience': Patience
+        "Patience": Patience
     }
 
     def __init__(self, **attrs):
@@ -119,21 +129,28 @@ class Config:
         self.config = dict(attrs)
 
         for attrname, value in attrs.items():
-            attrnames = ['encoder_dataset', 'classifier_dataset', 'model',
-                         'encoder_loss', 'classifier_loss', 'optimizer',
-                         'scheduler', 'early_stopper']
+            attrnames = [
+                "encoder_dataset",
+                "classifier_dataset",
+                "model",
+                "encoder_loss",
+                "classifier_loss",
+                "optimizer",
+                "scheduler",
+                "early_stopper",
+            ]
             if attrname in attrnames:
-                if attrname == 'encoder_dataset':
-                    setattr(self, 'encoder_dataset_name', "_".join(value))
-                if attrname == 'classifier_dataset':
-                    setattr(self, 'classifier_dataset_name', value)
-                if attrname == 'model':
-                    setattr(self, 'model_name', value)
-                if attrname == 'encoder_loss':
-                    setattr(self, 'encoder_loss_name', value)
-                if attrname == 'classifier_loss':
-                    setattr(self, 'classifier_loss_name', value)
-                fn = getattr(self, f'parse_{attrname}')
+                if attrname == "encoder_dataset":
+                    setattr(self, "encoder_dataset_name", "_".join(value))
+                if attrname == "classifier_dataset":
+                    setattr(self, "classifier_dataset_name", value)
+                if attrname == "model":
+                    setattr(self, "model_name", value)
+                if attrname == "encoder_loss":
+                    setattr(self, "encoder_loss_name", value)
+                if attrname == "classifier_loss":
+                    setattr(self, "classifier_loss_name", value)
+                fn = getattr(self, f"parse_{attrname}")
                 setattr(self, attrname, fn(value))
             else:
                 setattr(self, attrname, value)
@@ -147,11 +164,11 @@ class Config:
 
     def __repr__(self):
         name = self.__class__.__name__
-        return f'<{name}: {str(self.__dict__)}>'
+        return f"<{name}: {str(self.__dict__)}>"
 
     @property
     def exp_name(self):
-        return f'{self.model_name}_{self.dataset_name}'
+        return f"{self.model_name}_{self.dataset_name}"
 
     @property
     def config_dict(self):
@@ -160,34 +177,32 @@ class Config:
     @staticmethod
     def parse_encoder_dataset(dataset_l):
         for dataset_s in dataset_l:
-            assert dataset_s in Config.encoder_datasets, \
-                f'Could not find {dataset_s}'
+            assert dataset_s in Config.encoder_datasets, f"Could not find {dataset_s}"
         return [Config.encoder_datasets[s]() for s in dataset_l]
 
     @staticmethod
     def parse_classifier_dataset(dataset_s):
-        assert dataset_s in Config.classifier_datasets, \
-            f'Could not find {dataset_s}'
+        assert dataset_s in Config.classifier_datasets, f"Could not find {dataset_s}"
         return Config.classifier_datasets[dataset_s]
 
     @staticmethod
     def parse_model(model_s):
-        assert model_s in Config.models, f'Could not find {model_s}'
+        assert model_s in Config.models, f"Could not find {model_s}"
         return Config.models[model_s]
 
     @staticmethod
     def parse_encoder_loss(loss_s):
-        assert loss_s in Config.encoder_losses, f'Could not find {loss_s}'
+        assert loss_s in Config.encoder_losses, f"Could not find {loss_s}"
         return Config.encoder_losses[loss_s]
 
     @staticmethod
     def parse_classifier_loss(loss_s):
-        assert loss_s in Config.classifier_losses, f'Could not find {loss_s}'
+        assert loss_s in Config.classifier_losses, f"Could not find {loss_s}"
         return Config.classifier_losses[loss_s]
 
     @staticmethod
     def parse_optimizer(optim_s):
-        assert optim_s in Config.optimizers, f'Could not find {optim_s}'
+        assert optim_s in Config.optimizers, f"Could not find {optim_s}"
         return Config.optimizers[optim_s]
 
     @staticmethod
@@ -195,10 +210,10 @@ class Config:
         if sched_dict is None:
             return None
 
-        sched_s = sched_dict['class']
-        args = sched_dict['args']
+        sched_s = sched_dict["class"]
+        args = sched_dict["args"]
 
-        assert sched_s in Config.schedulers, f'Could not find {sched_s}'
+        assert sched_s in Config.schedulers, f"Could not find {sched_s}"
 
         return lambda opt: Config.schedulers[sched_s](opt, **args)
 
@@ -207,11 +222,10 @@ class Config:
         if stopper_dict is None:
             return None
 
-        stopper_s = stopper_dict['class']
-        args = stopper_dict['args']
+        stopper_s = stopper_dict["class"]
+        args = stopper_dict["args"]
 
-        assert stopper_s in Config.early_stoppers,\
-            f'Could not find {stopper_s}'
+        assert stopper_s in Config.early_stoppers, f"Could not find {stopper_s}"
 
         return lambda: Config.early_stoppers[stopper_s](**args)
 
@@ -219,8 +233,8 @@ class Config:
     def parse_gradient_clipping(clip_dict):
         if clip_dict is None:
             return None
-        args = clip_dict['args']
-        clipping = None if not args['use'] else args['value']
+        args = clip_dict["args"]
+        clipping = None if not args["use"] else args["value"]
         return clipping
 
     @classmethod
@@ -245,7 +259,7 @@ class Grid:
         return self.num_configs
 
     def __iter__(self):
-        assert self.num_configs > 0, 'No configurations available'
+        assert self.num_configs > 0, "No configurations available"
         return iter(self._configs)
 
     def _grid_generator(self, cfgs_dict):
@@ -273,12 +287,12 @@ class Grid:
                     yield deepcopy(result)
 
     def _create_grid(self):
-        '''
+        """
         Takes a dictionary of key:list pairs and computes all possible
             permutations.
         :param configs_dict:
         :return: A dictionary generator
-        '''
+        """
         config_list = [cfg for cfg in self._grid_generator(self.configs_dict)]
         self.num_configs = len(config_list)
         return config_list
