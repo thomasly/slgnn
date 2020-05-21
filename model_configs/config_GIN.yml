@@ -22,7 +22,7 @@ batch_size:
 learning_rate:
   # - 0.01
   # - 0.001
-  - 0.0001
+  - 0.001
 encoder_epochs:
   - 0
   - 1000
@@ -46,10 +46,10 @@ scheduler:
       step_size: 20
       gamma: 0.5
 encoder_loss:
-  - BCELoss
+  - BCEWithLogitsLoss
   # - MulticlassClassificationLoss
 classifier_loss:
-  - NLLLoss
+  - CrossEntropyLoss
 train_eps:
   - true
   # - false
