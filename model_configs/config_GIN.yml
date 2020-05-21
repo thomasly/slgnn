@@ -43,7 +43,7 @@ scheduler:
   -
     class: StepLR
     args:
-      step_size: 20
+      step_size: 10
       gamma: 0.5
 encoder_loss:
   - BCEWithLogitsLoss
