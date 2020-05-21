@@ -1,5 +1,4 @@
 import os
-import os.path as osp
 from abc import ABC, abstractmethod
 import pickle as pk
 from statistics import mean
@@ -234,7 +233,7 @@ class EncoderDecoderTrainer(BaseTrainer):
 
     def _rooting(self, path):
         if path is None:
-            root = osp.curdir()
+            root = os.path.curdir()
         else:
             root = path
         os.makedirs(root, exist_ok=True)
@@ -243,13 +242,13 @@ class EncoderDecoderTrainer(BaseTrainer):
     def log_results(self, out=None, txt_name=None, pk_name=None):
         root = self._rooting(out)
         if txt_name is None:
-            txt_file = osp.join(root, "training_metrics.txt")
+            txt_file = os.path.join(root, "training_metrics.txt")
         else:
-            txt_file = osp.join(root, txt_name)
+            txt_file = os.path.join(root, txt_name)
         if pk_name is None:
-            pk_file = osp.join(root, "losses.pk")
+            pk_file = os.path.join(root, "losses.pk")
         else:
-            pk_file = osp.join(root, pk_name)
+            pk_file = os.path.join(root, pk_name)
         with open(txt_file, "w") as f:
             metrics = self.early_stopper.get_best_vl_metrics()
             f.write(
@@ -268,9 +267,9 @@ class EncoderDecoderTrainer(BaseTrainer):
     def plot_training_metrics(self, path=None, name=None):
         root = self._rooting(path)
         if name is None:
-            filep = osp.join(root, "train_val_losses.png")
+            filep = os.path.join(root, "train_val_losses.png")
         else:
-            filep = osp.join(root, name)
+            filep = os.path.join(root, name)
         dif = int((len(self.train_losses) - 1) / (len(self.val_losses) - 1))
         fig, axe = plt.subplots(figsize=(8.0, 6.0))
         x = list(range(len(self.train_losses)))
@@ -286,9 +285,9 @@ class EncoderDecoderTrainer(BaseTrainer):
         root = self._rooting(path)
         self._setup_models("eval")
         if name is None:
-            filep = osp.join(root, "reconstructions.png")
+            filep = os.path.join(root, "reconstructions.png")
         else:
-            filep = osp.join(root, name)
+            filep = os.path.join(root, name)
         self._setup_models("eval")
         data = self.val_loader.dataset[index]
         batch = Batch.from_data_list([data]).to(self.device)
@@ -357,7 +356,7 @@ class EncoderClassifierTrainer(EncoderDecoderTrainer):
             f"Best train loss: {metrics[0]:.4f}, "
             f"best train acc: {metrics[1]:.4f}, "
             f"best validate loss: {metrics[2]:.4f}, "
-            f"best validate acc: {metrics[3]}"
+            f"best validate acc: {metrics[3]:.4f}"
         )
 
     def log_before_training_status(self):
@@ -428,21 +427,18 @@ class EncoderClassifierTrainer(EncoderDecoderTrainer):
         self._cur_val_acc = mean(batch_acc)
         self.val_losses.append(self._cur_val_loss)
         self.validate_accs.append(self._cur_val_acc)
-        print(
-            f"val_loss: {self._cur_val_loss:.4f}, "
-            f"val_accurary: {self._cur_val_acc:.4f}"
-        )
+        print(f"val_loss: {self._cur_val_loss:.4f}, val_acc: {self._cur_val_acc:.4f}")
 
     def log_results(self, out=None, txt_name=None, pk_name=None):
         root = self._rooting(out)
         if txt_name is None:
-            txt_file = osp.join(root, "training_metrics.txt")
+            txt_file = os.path.join(root, "training_metrics.txt")
         else:
-            txt_file = osp.join(root, txt_name)
+            txt_file = os.path.join(root, txt_name)
         if pk_name is None:
-            pk_file = osp.join(root, "losses.pk")
+            pk_file = os.path.join(root, "losses.pk")
         else:
-            pk_file = osp.join(root, pk_name)
+            pk_file = os.path.join(root, pk_name)
         with open(txt_file, "w") as f:
             metrics = self.early_stopper.get_best_vl_metrics()
             f.write(
@@ -465,9 +461,9 @@ class EncoderClassifierTrainer(EncoderDecoderTrainer):
     def plot_training_metrics(self, path=None, name=None):
         root = self._rooting(path)
         if name is None:
-            filep = osp.join(root, "train_val_losses.png")
+            filep = os.path.join(root, "train_val_losses.png")
         else:
-            filep = osp.join(root, name)
+            filep = os.path.join(root, name)
         fig, axes = plt.subplots(ncols=2, figsize=(16.0, 6.0))
         x = list(range(len(self.train_losses)))
         axes[0].plot(x, self.train_losses, label="train_loss")
