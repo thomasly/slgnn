@@ -9,7 +9,6 @@ from slgnn.models.gcn.layers import GraphConvolution
 
 
 class GCN(nn.Module):
-
     def __init__(self, nfeat, nhid, nclass, dropout):
         super().__init__()
         # self.gc1 = GraphConvolution(nfeat, nclass)
@@ -25,14 +24,12 @@ class GCN(nn.Module):
 
 
 class GIN(nn.Module):
-
     def __init__(self, dim_features, dim_target, config):
         super().__init__()
 
         self.config = config
         self.dropout = config["dropout"]
-        self.embeddings_dim = [
-            config["hidden_units"][0]] + config["hidden_units"]
+        self.embeddings_dim = [config["hidden_units"][0]] + config["hidden_units"]
         self.no_layers = len(self.embeddings_dim)
         self.first_h = []
         self.nns = []
@@ -53,10 +50,11 @@ class GIN(nn.Module):
                     ReLU(),
                     Linear(out_emb_dim, out_emb_dim),
                     BatchNorm1d(out_emb_dim),
-                    ReLU())
+                    ReLU(),
+                )
                 self.linears.append(Linear(out_emb_dim, dim_target))
             else:
-                input_emb_dim = self.embeddings_dim[layer-1]
+                input_emb_dim = self.embeddings_dim[layer - 1]
                 self.nns.append(
                     Sequential(
                         Linear(input_emb_dim, out_emb_dim),
@@ -64,7 +62,9 @@ class GIN(nn.Module):
                         ReLU(),
                         Linear(out_emb_dim, out_emb_dim),
                         BatchNorm1d(out_emb_dim),
-                        ReLU()))
+                        ReLU(),
+                    )
+                )
                 self.convs.append(GINConv(self.nns[-1], train_eps=train_eps))
                 self.linears.append(Linear(out_emb_dim, dim_target))
 
@@ -74,16 +74,18 @@ class GIN(nn.Module):
 
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
-
         out = 0
-
         for layer in range(self.no_layers):
             if layer == 0:
                 x = self.first_h(x)
-                out += F.dropout(self.pooling(
-                    self.linears[layer](x), batch), p=self.dropout)
+                out += F.dropout(
+                    self.pooling(self.linears[layer](x), batch), p=self.dropout
+                )
             else:
-                x = self.convs[layer-1](x, edge_index)
-                out += F.dropout(self.linears[layer](self.pooling(x, batch)),
-                                 p=self.dropout, training=self.training)
+                x = self.convs[layer - 1](x, edge_index)
+                out += F.dropout(
+                    self.linears[layer](self.pooling(x, batch)),
+                    p=self.dropout,
+                    training=self.training,
+                )
         return out

@@ -6,6 +6,7 @@ from statistics import mean
 
 import torch.nn.functional as F
 import torch
+from torch_geometric.data import Batch
 import matplotlib.pyplot as plt
 
 
@@ -283,15 +284,18 @@ class EncoderDecoderTrainer(BaseTrainer):
 
     def plot_reconstructions(self, index=0, path=None, name=None):
         root = self._rooting(path)
+        self._setup_models("eval")
         if name is None:
             filep = osp.join(root, "reconstructions.png")
         else:
             filep = osp.join(root, name)
         self._setup_models("eval")
         data = self.val_loader.dataset[index]
-        label = data.y.to("cpu").detach()
-        out = self.decoder(self.encoder(data))
-        out = torch.round(torch.sigmoid(out)).to("cpu").detach()
+        batch = Batch.from_data_list([data]).to(self.device)
+        label = batch.y[0].to("cpu").detach()
+        with torch.no_grad():
+            out = self.decoder(self.encoder(batch))
+        out = torch.round(torch.sigmoid(out))[0].to("cpu").detach().numpy()
         fig, axes = plt.subplots(2, 1, figsize=(8.0, 12.0))
         ax1, ax2 = axes.flatten()
         ax1.bar(list(range(out.shape[0])), label)
@@ -443,13 +447,17 @@ class EncoderClassifierTrainer(EncoderDecoderTrainer):
             metrics = self.early_stopper.get_best_vl_metrics()
             f.write(
                 f"Best train loss: {metrics[0]:.4f}, "
-                f"best validate loss: {metrics[2]:.4f}"
+                f"best train acc: {metrics[1]:.4f}, "
+                f"best validate loss: {metrics[2]:.4f}, "
+                f"best validate acc: {metrics[3]}"
             )
         with open(pk_file, "wb") as f:
             loss_dict = (
                 {
                     "training_losses": self.train_losses,
                     "validating_losses": self.val_losses,
+                    "training_accs": self.train_accs,
+                    "validating_accs": self.validate_accs,
                 },
             )
             pk.dump(loss_dict, f)
@@ -460,13 +468,19 @@ class EncoderClassifierTrainer(EncoderDecoderTrainer):
             filep = osp.join(root, "train_val_losses.png")
         else:
             filep = osp.join(root, name)
-        dif = int((len(self.train_losses) - 1) / (len(self.val_losses) - 1))
-        fig, axe = plt.subplots(figsize=(8.0, 6.0))
+        fig, axes = plt.subplots(ncols=2, figsize=(16.0, 6.0))
         x = list(range(len(self.train_losses)))
-        axe.plot(x, self.train_losses, label="train_loss")
-        axe.plot(x[::dif], self.val_losses, label="val_loss")
-        axe.set_ylabel("BCE loss")
-        axe.set_xlabel("Steps")
-        axe.legend()
+        axes[0].plot(x, self.train_losses, label="train_loss")
+        axes[0].plot(x, self.val_losses, label="val_loss")
+        axes[0].set_ylabel("BCE loss")
+        axes[0].set_xlabel("Epochs")
+        axes[1].set_title("Losses")
+        axes[0].legend()
+        axes[1].plot(x, self.train_accs, label="train_acc")
+        axes[1].plot(x, self.validate_accs, label="val_acc")
+        axes[1].set_ylabel("Accuracy")
+        axes[1].set_xlabel("Epochs")
+        axes[1].set_title("Accuracies")
+        axes[1].legend()
         fig.savefig(filep, dpi=300, bbox_inches="tight")
         plt.close()
