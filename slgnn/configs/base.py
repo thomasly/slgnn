@@ -137,6 +137,7 @@ class Config:
                 "classifier_loss",
                 "optimizer",
                 "scheduler",
+                "encoder_early_stopper",
                 "early_stopper",
             ]
             if attrname in attrnames:
@@ -150,6 +151,7 @@ class Config:
                     setattr(self, "encoder_loss_name", value)
                 if attrname == "classifier_loss":
                     setattr(self, "classifier_loss_name", value)
+
                 fn = getattr(self, f"parse_{attrname}")
                 setattr(self, attrname, fn(value))
             else:
@@ -219,6 +221,18 @@ class Config:
 
     @staticmethod
     def parse_early_stopper(stopper_dict):
+        if stopper_dict is None:
+            return None
+
+        stopper_s = stopper_dict["class"]
+        args = stopper_dict["args"]
+
+        assert stopper_s in Config.early_stoppers, f"Could not find {stopper_s}"
+
+        return lambda: Config.early_stoppers[stopper_s](**args)
+
+    @staticmethod
+    def parse_encoder_early_stopper(stopper_dict):
         if stopper_dict is None:
             return None
 
