@@ -96,7 +96,9 @@ class EncoderDecoderTrainer(BaseTrainer):
         )
 
     def _parse_config(self):
-        super()._parse_config()
+        self._lr = self.config["learning_rate"]
+        self._device = torch.device(self.config["device"])
+        self._early_stopper = self.config["encoder_early_stopper"]()
         self._encoder_optimizer = self.config["optimizer"](
             self._encoder.parameters(), lr=self._lr
         )
@@ -159,11 +161,12 @@ class EncoderDecoderTrainer(BaseTrainer):
     def train(self):
         self.epoch = 0
         self.log_before_training_status()
-        while self.epoch < self.config["classifier_epochs"]:
-            if self.epoch < self.config["frozen_epochs"]:
-                self.load_optimizers(self._decoder_optimizer)
-            else:
-                self.load_optimizers(self._encoder_optimizer, self._decoder_optimizer)
+        while self.epoch < self.config["encoder_epochs"]:
+            # if self.epoch < self.config["frozen_epochs"]:
+            #     self.load_optimizers(self._decoder_optimizer)
+            # else:
+            self.load_optimizers(self._encoder_optimizer, self._decoder_optimizer)
+
             self.train_one_epoch()
             self.validate()
             stop = self.early_stopper.stop(
@@ -315,6 +318,7 @@ class EncoderClassifierTrainer(EncoderDecoderTrainer):
 
     def _parse_config(self):
         super()._parse_config()
+        self._early_stopper = self.config["early_stopper"]()
         self._criterion = self.config["classifier_loss"]()
 
     @property
