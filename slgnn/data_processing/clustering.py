@@ -1,5 +1,6 @@
 from chemreader.readers import Smiles
 from rdkit.DataStructs import BulkTanimotoSimilarity
+from tqdm import tqdm
 
 
 class Cluster:
@@ -14,12 +15,13 @@ class Cluster:
     def threshold(self, value):
         self._threshold = value
 
-    def clustering(self, smiles: list):
+    def clustering(self, smiles: list, verbose=0):
         """ Clustering the smiles with Tanimoto similarity.
         """
         self.clusters = dict()
         counter = 0
-        for s in smiles:
+        it = tqdm(smiles) if verbose else smiles
+        for s in it:
             s = Smiles(s)
             if s.rdkit_mol is None:
                 continue
@@ -29,6 +31,8 @@ class Cluster:
                 counter += 1
             else:
                 self._update_cluster(idx, s)
+        self.clusters = list(self.clusters.values())
+        return self.clusters
 
     def _find_similarity(self, smiles):
         indices = list()
