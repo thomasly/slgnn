@@ -1,9 +1,10 @@
 encoder_dataset:
-  - [ZINC1k]
-  - [JAK3]
   - [ZINC1k, JAK3]
-  # - [ZINC10k, JAK3]
+  - [ZINC1k] 
+  - [ZINC10k, JAK3]
+  - [ZINC10k]
 classifier_dataset:
+  - JAK3Pre
   - JAK3
 # model:
 #   - GIN
@@ -29,10 +30,10 @@ learning_rate:
   - 0.001
 encoder_epochs:
   - 0
-  - 1000
+  - 10000
 classifier_epochs:
   # - 100
-  - 1
+  - 10000
 frozen_epochs:
   # - 3
   - 10
