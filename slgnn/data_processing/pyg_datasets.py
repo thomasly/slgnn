@@ -410,7 +410,7 @@ class JAK1Presplitted(PresplittedBase):
 
     def val_loader(self):
         return DataLoader(
-            self._val_data, shuffle=self._shuffle, batch_size=self.batch_size
+            self._val_data, shuffle=self._shuffle, batch_size=self._batch_size
         )
 
     def _str(self):
@@ -430,7 +430,7 @@ class JAK2Presplitted(PresplittedBase):
 
     def val_loader(self):
         return DataLoader(
-            self._val_data, shuffle=self._shuffle, batch_size=self.batch_size
+            self._val_data, shuffle=self._shuffle, batch_size=self._batch_size
         )
 
     def _str(self):
