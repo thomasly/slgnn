@@ -71,6 +71,12 @@ class DataSplitter:
         if isinstance(self.dataset, list):
             self._split_from_list()
         else:
+            if hasattr(self.dataset, "train_loader"):
+                self.dataset.set_shuffle(self.shuffle)
+                self.dataset.set_batch_size(self.batch_size)
+                self._train_loader = self.dataset.train_loader()
+                self._val_loader = self.dataset.val_loader()
+                return
             if self.shuffle:
                 indices = list(range(len(self.dataset)))
                 shuffle(indices)
@@ -94,13 +100,16 @@ class DataSplitter:
 
     def _split_from_list(self):
         datasets = self.dataset.copy()
-        if self.shuffle:
-            for i, dataset in enumerate(datasets):
-                indices = list(range(len(dataset)))
-                shuffle(indices)
-                datasets[i] = dataset[indices]
         train_l, val_l, test_l = list(), list(), list()
         for dataset in datasets:
+            if hasattr(dataset, "train_loader"):
+                train_l.append(dataset.train_data)
+                val_l.append(dataset.val_data)
+                continue
+            if self.shuffle:
+                indices = list(range(len(dataset)))
+                shuffle(indices)
+                dataset = dataset[indices]
             sep1 = int(len(dataset) * self.ratio[0])
             sep2 = min(int(len(dataset) * self.ratio[1]) + sep1, len(dataset))
             train_l.append(dataset[:sep1])

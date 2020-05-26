@@ -18,6 +18,9 @@ from slgnn.data_processing.pyg_datasets import (
     JAK1FP,
     JAK2FP,
     JAK3FP,
+    JAK1Presplitted,
+    JAK2Presplitted,
+    JAK3Presplitted,
 )
 from slgnn.training.utils import Patience
 
@@ -83,6 +86,9 @@ class Config:
         "JAK1": JAK1,
         "JAK2": JAK2,
         "JAK3": JAK3,
+        "JAK1Pre": JAK1Presplitted,
+        "JAK2Pre": JAK2Presplitted,
+        "JAK3Pre": JAK3Presplitted,
     }
 
     # models = {

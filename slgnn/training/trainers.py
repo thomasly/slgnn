@@ -236,7 +236,7 @@ class EncoderDecoderTrainer(BaseTrainer):
 
     def _rooting(self, path):
         if path is None:
-            root = os.path.curdir()
+            root = os.path.curdir
         else:
             root = path
         os.makedirs(root, exist_ok=True)
@@ -245,11 +245,11 @@ class EncoderDecoderTrainer(BaseTrainer):
     def log_results(self, out=None, txt_name=None, pk_name=None):
         root = self._rooting(out)
         if txt_name is None:
-            txt_file = os.path.join(root, "training_metrics.txt")
+            txt_file = os.path.join(root, "encoder_training_metrics.txt")
         else:
             txt_file = os.path.join(root, txt_name)
         if pk_name is None:
-            pk_file = os.path.join(root, "losses.pk")
+            pk_file = os.path.join(root, "encoder_losses.pk")
         else:
             pk_file = os.path.join(root, pk_name)
         with open(txt_file, "w") as f:
@@ -270,7 +270,7 @@ class EncoderDecoderTrainer(BaseTrainer):
     def plot_training_metrics(self, path=None, name=None):
         root = self._rooting(path)
         if name is None:
-            filep = os.path.join(root, "train_val_losses.png")
+            filep = os.path.join(root, "encoder_train_val_losses.png")
         else:
             filep = os.path.join(root, name)
         dif = int((len(self.train_losses) - 1) / (len(self.val_losses) - 1))
@@ -436,11 +436,11 @@ class EncoderClassifierTrainer(EncoderDecoderTrainer):
     def log_results(self, out=None, txt_name=None, pk_name=None):
         root = self._rooting(out)
         if txt_name is None:
-            txt_file = os.path.join(root, "training_metrics.txt")
+            txt_file = os.path.join(root, "classifier_training_metrics.txt")
         else:
             txt_file = os.path.join(root, txt_name)
         if pk_name is None:
-            pk_file = os.path.join(root, "losses.pk")
+            pk_file = os.path.join(root, "classifier_losses_accs.pk")
         else:
             pk_file = os.path.join(root, pk_name)
         with open(txt_file, "w") as f:
@@ -465,7 +465,7 @@ class EncoderClassifierTrainer(EncoderDecoderTrainer):
     def plot_training_metrics(self, path=None, name=None):
         root = self._rooting(path)
         if name is None:
-            filep = os.path.join(root, "train_val_losses.png")
+            filep = os.path.join(root, "classifier_train_val_losses.png")
         else:
             filep = os.path.join(root, name)
         fig, axes = plt.subplots(ncols=2, figsize=(16.0, 6.0))
