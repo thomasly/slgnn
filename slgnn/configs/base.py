@@ -22,6 +22,7 @@ from slgnn.data_processing.pyg_datasets import (
     JAK2Presplitted,
     JAK3Presplitted,
 )
+from slgnn.data_processing.deepchem_datasets import Sider, SiderFP
 from slgnn.training.utils import Patience
 
 # from models.graph_classifiers.GIN import GIN
@@ -71,6 +72,7 @@ class Config:
         "JAK1": JAK1FP,
         "JAK2": JAK2FP,
         "JAK3": JAK3FP,
+        "Sider": SiderFP,
         # 'NCI1': NCI1,
         # 'IMDB-BINARY': IMDBBinary,
         # 'IMDB-MULTI': IMDBMulti,
@@ -89,6 +91,7 @@ class Config:
         "JAK1Pre": JAK1Presplitted,
         "JAK2Pre": JAK2Presplitted,
         "JAK3Pre": JAK3Presplitted,
+        "Sider": Sider,
     }
 
     # models = {
