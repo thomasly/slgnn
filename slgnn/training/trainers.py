@@ -3,10 +3,11 @@ from abc import ABC, abstractmethod
 import pickle as pk
 from statistics import mean
 
-import torch.nn.functional as F
 import torch
 from torch_geometric.data import Batch
 import matplotlib.pyplot as plt
+
+from slgnn.metrics.metrics import accuracy
 
 
 class BaseTrainer(ABC):
@@ -377,10 +378,11 @@ class EncoderClassifierTrainer(EncoderDecoderTrainer):
                 for batch in loader:
                     batch = batch.to(self.device)
                     out = self.decoder(self.encoder(batch))
-                    batch_losses.append(self.criterion(out, batch.y).item())
-                    _, pred = F.log_softmax(out, dim=1).max(dim=1)
-                    correct = float(pred.eq(batch.y).sum().item())
-                    batch_accs.append(correct / batch.num_graphs)
+                    try:
+                        batch_losses.append(self.criterion(out, batch.y).item())
+                    except RuntimeError:
+                        batch_losses.append(self.criterion(out, batch.y.float()).item())
+                    batch_accs.append(accuracy(out, batch.y))
                 loss = mean(batch_losses)
                 losses.append(loss)
                 acc = mean(batch_accs)
@@ -393,16 +395,17 @@ class EncoderClassifierTrainer(EncoderDecoderTrainer):
         for i, batch in enumerate(self.train_loader):
             batch = batch.to(self.device)
             out = self.decoder(self.encoder(batch))
-            train_loss = self.criterion(out, batch.y)
+            try:
+                train_loss = self.criterion(out, batch.y)
+            except RuntimeError:
+                train_loss = self.criterion(out, batch.y.float())
             batch_losses.append(train_loss.item())
             for opt in self._optimizers:
                 opt.zero_grad()
             train_loss.backward()
             for opt in self._optimizers:
                 opt.step()
-            _, pred = F.log_softmax(out, dim=1).max(dim=1)
-            correct = float(pred.eq(batch.y).sum().item())
-            acc = correct / batch.num_graphs
+            acc = accuracy(out, batch.y)
             batch_accs.append(acc)
             print(
                 f"\repoch: {self.epoch+1}, batch: {i+1}, "
@@ -423,9 +426,7 @@ class EncoderClassifierTrainer(EncoderDecoderTrainer):
                 batch = batch.to(self.device)
                 out = self.decoder(self.encoder(batch))
                 batch_losses.append(self.criterion(out, batch.y).item())
-                _, pred = F.log_softmax(out, dim=1).max(dim=1)
-                correct = float(pred.eq(batch.y).sum().item())
-                acc = correct / batch.num_graphs
+                acc = accuracy(out, batch.y)
                 batch_acc.append(acc)
         self._cur_val_loss = mean(batch_losses)
         self._cur_val_acc = mean(batch_acc)
