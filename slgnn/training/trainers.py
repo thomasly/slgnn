@@ -7,8 +7,6 @@ import torch
 from torch_geometric.data import Batch
 import matplotlib.pyplot as plt
 
-from slgnn.metrics.metrics import accuracy
-
 
 class BaseTrainer(ABC):
     """ The base class for trainers
@@ -92,6 +90,9 @@ class EncoderDecoderTrainer(BaseTrainer):
     ):
         self._encoder = encoder
         self._decoder = decoder
+        self._tr_metrics = list()
+        self._val_metrics = list()
+        self._freeze = True
         super().__init__(
             config=config, train_loader=train_loader, val_loader=val_loader
         )
@@ -109,6 +110,7 @@ class EncoderDecoderTrainer(BaseTrainer):
         self._encoder_lr_scheduler = self.config["scheduler"](self._encoder_optimizer)
         self._decoder_lr_scheduler = self.config["scheduler"](self._decoder_optimizer)
         self._criterion = self.config["encoder_loss"]()
+        self._metrics = [m() for m in self.config["metrics"]]
 
     def _setup_models(self, mode="train"):
         self.encoder = self.encoder.to(self.device)
@@ -140,16 +142,38 @@ class EncoderDecoderTrainer(BaseTrainer):
         self._decoder = model
 
     @property
-    def use_accuracy(self):
-        return self._use_accuracy
+    def train_metrics(self):
+        return self._tr_metrics
 
-    @use_accuracy.setter
-    def use_accuracy(self, value):
-        self._use_accuracy = value
+    @property
+    def val_metrics(self):
+        return self._val_metrics
+
+    @property
+    def freeze_encoder(self):
+        return self._freeze
+
+    @property
+    def epochs(self):
+        return self.config["encoder_epochs"]
+
+    @freeze_encoder.setter
+    def freeze_encoder(self, value):
+        assert isinstance(value, bool)
+        self._freeze = value
 
     @property
     def criterion(self):
         return self._criterion
+
+    @property
+    def metrics(self):
+        return self._metrics
+
+    @metrics.setter
+    def metrics(self, value):
+        assert isinstance(value, list)
+        self._metrics = value
 
     @property
     def encoder_lr_scheduler(self):
@@ -159,81 +183,130 @@ class EncoderDecoderTrainer(BaseTrainer):
     def decoder_lr_scheduler(self):
         return self._decoder_lr_scheduler
 
+    def _get_metrics_string(self, metrics):
+        s = ""
+        if metrics[0] is not None:
+            s += f"Best train loss: {metrics[0]:.4f} "
+        if metrics[1] is not None:
+            s += f"best train accuracy: {metrics[1]:.4f} "
+        if metrics[2] is not None:
+            s += f"best validate loss: {metrics[2]:.4f} "
+        if metrics[3] is not None:
+            s += f"best validate accuracy: {metrics[3]:.4f} "
+        if metrics[4] is not None:
+            s += f"best test loss: {metrics[4]:.4f} "
+        if metrics[5] is not None:
+            s += f"best test accuracy: {metrics[5]:.4f}"
+        return s
+
     def train(self):
         self.epoch = 0
         self.log_before_training_status()
-        while self.epoch < self.config["encoder_epochs"]:
-            # if self.epoch < self.config["frozen_epochs"]:
-            #     self.load_optimizers(self._decoder_optimizer)
-            # else:
-            self.load_optimizers(self._encoder_optimizer, self._decoder_optimizer)
+        while self.epoch < self.epochs:
+            if self.epoch < self.config["frozen_epochs"] and self.freeze_encoder:
+                self.load_optimizers(self._decoder_optimizer)
+            else:
+                self.load_optimizers(self._encoder_optimizer, self._decoder_optimizer)
 
             self.train_one_epoch()
             self.validate()
-            stop = self.early_stopper.stop(
-                self.epoch, self._cur_val_loss, train_loss=self._cur_train_loss
-            )
+            try:
+                stop = self.early_stopper.stop(
+                    self.epoch,
+                    self._cur_val_loss,
+                    val_acc=self._cur_val_metrics[0],
+                    train_loss=self._cur_train_loss,
+                    train_acc=self._cur_train_metrics[0],
+                )
+            except IndexError:
+                stop = self.early_stopper.stop(
+                    self.epoch, self._cur_val_loss, train_loss=self._cur_train_loss,
+                )
             if stop:
                 break
             self.encoder_lr_scheduler.step()
             self.decoder_lr_scheduler.step()
             self.epoch += 1
         metrics = self.early_stopper.get_best_vl_metrics()
-        print(
-            f"Best train loss: {metrics[0]:.4f}, "
-            f"best validate loss: {metrics[2]:.4f}"
-        )
+        print(self._get_metrics_string(metrics))
 
     def log_before_training_status(self):
         with torch.no_grad():
             self._setup_models("train")
-            batch_losses = list()
-            for batch in self.train_loader:
-                batch = batch.to(self.device)
-                out = self.decoder(self.encoder(batch))
-                batch_losses.append(self.criterion(out, batch.y.float()).item())
-                loss = mean(batch_losses)
-            self.train_losses.append(loss)
-            batch_losses = list()
-            for batch in self.val_loader:
-                batch = batch.to(self.device)
-                out = self.decoder(self.encoder(batch))
-                batch_losses.append(self.criterion(out, batch.y.float()).item())
-                loss = mean(batch_losses)
-            self.val_losses.append(loss)
+            it = zip(
+                [self.train_loader, self.val_loader],
+                [self.train_losses, self.val_losses],
+                [self.train_metrics, self.val_metrics],
+            )
+            for loader, losses, metrics in it:
+                batch_losses = list()
+                batch_metrics = list()
+                for batch in loader:
+                    batch = batch.to(self.device)
+                    out = self.decoder(self.encoder(batch))
+                    try:
+                        batch_losses.append(self.criterion(out, batch.y).item())
+                    except RuntimeError:
+                        batch_losses.append(self.criterion(out, batch.y.float()).item())
+                    metrics = [m(out, batch.y) for m in self.metrics]
+                    batch_metrics.append(metrics)
+                losses.append(mean(batch_losses))
+                metrics.append([mean(m) for m in zip(*batch_metrics)])
 
     def train_one_epoch(self):
         self._setup_models("train")
         batch_losses = list()
+        batch_metrics = list()
         for i, batch in enumerate(self.train_loader):
             batch = batch.to(self.device)
             out = self.decoder(self.encoder(batch))
-            train_loss = self.criterion(out, batch.y.float())
+            try:
+                train_loss = self.criterion(out, batch.y)
+            except RuntimeError:
+                train_loss = self.criterion(out, batch.y.float())
             batch_losses.append(train_loss.item())
-            self.train_losses.append(train_loss)
             for opt in self._optimizers:
                 opt.zero_grad()
             train_loss.backward()
             for opt in self._optimizers:
                 opt.step()
+            metrics = [m(out, batch.y) for m in self.metrics]
+            batch_metrics.append(metrics)
             print(
                 f"\repoch: {self.epoch+1}, batch: {i+1}, "
                 f"train_loss: {train_loss.item():.4f}",
                 end=" ",
             )
+            for smet, met in zip(self.metrics, metrics):
+                print(f"{smet.name}: {met:.4f}", end=" ")
         self._cur_train_loss = mean(batch_losses)
+        self._cur_train_metrics = [mean(m) for m in zip(*batch_metrics)]
+        self.train_losses.append(train_loss)
+        self.train_metrics.append(self._cur_train_metrics)
 
     def validate(self):
         self._setup_models("eval")
         with torch.no_grad():
             batch_losses = list()
+            batch_metrics = list()
             for batch in self.val_loader:
                 batch = batch.to(self.device)
                 out = self.decoder(self.encoder(batch))
-                batch_losses.append(self.criterion(out, batch.y.float()).item())
+                try:
+                    loss = self.criterion(out, batch.y).item()
+                except RuntimeError:
+                    loss = self.criterion(out, batch.y.float()).item()
+                batch_losses.append(loss)
+                metrics = [m(out, batch.y) for m in self.metrics]
+                batch_metrics.append(metrics)
         self._cur_val_loss = mean(batch_losses)
+        self._cur_val_metrics = [mean(m) for m in zip(*batch_metrics)]
         self.val_losses.append(self._cur_val_loss)
-        print(f"val_loss: {self._cur_val_loss:.4f}")
+        self.val_metrics.append(self._cur_val_metrics)
+        print(f"val_loss: {self._cur_val_loss:.4f}", end=" ")
+        for smet, met in zip(self.metrics, self._cur_val_metrics):
+            print(f"{smet.name}: {met:.4f}", end=" ")
+        print()
 
     def _rooting(self, path):
         if path is None:
@@ -246,32 +319,32 @@ class EncoderDecoderTrainer(BaseTrainer):
     def log_results(self, out=None, txt_name=None, pk_name=None):
         root = self._rooting(out)
         if txt_name is None:
-            txt_file = os.path.join(root, "encoder_training_metrics.txt")
+            txt_file = os.path.join(root, "training_metrics.txt")
         else:
             txt_file = os.path.join(root, txt_name)
         if pk_name is None:
-            pk_file = os.path.join(root, "encoder_losses.pk")
+            pk_file = os.path.join(root, "losses.pk")
         else:
             pk_file = os.path.join(root, pk_name)
         with open(txt_file, "w") as f:
             metrics = self.early_stopper.get_best_vl_metrics()
-            f.write(
-                f"Best train loss: {metrics[0]:.4f}, "
-                f"best validate loss: {metrics[2]:.4f}"
-            )
+            f.write(self._get_metrics_string(metrics))
         with open(pk_file, "wb") as f:
-            loss_dict = (
-                {
-                    "training_losses": self.train_losses,
-                    "validating_losses": self.val_losses,
-                },
-            )
-            pk.dump(loss_dict, f)
+            metrics_dict = {
+                "training_losses": self.train_losses,
+                "validating_losses": self.val_losses,
+            }
+
+            for key, tr, val in zip(self.metrics, self.train_metrics, self.val_metrics):
+                metrics_dict.update(
+                    {f"training_{key.name}": tr, f"validating_{key.name}": val}
+                )
+            pk.dump(metrics_dict, f)
 
     def plot_training_metrics(self, path=None, name=None):
         root = self._rooting(path)
         if name is None:
-            filep = os.path.join(root, "encoder_train_val_losses.png")
+            filep = os.path.join(root, "train_val_losses.png")
         else:
             filep = os.path.join(root, name)
         dif = int((len(self.train_losses) - 1) / (len(self.val_losses) - 1))
@@ -314,8 +387,6 @@ class EncoderClassifierTrainer(EncoderDecoderTrainer):
         self, config, encoder=None, decoder=None, train_loader=None, val_loader=None
     ):
         super().__init__(config, encoder, decoder, train_loader, val_loader)
-        self._tr_accs = list()
-        self._val_accs = list()
 
     def _parse_config(self):
         super()._parse_config()
@@ -323,165 +394,33 @@ class EncoderClassifierTrainer(EncoderDecoderTrainer):
         self._criterion = self.config["classifier_loss"]()
 
     @property
-    def train_accs(self):
-        return self._tr_accs
-
-    @property
-    def validate_accs(self):
-        return self._val_accs
-
-    @property
     def criterion(self):
         return self._criterion
 
-    def train(self):
-        self.epoch = 0
-        self.log_before_training_status()
-        while self.epoch < self.config["classifier_epochs"]:
-            if self.epoch < self.config["frozen_epochs"]:
-                self.load_optimizers(self._decoder_optimizer)
-            else:
-                self.load_optimizers(self._encoder_optimizer, self._decoder_optimizer)
-            self.train_one_epoch()
-            self.validate()
-            stop = self.early_stopper.stop(
-                self.epoch,
-                self._cur_val_loss,
-                val_acc=self._cur_val_acc,
-                train_loss=self._cur_train_loss,
-                train_acc=self._cur_train_acc,
-            )
-            if stop:
-                break
-            self.encoder_lr_scheduler.step()
-            self.decoder_lr_scheduler.step()
-            self.epoch += 1
-        metrics = self.early_stopper.get_best_vl_metrics()
-        print(
-            f"Best train loss: {metrics[0]:.4f}, "
-            f"best train acc: {metrics[1]:.4f}, "
-            f"best validate loss: {metrics[2]:.4f}, "
-            f"best validate acc: {metrics[3]:.4f}"
-        )
-
-    def log_before_training_status(self):
-        with torch.no_grad():
-            self._setup_models("train")
-            it = zip(
-                [self.train_loader, self.val_loader],
-                [self.train_losses, self.val_losses],
-                [self.train_accs, self.validate_accs],
-            )
-            for loader, losses, accs in it:
-                batch_losses = list()
-                batch_accs = list()
-                for batch in loader:
-                    batch = batch.to(self.device)
-                    out = self.decoder(self.encoder(batch))
-                    try:
-                        batch_losses.append(self.criterion(out, batch.y).item())
-                    except RuntimeError:
-                        batch_losses.append(self.criterion(out, batch.y.float()).item())
-                    batch_accs.append(accuracy(out, batch.y))
-                loss = mean(batch_losses)
-                losses.append(loss)
-                acc = mean(batch_accs)
-                accs.append(acc)
-
-    def train_one_epoch(self):
-        self._setup_models("train")
-        batch_losses = list()
-        batch_accs = list()
-        for i, batch in enumerate(self.train_loader):
-            batch = batch.to(self.device)
-            out = self.decoder(self.encoder(batch))
-            try:
-                train_loss = self.criterion(out, batch.y)
-            except RuntimeError:
-                train_loss = self.criterion(out, batch.y.float())
-            batch_losses.append(train_loss.item())
-            for opt in self._optimizers:
-                opt.zero_grad()
-            train_loss.backward()
-            for opt in self._optimizers:
-                opt.step()
-            acc = accuracy(out, batch.y)
-            batch_accs.append(acc)
-            print(
-                f"\repoch: {self.epoch+1}, batch: {i+1}, "
-                f"train_loss: {train_loss.item():.4f}, train_acc: {acc:.4f}",
-                end=" ",
-            )
-        self._cur_train_loss = mean(batch_losses)
-        self._cur_train_acc = mean(batch_accs)
-        self.train_losses.append(self._cur_train_loss)
-        self.train_accs.append(self._cur_train_acc)
-
-    def validate(self):
-        self._setup_models("eval")
-        with torch.no_grad():
-            batch_losses = list()
-            batch_acc = list()
-            for batch in self.val_loader:
-                batch = batch.to(self.device)
-                out = self.decoder(self.encoder(batch))
-                batch_losses.append(self.criterion(out, batch.y).item())
-                acc = accuracy(out, batch.y)
-                batch_acc.append(acc)
-        self._cur_val_loss = mean(batch_losses)
-        self._cur_val_acc = mean(batch_acc)
-        self.val_losses.append(self._cur_val_loss)
-        self.validate_accs.append(self._cur_val_acc)
-        print(f"val_loss: {self._cur_val_loss:.4f}, val_acc: {self._cur_val_acc:.4f}")
-
-    def log_results(self, out=None, txt_name=None, pk_name=None):
-        root = self._rooting(out)
-        if txt_name is None:
-            txt_file = os.path.join(root, "classifier_training_metrics.txt")
-        else:
-            txt_file = os.path.join(root, txt_name)
-        if pk_name is None:
-            pk_file = os.path.join(root, "classifier_losses_accs.pk")
-        else:
-            pk_file = os.path.join(root, pk_name)
-        with open(txt_file, "w") as f:
-            metrics = self.early_stopper.get_best_vl_metrics()
-            f.write(
-                f"Best train loss: {metrics[0]:.4f}, "
-                f"best train acc: {metrics[1]:.4f}, "
-                f"best validate loss: {metrics[2]:.4f}, "
-                f"best validate acc: {metrics[3]}"
-            )
-        with open(pk_file, "wb") as f:
-            loss_dict = (
-                {
-                    "training_losses": self.train_losses,
-                    "validating_losses": self.val_losses,
-                    "training_accs": self.train_accs,
-                    "validating_accs": self.validate_accs,
-                },
-            )
-            pk.dump(loss_dict, f)
+    @property
+    def epochs(self):
+        return self.config["classifier_epochs"]
 
     def plot_training_metrics(self, path=None, name=None):
-        root = self._rooting(path)
-        if name is None:
-            filep = os.path.join(root, "classifier_train_val_losses.png")
-        else:
-            filep = os.path.join(root, name)
-        fig, axes = plt.subplots(ncols=2, figsize=(16.0, 6.0))
-        x = list(range(len(self.train_losses)))
-        axes[0].plot(x, self.train_losses, label="train_loss")
-        axes[0].plot(x, self.val_losses, label="val_loss")
-        axes[0].set_ylabel("BCE loss")
-        axes[0].set_xlabel("Epochs")
-        axes[1].set_title("Losses")
-        axes[0].legend()
-        axes[1].plot(x, self.train_accs, label="train_acc")
-        axes[1].plot(x, self.validate_accs, label="val_acc")
-        axes[1].set_ylabel("Accuracy")
-        axes[1].set_xlabel("Epochs")
-        axes[1].set_title("Accuracies")
-        axes[1].legend()
-        fig.savefig(filep, dpi=300, bbox_inches="tight")
-        plt.close()
+        # root = self._rooting(path)
+        # if name is None:
+        #     filep = os.path.join(root, "classifier_train_val_losses.png")
+        # else:
+        #     filep = os.path.join(root, name)
+        # fig, axes = plt.subplots(ncols=2, figsize=(16.0, 6.0))
+        # x = list(range(len(self.train_losses)))
+        # axes[0].plot(x, self.train_losses, label="train_loss")
+        # axes[0].plot(x, self.val_losses, label="val_loss")
+        # axes[0].set_ylabel("BCE loss")
+        # axes[0].set_xlabel("Epochs")
+        # axes[1].set_title("Losses")
+        # axes[0].legend()
+        # axes[1].plot(x, self.train_accs, label="train_acc")
+        # axes[1].plot(x, self.validate_accs, label="val_acc")
+        # axes[1].set_ylabel("Accuracy")
+        # axes[1].set_xlabel("Epochs")
+        # axes[1].set_title("Accuracies")
+        # axes[1].legend()
+        # fig.savefig(filep, dpi=300, bbox_inches="tight")
+        # plt.close()
+        print("dummy plotting")

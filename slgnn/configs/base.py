@@ -24,6 +24,7 @@ from slgnn.data_processing.pyg_datasets import (
 )
 from slgnn.data_processing.deepchem_datasets import Sider, SiderFP
 from slgnn.training.utils import Patience
+from slgnn.metrics.metrics import Accuracy, ROC_AUC, F1
 
 # from models.graph_classifiers.GIN import GIN
 # from models.graph_classifiers.DiffPool import DiffPool
@@ -116,6 +117,12 @@ class Config:
         "CrossEntropyLoss": CrossEntropyLoss,
     }
 
+    metrics = {
+        "Accuracy": Accuracy,
+        "ROC_AUC": ROC_AUC,
+        "F1": F1,
+    }
+
     optimizers = {
         "Adam": Adam,
         # 'SGD': SGD
@@ -148,6 +155,7 @@ class Config:
                 "scheduler",
                 "encoder_early_stopper",
                 "early_stopper",
+                "metrics",
             ]
             if attrname in attrnames:
                 if attrname == "encoder_dataset":
@@ -160,6 +168,8 @@ class Config:
                     setattr(self, "encoder_loss_name", value)
                 if attrname == "classifier_loss":
                     setattr(self, "classifier_loss_name", value)
+                if attrname == "metrics":
+                    setattr(self, "metrics_name", value)
 
                 fn = getattr(self, f"parse_{attrname}")
                 setattr(self, attrname, fn(value))
@@ -210,6 +220,14 @@ class Config:
     def parse_classifier_loss(loss_s):
         assert loss_s in Config.classifier_losses, f"Could not find {loss_s}"
         return Config.classifier_losses[loss_s]
+
+    @staticmethod
+    def parse_metrics(metrics_s):
+        met = list()
+        for s in metrics_s:
+            assert s in Config.metrics, f"Could not find {s}"
+            met.append(Config.metrics[s])
+        return met
 
     @staticmethod
     def parse_optimizer(optim_s):

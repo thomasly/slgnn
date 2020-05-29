@@ -48,9 +48,13 @@ if __name__ == "__main__":
             encoder_trainer = EncoderDecoderTrainer(
                 config, encoder, decoder, dloader.train_loader, dloader.val_loader
             )
+            encoder_trainer.metrics = []
+            encoder_trainer.freeze_encoder = False
             encoder_trainer.train()
-            encoder_trainer.log_results(out=log_dir)
-            encoder_trainer.plot_training_metrics(log_dir)
+            encoder_trainer.log_results(
+                out=log_dir, txt_name="encoder_losses.txt", pk_name="encoder_losses.pk"
+            )
+            encoder_trainer.plot_training_metrics(log_dir, name="encoder_losses.png")
             for index in range(5):
                 encoder_trainer.plot_reconstructions(
                     index, log_dir, f"reconstruction_{index}.png"
@@ -70,4 +74,8 @@ if __name__ == "__main__":
         )
         cls_trainer.train()
         cls_trainer.plot_training_metrics(log_dir)
-        cls_trainer.log_results(out=log_dir)
+        cls_trainer.log_results(
+            out=log_dir,
+            txt_name="classifier_metrics.txt",
+            pk_name="classifier_metrics.pk",
+        )

@@ -9,7 +9,7 @@ def plot_reconstruct(model, data, index, output):
     label = data.y[index].to("cpu").detach()
     out = torch.round(torch.sigmoid(model(data)))
     out_y = out[index].to("cpu").detach()
-    fig, axes = plt.subplots(2, 1, figsize=(8., 12.))
+    fig, axes = plt.subplots(2, 1, figsize=(8.0, 12.0))
     ax1, ax2 = axes.flatten()
     ax1.bar(list(range(out_y.shape[0])), out_y)
     ax1.set_xlabel("Reconstructed Fingerprint")
@@ -20,8 +20,8 @@ def plot_reconstruct(model, data, index, output):
 
 
 def plot_train_val_losses(train_losses: list, val_losses: list, output):
-    dif = int((len(train_losses)-1) / (len(val_losses)-1))
-    fig, axe = plt.subplots(figsize=(8., 6.))
+    dif = int((len(train_losses) - 1) / (len(val_losses) - 1))
+    fig, axe = plt.subplots(figsize=(8.0, 6.0))
     x = list(range(len(train_losses)))
     axe.plot(x, train_losses, label="train_loss")
     axe.plot(x[::dif], val_losses, label="val_loss")
@@ -34,8 +34,8 @@ def plot_train_val_losses(train_losses: list, val_losses: list, output):
 
 
 def plot_train_val_acc(train_accs: list, val_accs: list, output):
-    dif = int((len(train_accs)-1) / (len(val_accs)-1))
-    fig, axe = plt.subplots(figsize=(8., 6.))
+    dif = int((len(train_accs) - 1) / (len(val_accs) - 1))
+    fig, axe = plt.subplots(figsize=(8.0, 6.0))
     x = list(range(len(train_accs)))
     axe.plot(x, train_accs, label="train_acc")
     axe.plot(x[::dif], val_accs, label="val_acc")
@@ -49,21 +49,35 @@ def plot_train_val_acc(train_accs: list, val_accs: list, output):
 
 
 class EarlyStopper:
-
-    def stop(self, epoch, val_loss, val_acc=None, test_loss=None,
-             test_acc=None, train_loss=None, train_acc=None):
+    def stop(
+        self,
+        epoch,
+        val_loss,
+        val_acc=None,
+        test_loss=None,
+        test_acc=None,
+        train_loss=None,
+        train_acc=None,
+    ):
         raise NotImplementedError("Implement this method!")
 
     def get_best_vl_metrics(self):
-        return (self.train_loss, self.train_acc, self.val_loss, self.val_acc,
-                self.test_loss, self.test_acc, self.best_epoch)
+        return (
+            self.train_loss,
+            self.train_acc,
+            self.val_loss,
+            self.val_acc,
+            self.test_loss,
+            self.test_acc,
+            self.best_epoch,
+        )
 
 
 class Patience(EarlyStopper):
 
-    '''
+    """
     Implement common "patience" technique
-    '''
+    """
 
     def __init__(self, patience=20, use_loss=True):
         self.local_val_optimum = float("inf") if use_loss else -float("inf")
@@ -76,8 +90,16 @@ class Patience(EarlyStopper):
         self.val_loss, self.val_acc = None, None
         self.test_loss, self.test_acc = None, None
 
-    def stop(self, epoch, val_loss, val_acc=None, test_loss=None,
-             test_acc=None, train_loss=None, train_acc=None):
+    def stop(
+        self,
+        epoch,
+        val_loss,
+        val_acc=None,
+        test_loss=None,
+        test_acc=None,
+        train_loss=None,
+        train_acc=None,
+    ):
         if self.use_loss:
             if val_loss <= self.local_val_optimum:
                 self.counter = 0
