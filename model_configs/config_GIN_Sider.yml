@@ -21,7 +21,7 @@ embedding_dim:
 device:
   - cuda:0
 batch_size:
-  - 32
+  - 64
   # - 128
 learning_rate:
   # - 0.01
@@ -55,7 +55,7 @@ encoder_loss:
 classifier_loss:
   - BCEWithLogitsLoss
 metrics:
-  - [Accuracy, ROC_AUC, F1]
+  - [ROC_AUC, F1]
 train_eps:
   - true
   # - false

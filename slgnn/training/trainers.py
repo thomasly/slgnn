@@ -5,7 +5,10 @@ from statistics import mean
 
 import torch
 from torch_geometric.data import Batch
+import matplotlib
 import matplotlib.pyplot as plt
+
+matplotlib.use("Agg")
 
 
 class BaseTrainer(ABC):
@@ -188,15 +191,15 @@ class EncoderDecoderTrainer(BaseTrainer):
         if metrics[0] is not None:
             s += f"Best train loss: {metrics[0]:.4f} "
         if metrics[1] is not None:
-            s += f"best train accuracy: {metrics[1]:.4f} "
+            s += f"best train {self.metrics[0].name}: {metrics[1]:.4f} "
         if metrics[2] is not None:
             s += f"best validate loss: {metrics[2]:.4f} "
         if metrics[3] is not None:
-            s += f"best validate accuracy: {metrics[3]:.4f} "
+            s += f"best validate {self.metrics[0].name}: {metrics[3]:.4f} "
         if metrics[4] is not None:
             s += f"best test loss: {metrics[4]:.4f} "
         if metrics[5] is not None:
-            s += f"best test accuracy: {metrics[5]:.4f}"
+            s += f"best test {self.metrics[0].name}: {metrics[5]:.4f}"
         return s
 
     def train(self):
@@ -239,19 +242,21 @@ class EncoderDecoderTrainer(BaseTrainer):
                 [self.train_metrics, self.val_metrics],
             )
             for loader, losses, metrics in it:
-                batch_losses = list()
-                batch_metrics = list()
+                outputs = list()
+                labels = list()
                 for batch in loader:
                     batch = batch.to(self.device)
-                    out = self.decoder(self.encoder(batch))
-                    try:
-                        batch_losses.append(self.criterion(out, batch.y).item())
-                    except RuntimeError:
-                        batch_losses.append(self.criterion(out, batch.y.float()).item())
-                    metrics = [m(out, batch.y) for m in self.metrics]
-                    batch_metrics.append(metrics)
-                losses.append(mean(batch_losses))
-                metrics.append([mean(m) for m in zip(*batch_metrics)])
+                    outputs.append(self.decoder(self.encoder(batch)))
+                    labels.append(batch.y)
+                out = torch.cat(outputs, 0)
+                y = torch.cat(labels)
+                try:
+                    loss = self.criterion(out, y).item()
+                except RuntimeError:
+                    loss = self.criterion(out, y.float()).item()
+                metric = [m(out, y) for m in self.metrics]
+                losses.append(loss)
+                metrics.append(metric)
 
     def train_one_epoch(self):
         self._setup_models("train")
@@ -281,26 +286,25 @@ class EncoderDecoderTrainer(BaseTrainer):
                 print(f"{smet.name}: {met:.4f}", end=" ")
         self._cur_train_loss = mean(batch_losses)
         self._cur_train_metrics = [mean(m) for m in zip(*batch_metrics)]
-        self.train_losses.append(train_loss)
+        self.train_losses.append(train_loss.item())
         self.train_metrics.append(self._cur_train_metrics)
 
     def validate(self):
         self._setup_models("eval")
         with torch.no_grad():
-            batch_losses = list()
-            batch_metrics = list()
+            outputs = list()
+            labels = list()
             for batch in self.val_loader:
                 batch = batch.to(self.device)
-                out = self.decoder(self.encoder(batch))
-                try:
-                    loss = self.criterion(out, batch.y).item()
-                except RuntimeError:
-                    loss = self.criterion(out, batch.y.float()).item()
-                batch_losses.append(loss)
-                metrics = [m(out, batch.y) for m in self.metrics]
-                batch_metrics.append(metrics)
-        self._cur_val_loss = mean(batch_losses)
-        self._cur_val_metrics = [mean(m) for m in zip(*batch_metrics)]
+                outputs.append(self.decoder(self.encoder(batch)))
+                labels.append(batch.y)
+            out = torch.cat(outputs, 0)
+            y = torch.cat(labels)
+            try:
+                self._cur_val_loss = self.criterion(out, y).item()
+            except RuntimeError:
+                self._cur_val_loss = self.criterion(out, y.float()).item()
+            self._cur_val_metrics = [m(out, y) for m in self.metrics]
         self.val_losses.append(self._cur_val_loss)
         self.val_metrics.append(self._cur_val_metrics)
         print(f"val_loss: {self._cur_val_loss:.4f}", end=" ")
@@ -334,8 +338,8 @@ class EncoderDecoderTrainer(BaseTrainer):
                 "training_losses": self.train_losses,
                 "validating_losses": self.val_losses,
             }
-
-            for key, tr, val in zip(self.metrics, self.train_metrics, self.val_metrics):
+            it = zip(zip(*self.train_metrics), zip(*self.val_metrics))
+            for key, (tr, val) in zip(self.metrics, it):
                 metrics_dict.update(
                     {f"training_{key.name}": tr, f"validating_{key.name}": val}
                 )
@@ -402,25 +406,27 @@ class EncoderClassifierTrainer(EncoderDecoderTrainer):
         return self.config["classifier_epochs"]
 
     def plot_training_metrics(self, path=None, name=None):
-        # root = self._rooting(path)
-        # if name is None:
-        #     filep = os.path.join(root, "classifier_train_val_losses.png")
-        # else:
-        #     filep = os.path.join(root, name)
-        # fig, axes = plt.subplots(ncols=2, figsize=(16.0, 6.0))
-        # x = list(range(len(self.train_losses)))
-        # axes[0].plot(x, self.train_losses, label="train_loss")
-        # axes[0].plot(x, self.val_losses, label="val_loss")
-        # axes[0].set_ylabel("BCE loss")
-        # axes[0].set_xlabel("Epochs")
-        # axes[1].set_title("Losses")
-        # axes[0].legend()
-        # axes[1].plot(x, self.train_accs, label="train_acc")
-        # axes[1].plot(x, self.validate_accs, label="val_acc")
-        # axes[1].set_ylabel("Accuracy")
-        # axes[1].set_xlabel("Epochs")
-        # axes[1].set_title("Accuracies")
-        # axes[1].legend()
-        # fig.savefig(filep, dpi=300, bbox_inches="tight")
-        # plt.close()
-        print("dummy plotting")
+        root = self._rooting(path)
+        if name is None:
+            filep = os.path.join(root, "classifier_train_val_losses.png")
+        else:
+            filep = os.path.join(root, name)
+        ncols = len(self.metrics) + 1
+        fig, axes = plt.subplots(ncols=ncols, figsize=(ncols * 8.0, 6.0))
+        x = list(range(len(self.train_losses)))
+        axes[0].plot(x, self.train_losses, label="train_loss")
+        axes[0].plot(x, self.val_losses, label="val_loss")
+        axes[0].set_ylabel("BCE loss")
+        axes[0].set_xlabel("Epochs")
+        axes[0].set_title("Losses")
+        axes[0].legend()
+        it = zip(zip(*self.train_metrics), zip(*self.val_metrics))
+        for i, (tr_metric, val_metric) in enumerate(it):
+            axes[i + 1].plot(x, tr_metric, label="train_" + self.metrics[i].name)
+            axes[i + 1].plot(x, val_metric, label="val_" + self.metrics[i].name)
+            axes[i + 1].set_ylabel(self.metrics[i].name)
+            axes[i + 1].set_xlabel("Epochs")
+            axes[i + 1].set_title(self.metrics[i].name)
+            axes[i + 1].legend()
+        fig.savefig(filep, dpi=300, bbox_inches="tight")
+        plt.close()

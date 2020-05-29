@@ -8,7 +8,7 @@ import pandas as pd
 from chemreader.readers import Smiles
 from tqdm import tqdm
 
-from .utils import get_pubchem_fingerprint
+from slgnn.models.gcn.utils import get_filtered_fingerprint
 
 
 class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
@@ -95,7 +95,7 @@ class SiderFP(Sider):
     def _get_labels(self):
         sider_df = pd.read_csv(self.raw_paths[0])
         for smi in sider_df["smiles"]:
-            fp = get_pubchem_fingerprint(smi)
+            fp = get_filtered_fingerprint(smi)
             yield torch.tensor(list(fp), dtype=torch.long)[None, :]
 
     def process(self, verbose=1):
