@@ -22,7 +22,18 @@ from slgnn.data_processing.pyg_datasets import (
     JAK2Presplitted,
     JAK3Presplitted,
 )
-from slgnn.data_processing.deepchem_datasets import Sider, SiderFP
+from slgnn.data_processing.deepchem_datasets import (
+    Sider,
+    SiderFP,
+    BBBP,
+    BBBPFP,
+    BACE,
+    BACEFP,
+    HIV,
+    HIVFP,
+    ClinTox,
+    ClinToxFP,
+)
 from slgnn.training.utils import Patience
 from slgnn.metrics.metrics import Accuracy, ROC_AUC, F1
 
@@ -74,6 +85,10 @@ class Config:
         "JAK2": JAK2FP,
         "JAK3": JAK3FP,
         "Sider": SiderFP,
+        "BACE": BACEFP,
+        "BBBP": BBBPFP,
+        "ClinTox": ClinToxFP,
+        "HIV": HIVFP,
         # 'NCI1': NCI1,
         # 'IMDB-BINARY': IMDBBinary,
         # 'IMDB-MULTI': IMDBMulti,
@@ -93,6 +108,10 @@ class Config:
         "JAK2Pre": JAK2Presplitted,
         "JAK3Pre": JAK3Presplitted,
         "Sider": Sider,
+        "BACE": BACE,
+        "BBBP": BBBP,
+        "ClinTox": ClinTox,
+        "HIV": HIV,
     }
 
     # models = {

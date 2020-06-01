@@ -16,17 +16,10 @@ from slgnn.config import PAD_ATOM, PAD_BOND
 def encode_onehot(labels, len_label=None):
     classes = set(labels)
     if len_label is None:
-        classes_dict = {
-            c: np.identity(len(classes))[i]
-            for i, c in enumerate(classes)
-        }
+        classes_dict = {c: np.identity(len(classes))[i] for i, c in enumerate(classes)}
     else:
-        classes_dict = {
-            c: np.identity(len_label)[i]
-            for i, c in enumerate(classes)
-        }
-    labels_onehot = np.array(list(map(classes_dict.get, labels)),
-                             dtype=np.int32)
+        classes_dict = {c: np.identity(len_label)[i] for i, c in enumerate(classes)}
+    labels_onehot = np.array(list(map(classes_dict.get, labels)), dtype=np.int32)
     return labels_onehot
 
 
@@ -45,7 +38,7 @@ def normalize(matrices):
     for i, mx in enumerate(matrices):
         rowsum = np.array(mx.sum(0))
         r_inv = np.power(rowsum, -1).flatten()
-        r_inv[np.isinf(r_inv)] = 0.
+        r_inv[np.isinf(r_inv)] = 0.0
         r_mat_inv = np.diag(r_inv)
         mx = mx.dot(r_mat_inv)
         matrices[i] = mx
@@ -61,7 +54,7 @@ def accuracy(output, labels):
         #       "numerator: {}".format(numerator.item()),
         #       "denominator: {}".format(denominator.item()))
         if denominator == 0:
-            return 0.
+            return 0.0
         return (numerator / denominator).item()
     else:
         return (output.round() == labels).sum().item() / output.numel()
@@ -70,15 +63,16 @@ def accuracy(output, labels):
 def sparse_mx_to_torch_spare_tensor(sparse_mx):
     sparse_mx = sparse_mx.tocoo().astype(np.float32)
     indices = torch.from_numpy(
-        np.vstack((sparse_mx.row, sparse_mx.col)).astype(np.int64))
+        np.vstack((sparse_mx.row, sparse_mx.col)).astype(np.int64)
+    )
     values = torch.from_numpy(sparse_mx.data)
     shape = torch.Size(sparse_mx.shape)
     return torch.sparse.FloatTensor(indices, values, shape)
 
 
 def get_filtered_fingerprint(smiles):
-    """ Get PubChem fingerprint wiht elements other than C, H, O, N, S, F, Cl,
-    Br.
+    """ Get filtered PubChem fingerprint. The digits related to elements other than C,
+    H, O, N, S, F, Cl, and Br are discarded.
 
     Args:
         smiles (str): SMILES string.
@@ -87,13 +81,44 @@ def get_filtered_fingerprint(smiles):
         fp (np.ndarray): The filtered PubChem fingerprint as a vector.
         length (int): length of the filtered vector.
     """
-    fp = get_fingerprint(smiles, fp_type='pubchem', output="vector")
-    del_pos = [26, 27, 28, 29, 30, 31, 32, 41, 42, 46, 47, 48, 295, 296, 298,
-               303, 304, 348, 354, 369, 407, 411, 415, 456, 525, 627] + \
-        list(range(49, 115)) + list(range(263, 283)) + \
-        list(range(288, 293)) + list(range(310, 317)) + \
-        list(range(318, 327)) + list(range(327, 332)) + \
-        list(range(424, 427))
+    fp = get_fingerprint(smiles, fp_type="pubchem", output="vector")
+    del_pos = (
+        [
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            41,
+            42,
+            46,
+            47,
+            48,
+            295,
+            296,
+            298,
+            303,
+            304,
+            348,
+            354,
+            369,
+            407,
+            411,
+            415,
+            456,
+            525,
+            627,
+        ]
+        + list(range(49, 115))
+        + list(range(263, 283))
+        + list(range(288, 293))
+        + list(range(310, 317))
+        + list(range(318, 327))
+        + list(range(327, 332))
+        + list(range(424, 427))
+    )
     fp = np.delete(fp, del_pos)
     return fp
 
@@ -157,19 +182,20 @@ def feat_to_oh(features, col_num, label_len):
     features = np.array(features)
     oh = encode_onehot(list(features[:, col_num]), label_len)
     oh_features = np.concatenate(
-        [features[:, :col_num], oh, features[:, col_num + 1:]], axis=1)
+        [features[:, :col_num], oh, features[:, col_num + 1 :]], axis=1
+    )
     return oh_features
 
 
 def load_encoder_txt_data(path):
     import random
+
     random.seed(12391)
     saving_path = os.path.join(
-        os.path.dirname(path),
-        os.path.basename(path).split(".")[0] + "_fingerprints.pk")
+        os.path.dirname(path), os.path.basename(path).split(".")[0] + "_fingerprints.pk"
+    )
     graph_saving_path = os.path.join(
-        os.path.dirname(path),
-        os.path.basename(path).split(".")[0] + "_graphs.pk"
+        os.path.dirname(path), os.path.basename(path).split(".")[0] + "_graphs.pk"
     )
 
     if os.path.isfile(graph_saving_path):
@@ -183,7 +209,8 @@ def load_encoder_txt_data(path):
         pbar.set_description("Generating graphs ")
         graphs = [
             s.to_graph(pad_atom=PAD_ATOM, pad_bond=PAD_BOND, sparse=True)
-            for s in pbar if s.num_atoms < PAD_ATOM + 1
+            for s in pbar
+            if s.num_atoms < PAD_ATOM + 1
         ]
         with open(graph_saving_path, "wb") as f:
             pk.dump(graphs, f)
@@ -240,11 +267,9 @@ def load_encoder_txt_data(path):
     return train, valid, len_fp
 
 
-def load_classifier_data(path,
-                         smiles_col="smiles",
-                         label_cols=[],
-                         training_ratio=0.7,
-                         testing_ratio=None):
+def load_classifier_data(
+    path, smiles_col="smiles", label_cols=[], training_ratio=0.7, testing_ratio=None
+):
     """ Load classification task data.
 
     Args:
@@ -255,17 +280,18 @@ def load_classifier_data(path,
             None, the ration is default to 1 - training_ration.
     """
     import random
+
     random.seed(12391)
 
     if testing_ratio is not None:
         if testing_ratio + training_ratio > 1:
-            raise ValueError("The sum of training_ratio and testing_ratio"
-                             " should be less than 1.")
+            raise ValueError(
+                "The sum of training_ratio and testing_ratio" " should be less than 1."
+            )
     if testing_ratio is None:
-        testing_ratio = 1. - training_ratio
+        testing_ratio = 1.0 - training_ratio
     if training_ratio >= 0.9 or training_ratio <= 0.1:
-        raise ValueError(
-            "training_ratio should be a float in range (0.1, 0.9).")
+        raise ValueError("training_ratio should be a float in range (0.1, 0.9).")
 
     train, valid, test = dict(), dict(), dict()
     df = pd.read_csv(path)
@@ -273,7 +299,8 @@ def load_classifier_data(path,
     random.shuffle(smiles)
     graphs = [
         s.to_graph(pad_atom=PAD_ATOM, pad_bond=PAD_BOND, sparse=True)
-        for s in smiles if s.num_atoms < 71
+        for s in smiles
+        if s.num_atoms < 71
     ]
 
     sep_tr = int(len(graphs) * training_ratio)  # training
