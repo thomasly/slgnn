@@ -51,7 +51,7 @@ class TestDeepChemDatasets(unittest.TestCase):
         self.assertEqual(len(dataset), 1513)
         data = dataset[0]
         self.assertEqual(data.x.size()[1], 6)
-        self.assertEqual(data.y.size(), (1, 1))
+        self.assertEqual(data.y.size(), (1,))
         self.assertEqual(data.edge_index.size()[0], 2)
 
     def test_bacefp_dataset(self):
@@ -114,7 +114,7 @@ class TestDeepChemDatasets(unittest.TestCase):
         self.assertEqual(data.y.size(), (1, FILTERED_PUBCHEM_FP_LEN))
         self.assertEqual(data.edge_index.size()[0], 2)
 
-    def test_HIV_dataset(self):
+    def test_hiv_dataset(self):
         # # remove processed data
         # path = osp.join("data", "DeepChem", "HIV", "processed")
         # if osp.exists(path):
@@ -126,7 +126,7 @@ class TestDeepChemDatasets(unittest.TestCase):
         self.assertEqual(data.y.size(), (1, 1))
         self.assertEqual(data.edge_index.size()[0], 2)
 
-    def test_HIVFP_dataset(self):
+    def test_hivfp_dataset(self):
         # # remove processed data
         # path = osp.join("data", "DeepChem", "BBBPFP", "processed")
         # if osp.exists(path):

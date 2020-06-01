@@ -206,9 +206,11 @@ class ZINC100k(ZINCDataset):
 
 
 class JAK1(JAKDataset):
-    def __init__(self):
-        root = osp.join("data", "JAK", "graphs")
-        name = "JAK1"
+    def __init__(self, root=None, name=None):
+        if root is None:
+            root = osp.join("data", "JAK", "graphs")
+        if name is None:
+            name = "JAK1"
         super().__init__(root=root, name=name, use_node_attr=True)
 
     def process(self):

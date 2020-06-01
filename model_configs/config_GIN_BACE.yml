@@ -53,9 +53,9 @@ encoder_loss:
   - BCEWithLogitsLoss
   # - MulticlassClassificationLoss
 classifier_loss:
-  - BCEWithLogitsLoss
+  - CrossEntropyLoss
 metrics:
-  - [ROC_AUC, F1]
+  - [Accuracy, ROC_AUC, F1]
 train_eps:
   - true
   # - false

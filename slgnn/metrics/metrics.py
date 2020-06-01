@@ -6,10 +6,18 @@ def _to_numpy(*tensors):
     return [t.cpu().detach() for t in tensors]
 
 
+def _one_class(target):
+    if len(target.size()) == 1:
+        return True
+    if target.size()[1] == 1:
+        return True
+    return False
+
+
 class Accuracy:
     def __call__(self, pred, target):
         pred, target = _to_numpy(pred, target)
-        if target.size()[1] == 1:
+        if _one_class(target):
             _, pred = pred.max(dim=1)
         else:
             pred = torch.round(torch.sigmoid(pred))
@@ -25,8 +33,8 @@ class ROC_AUC:
         self._last = 0
 
     def __call__(self, pred, target):
-        if target.size()[1] == 1:
-            pred = torch.log_softmax(pred)
+        if _one_class(target):
+            pred = torch.softmax(pred, 1)[:, 1]
         else:
             pred = torch.sigmoid(pred)
         pred, target = _to_numpy(pred, target)
@@ -44,7 +52,7 @@ class ROC_AUC:
 
 class F1:
     def __call__(self, pred, target):
-        if target.size()[1] == 1:
+        if _one_class(target):
             _, pred = pred.max(dim=1)
         else:
             pred = torch.round(torch.sigmoid(pred))

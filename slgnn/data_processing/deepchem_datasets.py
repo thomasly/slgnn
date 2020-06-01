@@ -38,7 +38,7 @@ class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
             try:
                 x, edge_idx = self._graph_helper(smi)
                 data_list.append(Data(x=x, edge_index=edge_idx, y=y))
-            except AttributeError:
+            except AttributeError:  # SMILES invalid
                 continue
         data, slices = self.collate(data_list)
         torch.save((data, slices), self.processed_paths[0])
@@ -121,7 +121,7 @@ class BACE(DeepchemDataset):
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])
         for lb in df["Class"]:
-            yield torch.tensor([lb], dtype=torch.long)[None, :]
+            yield torch.tensor([lb], dtype=torch.long)
 
     def process(self, verbose=0):
         super().process(verbose)
@@ -165,7 +165,7 @@ class BBBP(DeepchemDataset):
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])
         for lb in df["p_np"]:
-            yield torch.tensor([lb], dtype=torch.long)[None, :]
+            yield torch.tensor([lb], dtype=torch.long)
 
     def process(self, verbose=0):
         super().process(verbose)
@@ -209,7 +209,7 @@ class ClinTox(DeepchemDataset):
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])
         for lb in df["CT_TOX"]:
-            yield torch.tensor([lb], dtype=torch.long)[None, :]
+            yield torch.tensor([lb], dtype=torch.long)
 
     def process(self, verbose=0):
         super().process(verbose)
@@ -256,7 +256,7 @@ class HIV(DeepchemDataset):
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])
         for lb in df["HIV_active"]:
-            yield torch.tensor([lb], dtype=torch.long)[None, :]
+            yield torch.tensor([lb], dtype=torch.long)
 
     def process(self, verbose=0):
         super().process(verbose)
