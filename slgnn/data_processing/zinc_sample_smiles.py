@@ -12,9 +12,10 @@ random.seed(182436)
 class SmilesSampler:
     """ Sample SMILES from source file. The source file must have one SMILES
     each line. The SMILES string must be at the beggining of the line. If there
-    are comments for the SMILES, they should be seperated with the SMIELS by a
+    are comments for the SMILES, they should be seperated with the SMIELS with a
     comma.
     """
+
     def __init__(self, path):
         """ Sampler initializer.
 
@@ -24,13 +25,52 @@ class SmilesSampler:
         if not os.path.isfile(path):
             raise FileNotFoundError("{} is not a file.".format(path))
         self.path = path
+        self._samples = list()
 
-    def sample(self,
-               n_samples,
-               filter_similar=True,
-               threshold=0.85,
-               header=True,
-               verbose=True):
+    def _sample_wo_filter(self, n_samples, data, verbose):
+        count = 0
+        pb = tqdm(total=n_samples, ascii=True, desc="Sampling") if verbose else None
+        while count < n_samples:
+            sample = random.sample(data, 1)[0].split(",")[0]
+            if Chem.MolFromSmiles(sample) is None:
+                continue
+            self._samples.append(sample)
+            count += 1
+            if verbose:
+                pb.update(1)
+
+    def _are_similar(self, fp, fp_list, threshold):
+        for fp2 in fp_list:
+            score = DataStructs.FingerprintSimilarity(fp, fp2)
+            if score > threshold:
+                return True
+        return False
+
+    def _sample_w_filter(self, n_samples, data, threshold, verbose):
+        count = 0
+        selected_mols_fp = list()
+        if verbose:
+            pb = tqdm(total=n_samples, ascii=True, desc="Sampling")
+        while count < n_samples:
+            idx = random.sample(range(len(data)), 1)[0]
+            smiles = data[idx].split(",")[0]
+            mol = Chem.MolFromSmiles(smiles)
+            if mol is None:
+                data[idx] = data.pop()
+                continue
+            fp = GetMorganFingerprintAsBitVect(mol, 4, nBits=1024)
+            if self._are_similar(fp, selected_mols_fp, threshold):
+                data[idx] = data.pop()
+                continue
+            self._samples.append(smiles)
+            selected_mols_fp.append(fp)
+            if verbose:
+                pb.update(1)
+            count += 1
+
+    def sample(
+        self, n_samples, filter_similar=True, threshold=0.85, header=True, verbose=True
+    ):
         """ Sample SMILES from file.
 
         Args:
@@ -53,40 +93,8 @@ class SmilesSampler:
             else:
                 data = inf.readlines()
         if not filter_similar:
-            count = 0
-            samples = list()
-            while count < n_samples:
-                sample = random.sample(data, 1)[0].split(",")[0]
-                if Chem.MolFromSmiles(sample) is None:
-                    continue
-                samples.append(sample)
-                count += 1
-            return samples
-        count = 0
-        samples = list()
-        selected_mols_fp = list()
-        if verbose:
-            pb = tqdm(total=n_samples, ascii=True, desc="Sampling")
-        while count < n_samples:
-            idx = random.sample(range(len(data)), 1)[0]
-            smiles = data[idx].split(",")[0]
-            mol = Chem.MolFromSmiles(smiles)
-            if mol is None:
-                data[idx] = data.pop()
-                continue
-            fp = GetMorganFingerprintAsBitVect(mol, 4, nBits=1024)
-            flag = 0
-            for fp2 in selected_mols_fp:
-                score = DataStructs.FingerprintSimilarity(fp, fp2)
-                if score > threshold:
-                    data[idx] = data.pop()
-                    flag = 1
-                    break
-            if flag == 0:
-                samples.append(smiles)
-                selected_mols_fp.append(fp)
-                if verbose:
-                    pb.update(1)
-                count += 1
-
-        return samples
+            self._sample_wo_filter(n_samples, data, verbose)
+            return self._samples
+        else:
+            self._sample_w_filter(n_samples, data, threshold, verbose)
+            return self._samples
