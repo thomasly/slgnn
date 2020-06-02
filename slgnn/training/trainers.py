@@ -286,7 +286,7 @@ class EncoderDecoderTrainer(BaseTrainer):
                 print(f"{smet.name}: {met:.4f}", end=" ")
         self._cur_train_loss = mean(batch_losses)
         self._cur_train_metrics = [mean(m) for m in zip(*batch_metrics)]
-        self.train_losses.append(train_loss.item())
+        self.train_losses.append(self._cur_train_loss)
         self.train_metrics.append(self._cur_train_metrics)
 
     def validate(self):
