@@ -33,6 +33,7 @@ from slgnn.data_processing.deepchem_datasets import (
     HIVFP,
     ClinTox,
     ClinToxFP,
+    ClinToxBalanced,
 )
 from slgnn.training.utils import Patience
 from slgnn.metrics.metrics import Accuracy, ROC_AUC, F1
@@ -111,6 +112,7 @@ class Config:
         "BACE": BACE,
         "BBBP": BBBP,
         "ClinTox": ClinTox,
+        "ClinToxBalanced": ClinToxBalanced,
         "HIV": HIV,
     }
 

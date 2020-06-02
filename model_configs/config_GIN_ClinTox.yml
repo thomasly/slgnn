@@ -4,7 +4,8 @@ encoder_dataset:
   - [ZINC10k, ClinTox]
   - [ZINC10k]
 classifier_dataset:
-  - ClinTox
+  # - ClinTox
+  - ClinToxBalanced
 # model:
 #   - GIN
 use_encoder:

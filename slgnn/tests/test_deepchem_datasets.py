@@ -11,6 +11,7 @@ from slgnn.data_processing.deepchem_datasets import (
     BBBPFP,
     ClinTox,
     ClinToxFP,
+    ClinToxBalanced,
     HIV,
     HIVFP,
 )
@@ -75,7 +76,7 @@ class TestDeepChemDatasets(unittest.TestCase):
         self.assertEqual(len(dataset), 2039)
         data = dataset[0]
         self.assertEqual(data.x.size()[1], 6)
-        self.assertEqual(data.y.size(), (1, 1))
+        self.assertEqual(data.y.size(), (1,))
         self.assertEqual(data.edge_index.size()[0], 2)
 
     def test_bbbpfp_dataset(self):
@@ -99,7 +100,7 @@ class TestDeepChemDatasets(unittest.TestCase):
         self.assertEqual(len(dataset), 1477)
         data = dataset[0]
         self.assertEqual(data.x.size()[1], 6)
-        self.assertEqual(data.y.size(), (1, 1))
+        self.assertEqual(data.y.size(), (1,))
         self.assertEqual(data.edge_index.size()[0], 2)
 
     def test_clintoxFP_dataset(self):
@@ -114,6 +115,18 @@ class TestDeepChemDatasets(unittest.TestCase):
         self.assertEqual(data.y.size(), (1, FILTERED_PUBCHEM_FP_LEN))
         self.assertEqual(data.edge_index.size()[0], 2)
 
+    def test_clintoxbalanced_dataset(self):
+        # remove processed data
+        path = osp.join("data", "DeepChem", "ClinToxBalanced", "processed")
+        if osp.exists(path):
+            rmtree(path)
+        dataset = ClinToxBalanced()
+        self.assertEqual(len(dataset), 336)
+        data = dataset[0]
+        self.assertEqual(data.x.size()[1], 6)
+        self.assertEqual(data.y.size(), (1,))
+        self.assertEqual(data.edge_index.size()[0], 2)
+
     def test_hiv_dataset(self):
         # # remove processed data
         # path = osp.join("data", "DeepChem", "HIV", "processed")
@@ -123,7 +136,7 @@ class TestDeepChemDatasets(unittest.TestCase):
         self.assertEqual(len(dataset), 41127)
         data = dataset[0]
         self.assertEqual(data.x.size()[1], 6)
-        self.assertEqual(data.y.size(), (1, 1))
+        self.assertEqual(data.y.size(), (1,))
         self.assertEqual(data.edge_index.size()[0], 2)
 
     def test_hivfp_dataset(self):

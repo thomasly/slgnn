@@ -238,6 +238,20 @@ class ClinToxFP(ClinTox):
         super().process(verbose)
 
 
+class ClinToxBalanced(ClinTox):
+    def __init__(self, root=None, name=None):
+        if root is None:
+            root = osp.join("data", "DeepChem", "ClinToxBalanced")
+        if name is None:
+            name = "clintox_balanced"
+        self.root = root
+        self.name = name
+        super().__init__(root=root, name=name)
+
+    def process(self, verbose=1):
+        super().process(verbose)
+
+
 class HIV(DeepchemDataset):
     def __init__(self, root=None, name=None):
         if root is None:
