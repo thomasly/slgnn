@@ -31,6 +31,7 @@ from slgnn.data_processing.deepchem_datasets import (
     BACEFP,
     HIV,
     HIVFP,
+    HIVBalanced,
     ClinTox,
     ClinToxFP,
     ClinToxBalanced,
@@ -114,6 +115,7 @@ class Config:
         "ClinTox": ClinTox,
         "ClinToxBalanced": ClinToxBalanced,
         "HIV": HIV,
+        "HIVBalanced": HIVBalanced,
     }
 
     # models = {

@@ -14,6 +14,7 @@ from slgnn.data_processing.deepchem_datasets import (
     ClinToxBalanced,
     HIV,
     HIVFP,
+    HIVBalanced,
 )
 from slgnn.config import FILTERED_PUBCHEM_FP_LEN
 
@@ -149,4 +150,12 @@ class TestDeepChemDatasets(unittest.TestCase):
         data = dataset[0]
         self.assertEqual(data.x.size()[1], 6)
         self.assertEqual(data.y.size(), (1, FILTERED_PUBCHEM_FP_LEN))
+        self.assertEqual(data.edge_index.size()[0], 2)
+
+    def test_hivbalanced_dataset(self):
+        dataset = HIVBalanced()
+        self.assertEqual(len(dataset), 4329)
+        data = dataset[0]
+        self.assertEqual(data.x.size()[1], 6)
+        self.assertEqual(data.y.size(), (1,))
         self.assertEqual(data.edge_index.size()[0], 2)

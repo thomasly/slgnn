@@ -4,7 +4,8 @@ encoder_dataset:
   - [ZINC10k, HIV]
   - [ZINC10k]
 classifier_dataset:
-  - HIV
+  # - HIV
+  - HIVBalanced
 # model:
 #   - GIN
 use_encoder:

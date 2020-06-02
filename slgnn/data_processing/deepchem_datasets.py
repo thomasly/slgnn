@@ -294,3 +294,17 @@ class HIVFP(HIV):
 
     def process(self, verbose=1):
         super().process(verbose)
+
+
+class HIVBalanced(HIV):
+    def __init__(self, root=None, name=None):
+        if root is None:
+            root = osp.join("data", "DeepChem", "HIVBalanced")
+        if name is None:
+            name = "hiv_balanced"
+        self.root = root
+        self.name = name
+        super().__init__(root=root, name=name)
+
+    def process(self, verbose=0):
+        super().process(verbose)
