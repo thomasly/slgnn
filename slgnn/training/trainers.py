@@ -5,6 +5,7 @@ from statistics import mean
 
 import torch
 from torch_geometric.data import Batch
+import wandb
 import matplotlib
 import matplotlib.pyplot as plt
 
@@ -15,11 +16,14 @@ class BaseTrainer(ABC):
     """ The base class for trainers
     """
 
-    def __init__(self, config, model=None, train_loader=None, val_loader=None):
+    def __init__(
+        self, config, model=None, train_loader=None, val_loader=None, wandb=None
+    ):
         self._model = model
         self._train_loader = train_loader
         self._val_loader = val_loader
         self._config = config
+        self._wandb = wandb
         self._parse_config()
         self._tr_losses = list()
         self._val_losses = list()
@@ -70,6 +74,15 @@ class BaseTrainer(ABC):
         self._config = conf
 
     @property
+    def wandb(self):
+        return self._wandb
+
+    @wandb.setter
+    def wandb(self, value):
+        assert isinstance(value, type(wandb))
+        self._wandb = value
+
+    @property
     def train_losses(self):
         return self._tr_losses
 
@@ -89,7 +102,13 @@ class BaseTrainer(ABC):
 
 class EncoderDecoderTrainer(BaseTrainer):
     def __init__(
-        self, config, encoder=None, decoder=None, train_loader=None, val_loader=None
+        self,
+        config,
+        encoder=None,
+        decoder=None,
+        train_loader=None,
+        val_loader=None,
+        wandb=None,
     ):
         self._encoder = encoder
         self._decoder = decoder
@@ -97,7 +116,7 @@ class EncoderDecoderTrainer(BaseTrainer):
         self._val_metrics = list()
         self._freeze = True
         super().__init__(
-            config=config, train_loader=train_loader, val_loader=val_loader
+            config=config, train_loader=train_loader, val_loader=val_loader, wandb=wandb
         )
 
     def _parse_config(self):
@@ -206,6 +225,8 @@ class EncoderDecoderTrainer(BaseTrainer):
         self.epoch = 0
         self.log_before_training_status()
         while self.epoch < self.epochs:
+            if self.wandb:
+                self.wandb.log({"epoch": self.epoch})
             if self.epoch < self.config["frozen_epochs"] and self.freeze_encoder:
                 self.load_optimizers(self._decoder_optimizer)
             else:
@@ -240,8 +261,9 @@ class EncoderDecoderTrainer(BaseTrainer):
                 [self.train_loader, self.val_loader],
                 [self.train_losses, self.val_losses],
                 [self.train_metrics, self.val_metrics],
+                ["train", "val"],
             )
-            for loader, losses, metrics in it:
+            for loader, losses, metrics, mode in it:
                 outputs = list()
                 labels = list()
                 for batch in loader:
@@ -257,6 +279,14 @@ class EncoderDecoderTrainer(BaseTrainer):
                 metric = [m(out, y) for m in self.metrics]
                 losses.append(loss)
                 metrics.append(metric)
+                if self.wandb:
+                    self.wandb.log({mode + "_loss": loss})
+                    self.wandb.log(
+                        {
+                            mode + "_" + key.name: value
+                            for key, value in zip(self.metrics, metric)
+                        }
+                    )
 
     def train_one_epoch(self):
         self._setup_models("train")
@@ -287,7 +317,15 @@ class EncoderDecoderTrainer(BaseTrainer):
         self._cur_train_loss = mean(batch_losses)
         self._cur_train_metrics = [mean(m) for m in zip(*batch_metrics)]
         self.train_losses.append(self._cur_train_loss)
-        self.train_metrics.append(self._cur_train_metrics)
+        self.train_metrics.append(self._cur_train_loss)
+        if self.wandb:
+            self.wandb.log({"train_loss": self._cur_train_loss})
+            self.wandb.log(
+                {
+                    "train_" + met.name: val
+                    for met, val in zip(self.metrics, self._cur_train_metrics)
+                }
+            )
 
     def validate(self):
         self._setup_models("eval")
@@ -311,6 +349,14 @@ class EncoderDecoderTrainer(BaseTrainer):
         for smet, met in zip(self.metrics, self._cur_val_metrics):
             print(f"{smet.name}: {met:.4f}", end=" ")
         print()
+        if self.wandb:
+            self.wandb.log({"val_loss": self._cur_val_loss})
+            self.wandb.log(
+                {
+                    "val_" + met.name: val
+                    for met, val in zip(self.metrics, self._cur_val_metrics)
+                }
+            )
 
     def _rooting(self, path):
         if path is None:
@@ -388,9 +434,22 @@ class EncoderDecoderTrainer(BaseTrainer):
 
 class EncoderClassifierTrainer(EncoderDecoderTrainer):
     def __init__(
-        self, config, encoder=None, decoder=None, train_loader=None, val_loader=None
+        self,
+        config,
+        encoder=None,
+        decoder=None,
+        train_loader=None,
+        val_loader=None,
+        wandb=None,
     ):
-        super().__init__(config, encoder, decoder, train_loader, val_loader)
+        super().__init__(
+            config=config,
+            encoder=encoder,
+            decoder=decoder,
+            train_loader=train_loader,
+            val_loader=val_loader,
+            wandb=wandb,
+        )
 
     def _parse_config(self):
         super()._parse_config()
