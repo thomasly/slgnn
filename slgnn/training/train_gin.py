@@ -20,7 +20,7 @@ if __name__ == "__main__":
     import wandb
 
     wandb.init(project="slgnn")
-    wandb = None
+
     torch.manual_seed(0)
     random.seed(0)
     args = ModelTrainingArgs().parse_args()
@@ -43,7 +43,7 @@ if __name__ == "__main__":
         encoder = GIN(
             dim_features=dim_features, dim_target=dim_encoder_target, config=config
         )
-        # wandb.watch(encoder)
+        wandb.watch(encoder)
         if config["encoder_epochs"] > 0:
             decoder = GINDecoder(dim_encoder_target, dim_decoder_target, dropout)
 
@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
         cls_dataset = config["classifier_dataset"]()
         classifier = GINDecoder(dim_encoder_target, cls_dataset.num_classes, dropout)
-        # wandb.watch(classifier)
+        wandb.watch(classifier)
         cls_dloader = DataSplitter(
             cls_dataset, ratio=config["data_ratio"], batch_size=config["batch_size"]
         )

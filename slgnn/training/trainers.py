@@ -317,7 +317,7 @@ class EncoderDecoderTrainer(BaseTrainer):
         self._cur_train_loss = mean(batch_losses)
         self._cur_train_metrics = [mean(m) for m in zip(*batch_metrics)]
         self.train_losses.append(self._cur_train_loss)
-        self.train_metrics.append(self._cur_train_loss)
+        self.train_metrics.append(self._cur_train_metrics)
         if self.wandb:
             self.wandb.log({"train_loss": self._cur_train_loss})
             self.wandb.log(
