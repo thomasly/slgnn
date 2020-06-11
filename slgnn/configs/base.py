@@ -37,7 +37,7 @@ from slgnn.data_processing.deepchem_datasets import (
     ClinToxBalanced,
 )
 from slgnn.training.utils import Patience
-from slgnn.metrics.metrics import Accuracy, ROC_AUC, F1
+from slgnn.metrics.metrics import Accuracy, ROC_AUC, F1, AP
 
 # from models.graph_classifiers.GIN import GIN
 # from models.graph_classifiers.DiffPool import DiffPool
@@ -144,6 +144,7 @@ class Config:
         "Accuracy": Accuracy,
         "ROC_AUC": ROC_AUC,
         "F1": F1,
+        "Average_precision": AP,
     }
 
     optimizers = {

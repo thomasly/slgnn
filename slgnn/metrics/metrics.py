@@ -1,5 +1,16 @@
+from abc import ABC, abstractmethod
+import warnings
+
 import torch
-from sklearn.metrics import accuracy_score, roc_auc_score, f1_score
+from sklearn.metrics import (
+    accuracy_score,
+    roc_auc_score,
+    f1_score,
+    average_precision_score,
+)
+import numpy
+
+numpy.set_printoptions(threshold=100000)
 
 
 def _to_numpy(*tensors):
@@ -14,6 +25,38 @@ def _one_class(target):
     return False
 
 
+class AUC(ABC):
+    def __init__(self):
+        self._last = 0
+
+    @abstractmethod
+    def judger(self):
+        pass
+
+    def __call__(self, pred, target):
+        if _one_class(target):
+            pred = torch.softmax(pred, 1)[:, 1]
+        else:
+            pred = torch.sigmoid(pred)
+        pred, target = _to_numpy(pred, target)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("error")
+            try:
+                score = self.judger(target, pred)
+                self._last = score
+            except ValueError:
+                score = 0
+                print("Value Error.")
+                print(f"Target: {target}")
+                print(f"Pred: {pred}")
+                # score = self._last
+            except RuntimeWarning:
+                # score = self._last
+                score = 0
+                print("Runtime Warning.")
+        return score
+
+
 class Accuracy:
     def __call__(self, pred, target):
         pred, target = _to_numpy(pred, target)
@@ -25,29 +68,17 @@ class Accuracy:
 
     @property
     def name(self):
-        return "accuracy"
+        return "Acc"
 
 
-class ROC_AUC:
-    def __init__(self):
-        self._last = 0
-
-    def __call__(self, pred, target):
-        if _one_class(target):
-            pred = torch.softmax(pred, 1)[:, 1]
-        else:
-            pred = torch.sigmoid(pred)
-        pred, target = _to_numpy(pred, target)
-        try:
-            score = roc_auc_score(target, pred)
-            self._last = score
-        except ValueError:
-            score = self._last
-        return score
+class ROC_AUC(AUC):
+    @property
+    def judger(self):
+        return roc_auc_score
 
     @property
     def name(self):
-        return "roc_auc"
+        return "ROC_AUC"
 
 
 class F1:
@@ -61,4 +92,14 @@ class F1:
 
     @property
     def name(self):
-        return "f1"
+        return "F1"
+
+
+class AP(AUC):
+    @property
+    def judger(self):
+        return average_precision_score
+
+    @property
+    def name(self):
+        return "AP_AUC"
