@@ -45,15 +45,7 @@ class AUC(ABC):
                 score = self.judger(target, pred)
                 self._last = score
             except ValueError:
-                score = 0
-                print("Value Error.")
-                print(f"Target: {target}")
-                print(f"Pred: {pred}")
-                # score = self._last
-            except RuntimeWarning:
-                # score = self._last
-                score = 0
-                print("Runtime Warning.")
+                score = self._last
         return score
 
 

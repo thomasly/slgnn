@@ -1,3 +1,5 @@
+import copy
+
 import torch
 import torch.nn as nn
 from torch.nn import BatchNorm1d
@@ -5,7 +7,7 @@ from torch.nn import Sequential, Linear, ReLU
 import torch.nn.functional as F
 from torch_geometric.nn import GINConv, global_add_pool, global_mean_pool
 
-from slgnn.models.gcn.layers import GraphConvolution
+from slgnn.models.gcn.layers import GraphConvolution, CPANConv
 
 
 class GCN(nn.Module):
@@ -89,3 +91,66 @@ class GIN(nn.Module):
                     training=self.training,
                 )
         return out
+
+
+class CPAN(nn.Module):
+    def __init__(self, dim_features, dim_target, config):
+        super(CPAN, self).__init__()
+
+        self.nhid = config["hidden_units"][0]
+        self.alpha = config["alpha"]
+        self.leakyrelu = nn.LeakyReLU(self.alpha)
+        self.intermediate_act_fn = nn.ReLU()
+        self.readout = config["aggregation"]
+        self.dropout = config["dropout"]
+        self.concat_size = self.nhid * config["n_layer"] + dim_features
+
+        conv_layer = CPANConv(config)
+        self.conv_layers = nn.ModuleList(
+            [copy.deepcopy(conv_layer) for _ in range(config["n_layer"])]
+        )
+
+        self.fc = Linear(dim_features, self.nhid, bias=False)
+        self.linears_prediction = torch.nn.ModuleList()
+        for layer in range(config["n_layer"] + 1):
+            if layer == 0:
+                self.linears_prediction.append(nn.Linear(dim_features, self.nhid))
+            else:
+                self.linears_prediction.append(nn.Linear(self.nhid, self.nhid))
+
+        self.bns_fc = torch.nn.ModuleList()
+        for layer in range(config["n_layer"] + 1):
+            if layer == 0:
+                self.bns_fc.append(BatchNorm1d(dim_features))
+            else:
+                self.bns_fc.append(BatchNorm1d(self.nhid))
+
+        self.lin_class = Linear(self.nhid, dim_target)
+
+    def forward(self, data):
+        x, edge_index, batch = data.x, data.edge_index, data.batch
+        if x.dim() == 1:
+            x = x.unsqueeze(-1)
+
+        if self.readout == "mean":
+            output_list = [global_mean_pool(x, batch)]
+        else:
+            output_list = [global_add_pool(x, batch)]
+        hid_x = self.fc(x)
+
+        for conv in self.conv_layers:
+            hid_x = conv(hid_x, edge_index)
+            if self.readout == "mean":
+                output_list.append(global_mean_pool(hid_x, batch))
+            else:
+                output_list.append(global_add_pool(hid_x, batch))
+
+        score_over_layer = 0
+        for layer, h in enumerate(output_list):
+            h = self.bns_fc[layer](h)
+            score_over_layer += F.relu(self.linears_prediction[layer](h))
+
+        if self.dropout > 0:
+            x = F.dropout(x, p=self.dropout, training=self.training)
+        x = self.lin_class(score_over_layer)
+        return x

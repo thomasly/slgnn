@@ -3,7 +3,7 @@ import json
 import pickle
 from copy import deepcopy
 
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss
 from torch.optim.lr_scheduler import StepLR  # , ReduceLROnPlateau
 import yaml
@@ -38,21 +38,7 @@ from slgnn.data_processing.deepchem_datasets import (
 )
 from slgnn.training.utils import Patience
 from slgnn.metrics.metrics import Accuracy, ROC_AUC, F1, AP
-
-# from models.graph_classifiers.GIN import GIN
-# from models.graph_classifiers.DiffPool import DiffPool
-# from models.graph_classifiers.ECC import ECC
-# from models.graph_classifiers.GraphSAGE import GraphSAGE
-# from models.modules import (BinaryClassificationLoss,)
-# MulticlassClassificationLoss,
-# NN4GMulticlassClassificationLoss,
-# DiffPoolMulticlassClassificationLoss)
-# from models.graph_classifiers.DGCNN import DGCNN
-# from models.graph_classifiers.DeepMultisets import DeepMultisets
-# from models.graph_classifiers.MolecularFingerprint import \
-# MolecularFingerprint
-# from models.schedulers.ECCScheduler import ECCLR
-# from models.utils.EarlyStopper import Patience, GLStopper
+from slgnn.models.gcn.model import GIN, CPAN
 
 
 def read_config_file(dict_or_filelike):
@@ -91,15 +77,6 @@ class Config:
         "BBBP": BBBPFP,
         "ClinTox": ClinToxFP,
         "HIV": HIVFP,
-        # 'NCI1': NCI1,
-        # 'IMDB-BINARY': IMDBBinary,
-        # 'IMDB-MULTI': IMDBMulti,
-        # 'COLLAB': Collab,
-        # 'REDDIT-BINARY': RedditBinary,
-        # 'REDDIT-MULTI-5K': Reddit5K,
-        # 'PROTEINS': Proteins,
-        # 'ENZYMES': Enzymes,
-        # 'DD': DD,
     }
 
     classifier_datasets = {
@@ -118,15 +95,16 @@ class Config:
         "HIVBalanced": HIVBalanced,
     }
 
-    # models = {
-    # 'GIN': GIN,
-    # 'ECC': ECC,
-    # "DiffPool": DiffPool,
-    # "DGCNN": DGCNN,
-    # "MolecularFingerprint": MolecularFingerprint,
-    # "DeepMultisets": DeepMultisets,
-    # "GraphSAGE": GraphSAGE
-    # }
+    models = {
+        "CPAN": CPAN,
+        "GIN": GIN,
+        # 'ECC': ECC,
+        # "DiffPool": DiffPool,
+        # "DGCNN": DGCNN,
+        # "MolecularFingerprint": MolecularFingerprint,
+        # "DeepMultisets": DeepMultisets,
+        # "GraphSAGE": GraphSAGE
+    }
 
     encoder_losses = {
         "BCEWithLogitsLoss": BCEWithLogitsLoss,
@@ -149,7 +127,7 @@ class Config:
 
     optimizers = {
         "Adam": Adam,
-        # 'SGD': SGD
+        "SGD": SGD,
     }
 
     schedulers = {
@@ -170,6 +148,7 @@ class Config:
 
         for attrname, value in attrs.items():
             attrnames = [
+                "model",
                 "encoder_dataset",
                 "classifier_dataset",
                 "model",

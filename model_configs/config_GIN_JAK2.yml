@@ -6,15 +6,18 @@ encoder_dataset:
 classifier_dataset:
   - JAK2Pre
   - JAK2
-# model:
-#   - GIN
+model:
+  # - GIN
+  - CPAN
+alpha:
+  - 0.2
 use_encoder:
-   - true
+  - true
   #  - false
 data_ratio:
-   - [0.9, 0.1, 0]
-   - [0.5, 0.5, 0]
-   - [0.1, 0.9, 0]
+  - [0.9, 0.1, 0]
+  - [0.5, 0.5, 0]
+  - [0.1, 0.9, 0]
 embedding_dim:
   - 128
   # - 256
@@ -42,6 +45,14 @@ hidden_units:  # Note: GIN add a first layer that simply adds up all node featur
   # - [32, 32, 32, 32]
   # - [64]
   # - [32, 32]
+n_layer:
+  - 4  # for CPAN
+heads:
+  - 1
+mod:
+  - origin
+  - additive
+  - scaled
 optimizer:
   - Adam
 scheduler:

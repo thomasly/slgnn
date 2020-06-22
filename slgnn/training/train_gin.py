@@ -10,7 +10,8 @@ import yaml
 
 from slgnn.configs.base import Grid, Config
 from slgnn.configs.arg_parsers import ModelTrainingArgs
-from slgnn.models.gcn.model import GIN
+
+# from slgnn.models.gcn.model import GIN
 from slgnn.models.decoder.model import GINDecoder
 from slgnn.data_processing.loaders import DataSplitter
 from .trainers import EncoderDecoderTrainer, EncoderClassifierTrainer
@@ -30,7 +31,11 @@ if __name__ == "__main__":
         config = Config.from_dict(config_dict)
         datasets = config["encoder_dataset"]
         log_dir = osp.join(
-            "logs", "GIN", time_stamp, config["encoder_dataset_name"], str(config_idx)
+            "logs",
+            config["model_name"],
+            time_stamp,
+            config["encoder_dataset_name"],
+            str(config_idx),
         )
         os.makedirs(log_dir)
         with open(osp.join(log_dir, "configs.yml"), "w") as f:
@@ -40,7 +45,8 @@ if __name__ == "__main__":
         dim_decoder_target = datasets[0].data.y.size(1)
         dim_features = datasets[0].data.x.size(1)
         dropout = config["dropout"]
-        encoder = GIN(
+        Encoder = config["model"]
+        encoder = Encoder(
             dim_features=dim_features, dim_target=dim_encoder_target, config=config
         )
         wandb.watch(encoder)
