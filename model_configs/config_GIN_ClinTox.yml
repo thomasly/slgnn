@@ -65,7 +65,7 @@ encoder_loss:
 classifier_loss:
   - CrossEntropyLoss
 metrics:
-  - [Accuracy, ROC_AUC, F1]
+  - [Accuracy, ROC_AUC, F1, Average_precision]
 train_eps:
   - true
   # - false
