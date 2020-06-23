@@ -6,8 +6,17 @@ encoder_dataset:
 classifier_dataset:
   # - ClinTox
   - ClinToxBalanced
-# model:
-#   - GIN
+model:
+  - GIN
+  - CPAN
+n_layer:
+  - 4  # for CPAN
+heads:
+  - 1
+mod:
+  - origin
+  - additive
+  - scaled
 use_encoder:
    - true
   #  - false

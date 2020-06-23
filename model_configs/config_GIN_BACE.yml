@@ -5,8 +5,17 @@ encoder_dataset:
   - [ZINC10k]
 classifier_dataset:
   - BACE
-# model:
-#   - GIN
+model:
+  - GIN
+  - CPAN
+n_layer:
+  - 4  # for CPAN
+heads:
+  - 1
+mod:
+  - origin
+  - additive
+  - scaled
 use_encoder:
    - true
   #  - false
