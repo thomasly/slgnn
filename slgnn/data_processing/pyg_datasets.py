@@ -1,16 +1,21 @@
 import os
 import os.path as osp
 import glob
+from abc import ABCMeta, abstractmethod
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 from torch_sparse import coalesce
-from torch_geometric.data import Data
+from torch_geometric.data import Data, InMemoryDataset
 from torch_geometric.datasets import TUDataset
 from torch_geometric.io import read_txt_array
 from torch_geometric.utils import remove_self_loops
 from torch_geometric.data import DataLoader
+from chemreader.readers import Smiles
+from tqdm import tqdm
+
+from slgnn.models.gcn.utils import get_filtered_fingerprint
 
 
 class ZINCDataset(TUDataset):
@@ -457,3 +462,107 @@ class JAK3Presplitted(PresplittedBase):
 
     def _str(self):
         return "JAK3Presplitted"
+
+
+class DudeDecoys(InMemoryDataset, metaclass=ABCMeta):
+    def __init__(self, root, transform=None, pre_transform=None, pre_filter=None):
+        super().__init__(root, transform, pre_transform, pre_filter)
+        self.data, self.slices = torch.load(self.processed_paths[0])
+
+    @abstractmethod
+    def raw_file_names(self):
+        raw_file_name = "decoys.P10000001.picked"
+        return [raw_file_name]
+
+    @property
+    def processed_file_names(self):
+        return ["data.pt"]
+
+    def download(self):
+        pass
+
+    def process(self, verbose=0):
+        smiles = self._get_smiles(verbose)
+        fingerprints = self._get_fingerprints(smiles, verbose)
+        data_list = list()
+        pb = (
+            tqdm(zip(smiles, fingerprints), desc="Generating graphs", total=len(smiles))
+            if verbose
+            else zip(smiles, fingerprints)
+        )
+        for smi, y in pb:
+            try:
+                x, edge_idx = self._graph_helper(smi)
+                data_list.append(Data(x=x, edge_index=edge_idx, y=y))
+            except AttributeError:  # SMILES invalid
+                continue
+        data, slices = self.collate(data_list)
+        torch.save((data, slices), self.processed_paths[0])
+
+    def _graph_helper(self, smi):
+        graph = Smiles(smi).to_graph(sparse=True)
+        x = torch.tensor(graph["atom_features"], dtype=torch.float)
+        edge_idx = graph["adjacency"].tocoo()
+        edge_idx = torch.tensor([edge_idx.row, edge_idx.col], dtype=torch.long)
+        return x, edge_idx
+
+    def _get_smiles(self, verbose):
+        smiles = list()
+        picked_files = os.scandir(self.raw_dir)
+        it = (
+            tqdm(list(picked_files), desc="Loading SMILES") if verbose else picked_files
+        )
+        for picked in it:
+            if not picked.name.endswith(".picked"):
+                continue
+            with open(picked.path, "r") as f:
+                contents = f.readlines()[1:]
+            for line in contents:
+                smiles.append(line.split()[0])
+        return smiles
+
+    def _get_fingerprints(self, smiles, verbose):
+        it = tqdm(smiles, desc="Generating fingerprints") if verbose else smiles
+        return [get_filtered_fingerprint(sm) for sm in it]
+
+
+class JAK1Dude(DudeDecoys):
+    def __init__(self, root="data/JAK/DUDE_decoys/JAK1"):
+        super().__init__(root=root)
+
+    def raw_file_names(self):
+        return ["decoys.P10000001.picked"]
+
+    def process(self):
+        super().process(verbose=1)
+
+    def _str(self):
+        return "JAK1Dude"
+
+
+class JAK2Dude(DudeDecoys):
+    def __init__(self, root="data/JAK/DUDE_decoys/JAK2"):
+        super().__init__(root=root)
+
+    def raw_file_names(self):
+        return ["decoys.P10000001.picked"]
+
+    def process(self):
+        super().process(verbose=1)
+
+    def _str(self):
+        return "JAK2Dude"
+
+
+class JAK3Dude(DudeDecoys):
+    def __init__(self, root="data/JAK/DUDE_decoys/JAK3"):
+        super().__init__(root=root)
+
+    def raw_file_names(self):
+        return ["decoys.P10000001.picked"]
+
+    def process(self):
+        super().process(verbose=1)
+
+    def _str(self):
+        return "JAK3Dude"
