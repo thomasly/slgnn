@@ -1,31 +1,36 @@
 encoder_dataset:
-  - [ZINC1k, JAK2]
+  - [ZINC1k, JAK3]
   - [ZINC1k] 
-  - [ZINC10k, JAK2]
+  - [ZINC10k, JAK3]
   - [ZINC10k]
 classifier_dataset:
-  - JAK2Pre
-  - JAK2
+  - JAK3Pre
+  - JAK3
 model:
-  - GIN
-  - CPAN
+  -
+    class: CPAN
+    mod: origin
+  -
+    class: CPAN
+    mod: additive
+  -
+    class: CPAN
+    mod: scaled
+  -
+    class: GIN
 n_layer:
   - 4  # for CPAN
 heads:
   - 1
-mod:
-  - origin
-  - additive
-  - scaled
 alpha:
   - 0.2
 use_encoder:
-  - true
+   - true
   #  - false
 data_ratio:
-  - [0.9, 0.1, 0]
-  - [0.5, 0.5, 0]
-  - [0.1, 0.9, 0]
+   - [0.9, 0.1, 0]
+   - [0.5, 0.5, 0]
+   - [0.1, 0.9, 0]
 embedding_dim:
   - 128
   # - 256

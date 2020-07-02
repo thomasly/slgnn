@@ -148,7 +148,6 @@ class Config:
 
         for attrname, value in attrs.items():
             attrnames = [
-                "model",
                 "encoder_dataset",
                 "classifier_dataset",
                 "model",
@@ -166,7 +165,7 @@ class Config:
                 if attrname == "classifier_dataset":
                     setattr(self, "classifier_dataset_name", value)
                 if attrname == "model":
-                    setattr(self, "model_name", value)
+                    setattr(self, "model_name", value["class"])
                 if attrname == "encoder_loss":
                     setattr(self, "encoder_loss_name", value)
                 if attrname == "classifier_loss":
@@ -210,8 +209,17 @@ class Config:
         return Config.classifier_datasets[dataset_s]
 
     @staticmethod
-    def parse_model(model_s):
+    def parse_model(model_dict):
+        model_s = model_dict["class"]
         assert model_s in Config.models, f"Could not find {model_s}"
+
+        if model_s == "CPAN":
+            mod = model_dict["mod"]
+
+            def model(dim_features, dim_target, config):
+                return Config.models[model_s](dim_features, dim_target, config, mod)
+
+            return model
         return Config.models[model_s]
 
     @staticmethod

@@ -94,7 +94,7 @@ class GIN(nn.Module):
 
 
 class CPAN(nn.Module):
-    def __init__(self, dim_features, dim_target, config):
+    def __init__(self, dim_features, dim_target, config, mod):
         super(CPAN, self).__init__()
 
         self.nhid = config["hidden_units"][0]
@@ -105,7 +105,7 @@ class CPAN(nn.Module):
         self.dropout = config["dropout"]
         self.concat_size = self.nhid * config["n_layer"] + dim_features
 
-        conv_layer = CPANConv(config)
+        conv_layer = CPANConv(config, mod)
         self.conv_layers = nn.ModuleList(
             [copy.deepcopy(conv_layer) for _ in range(config["n_layer"])]
         )

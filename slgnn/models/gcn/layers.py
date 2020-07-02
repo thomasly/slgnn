@@ -63,14 +63,14 @@ class GraphConvolution(Module):
 
 
 class CPANConv(MessagePassing):
-    def __init__(self, config):
+    def __init__(self, config, mod):
 
         super(CPANConv, self).__init__()
 
         self.heads = config["heads"]
         self.negative_slope = config["alpha"]
         self.dropout = config["dropout"]
-        self.mod = config["mod"]
+        self.mod = mod
         self.nhid = config["hidden_units"][0]
         self.in_channels = self.nhid
         self.out_channels = self.nhid
