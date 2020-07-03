@@ -493,6 +493,7 @@ class DudeDecoys(InMemoryDataset, metaclass=ABCMeta):
         for smi, y in pb:
             try:
                 x, edge_idx = self._graph_helper(smi)
+                y = torch.LongTensor([y])
                 data_list.append(Data(x=x, edge_index=edge_idx, y=y))
             except AttributeError:  # SMILES invalid
                 continue
@@ -507,7 +508,7 @@ class DudeDecoys(InMemoryDataset, metaclass=ABCMeta):
         return x, edge_idx
 
     def _get_smiles(self, verbose):
-        smiles = list()
+        smiles = set()
         picked_files = os.scandir(self.raw_dir)
         it = (
             tqdm(list(picked_files), desc="Loading SMILES") if verbose else picked_files
@@ -518,8 +519,8 @@ class DudeDecoys(InMemoryDataset, metaclass=ABCMeta):
             with open(picked.path, "r") as f:
                 contents = f.readlines()[1:]
             for line in contents:
-                smiles.append(line.split()[0])
-        return smiles
+                smiles.add(line.split()[0])
+        return list(smiles)
 
     def _get_fingerprints(self, smiles, verbose):
         it = tqdm(smiles, desc="Generating fingerprints") if verbose else smiles
@@ -559,7 +560,7 @@ class JAK3Dude(DudeDecoys):
         super().__init__(root=root)
 
     def raw_file_names(self):
-        return ["decoys.P10000001.picked"]
+        return ["decoys.P10000002.picked"]
 
     def process(self):
         super().process(verbose=1)

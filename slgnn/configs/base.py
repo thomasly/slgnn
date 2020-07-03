@@ -21,6 +21,9 @@ from slgnn.data_processing.pyg_datasets import (
     JAK1Presplitted,
     JAK2Presplitted,
     JAK3Presplitted,
+    JAK1Dude,
+    JAK2Dude,
+    JAK3Dude,
 )
 from slgnn.data_processing.deepchem_datasets import (
     Sider,
@@ -72,6 +75,9 @@ class Config:
         "JAK1": JAK1FP,
         "JAK2": JAK2FP,
         "JAK3": JAK3FP,
+        "JAK1Dude": JAK1Dude,
+        "JAK2Dude": JAK2Dude,
+        "JAK3Dude": JAK3Dude,
         "Sider": SiderFP,
         "BACE": BACEFP,
         "BBBP": BBBPFP,
