@@ -46,6 +46,8 @@ class AUC(ABC):
                 self._last = score
             except ValueError:
                 score = self._last
+            except RuntimeWarning:
+                score = self._last
         return score
 
 
