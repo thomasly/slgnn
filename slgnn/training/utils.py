@@ -49,28 +49,11 @@ def plot_train_val_acc(train_accs: list, val_accs: list, output):
 
 
 class EarlyStopper:
-    def stop(
-        self,
-        epoch,
-        val_loss,
-        val_acc=None,
-        test_loss=None,
-        test_acc=None,
-        train_loss=None,
-        train_acc=None,
-    ):
+    def stop(self, epoch, metrics_dict):
         raise NotImplementedError("Implement this method!")
 
     def get_best_vl_metrics(self):
-        return (
-            self.train_loss,
-            self.train_acc,
-            self.val_loss,
-            self.val_acc,
-            self.test_loss,
-            self.test_acc,
-            self.best_epoch,
-        )
+        return self.opt_metrics
 
 
 class Patience(EarlyStopper):
@@ -79,47 +62,33 @@ class Patience(EarlyStopper):
     Implement common "patience" technique
     """
 
-    def __init__(self, patience=20, use_loss=True):
-        self.local_val_optimum = float("inf") if use_loss else -float("inf")
-        self.use_loss = use_loss
+    def __init__(self, patience=20, monitor="val_loss", mode="min"):
+        assert mode in ["min", "max"]
+        self.local_val_optimum = float("inf") if mode == "min" else -float("inf")
+        self.monitor = monitor
         self.patience = patience
+        self.mode = mode
         self.best_epoch = -1
         self.counter = -1
+        self.opt_metrics = dict()
 
-        self.train_loss, self.train_acc = None, None
-        self.val_loss, self.val_acc = None, None
-        self.test_loss, self.test_acc = None, None
-
-    def stop(
-        self,
-        epoch,
-        val_loss,
-        val_acc=None,
-        test_loss=None,
-        test_acc=None,
-        train_loss=None,
-        train_acc=None,
-    ):
-        if self.use_loss:
-            if val_loss <= self.local_val_optimum:
+    def stop(self, epoch, metrics_dict):
+        if self.mode == "min":
+            if metrics_dict[self.monitor] <= self.local_val_optimum:
                 self.counter = 0
-                self.local_val_optimum = val_loss
+                self.local_val_optimum = metrics_dict[self.monitor]
                 self.best_epoch = epoch
-                self.train_loss, self.train_acc = train_loss, train_acc
-                self.val_loss, self.val_acc = val_loss, val_acc
-                self.test_loss, self.test_acc = test_loss, test_acc
+                self.opt_metrics = metrics_dict.copy()
                 return False
             else:
                 self.counter += 1
                 return self.counter >= self.patience
         else:
-            if val_acc >= self.local_val_optimum:
+            if metrics_dict[self.monitor] >= self.local_val_optimum:
                 self.counter = 0
-                self.local_val_optimum = val_acc
+                self.local_val_optimum = metrics_dict[self.monitor]
                 self.best_epoch = epoch
-                self.train_loss, self.train_acc = train_loss, train_acc
-                self.val_loss, self.val_acc = val_loss, val_acc
-                self.test_loss, self.test_acc = test_loss, test_acc
+                self.opt_metrics = metrics_dict.copy()
                 return False
             else:
                 self.counter += 1

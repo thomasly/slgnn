@@ -92,18 +92,13 @@ encoder_early_stopper:
     class: Patience
     args:
       patience: 20
-      use_loss: True
 early_stopper:
   -
     class: Patience
     args:
       patience: 20
-      use_loss: False
-  # -
-  #   class: Patience
-  #   args:
-  #     patience: 20
-  #     use_loss: True
+      monitor: val_Average_precision
+      mode: max
 shuffle:
   - True
 resume:

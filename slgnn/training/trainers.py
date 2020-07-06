@@ -5,7 +5,8 @@ from statistics import mean
 
 import torch
 from torch_geometric.data import Batch
-import wandb
+
+# import wandb
 import matplotlib
 import matplotlib.pyplot as plt
 
@@ -17,13 +18,18 @@ class BaseTrainer(ABC):
     """
 
     def __init__(
-        self, config, model=None, train_loader=None, val_loader=None, wandb=None
+        self,
+        config,
+        model=None,
+        train_loader=None,
+        val_loader=None,
+        # wandb=None
     ):
         self._model = model
         self._train_loader = train_loader
         self._val_loader = val_loader
         self._config = config
-        self._wandb = wandb
+        # self._wandb = wandb
         self._parse_config()
         self._tr_losses = list()
         self._val_losses = list()
@@ -73,14 +79,14 @@ class BaseTrainer(ABC):
     def config(self, conf):
         self._config = conf
 
-    @property
-    def wandb(self):
-        return self._wandb
+    # @property
+    # def wandb(self):
+    #     return self._wandb
 
-    @wandb.setter
-    def wandb(self, value):
-        assert isinstance(value, type(wandb))
-        self._wandb = value
+    # @wandb.setter
+    # def wandb(self, value):
+    #     assert isinstance(value, type(wandb))
+    #     self._wandb = value
 
     @property
     def train_losses(self):
@@ -108,7 +114,7 @@ class EncoderDecoderTrainer(BaseTrainer):
         decoder=None,
         train_loader=None,
         val_loader=None,
-        wandb=None,
+        # wandb=None,
     ):
         self._encoder = encoder
         self._decoder = decoder
@@ -116,7 +122,10 @@ class EncoderDecoderTrainer(BaseTrainer):
         self._val_metrics = list()
         self._freeze = True
         super().__init__(
-            config=config, train_loader=train_loader, val_loader=val_loader, wandb=wandb
+            config=config,
+            train_loader=train_loader,
+            val_loader=val_loader,
+            # wandb=wandb
         )
 
     def _parse_config(self):
@@ -207,26 +216,18 @@ class EncoderDecoderTrainer(BaseTrainer):
 
     def _get_metrics_string(self, metrics):
         s = ""
-        if metrics[0] is not None:
-            s += f"Best train loss: {metrics[0]:.4f} "
-        if metrics[1] is not None:
-            s += f"best train {self.metrics[0].name}: {metrics[1]:.4f} "
-        if metrics[2] is not None:
-            s += f"best validate loss: {metrics[2]:.4f} "
-        if metrics[3] is not None:
-            s += f"best validate {self.metrics[0].name}: {metrics[3]:.4f} "
-        if metrics[4] is not None:
-            s += f"best test loss: {metrics[4]:.4f} "
-        if metrics[5] is not None:
-            s += f"best test {self.metrics[0].name}: {metrics[5]:.4f}"
-        return s
+        for k, v in metrics.items():
+            s += f"Best {k}: "
+            s += f"{v:.4f}, "
+        # remove the last comma
+        return s[:-2]
 
     def train(self):
         self.epoch = 0
         self.log_before_training_status()
         while self.epoch < self.epochs:
-            if self.wandb:
-                self.wandb.log({"epoch": self.epoch})
+            # if self.wandb:
+            #     self.wandb.log({"epoch": self.epoch})
             if self.epoch < self.config["frozen_epochs"] and self.freeze_encoder:
                 self.load_optimizers(self._decoder_optimizer)
             else:
@@ -234,25 +235,33 @@ class EncoderDecoderTrainer(BaseTrainer):
 
             self.train_one_epoch()
             self.validate()
-            try:
-                stop = self.early_stopper.stop(
-                    self.epoch,
-                    self._cur_val_loss,
-                    val_acc=self._cur_val_metrics[0],
-                    train_loss=self._cur_train_loss,
-                    train_acc=self._cur_train_metrics[0],
-                )
-            except IndexError:
-                stop = self.early_stopper.stop(
-                    self.epoch, self._cur_val_loss, train_loss=self._cur_train_loss,
-                )
+            metrics_dict = {
+                "val_loss": self._cur_val_loss,
+                "train_loss": self._cur_train_loss,
+            }
+            metrics_dict.update(
+                {
+                    "train_" + m_name: m_value
+                    for m_name, m_value in zip(
+                        self.config["metrics_name"], self._cur_train_metrics
+                    )
+                }
+            )
+            metrics_dict.update(
+                {
+                    "val_" + m_name: m_value
+                    for m_name, m_value in zip(
+                        self.config["metrics_name"], self._cur_val_metrics
+                    )
+                }
+            )
+            stop = self.early_stopper.stop(self.epoch, metrics_dict)
             if stop:
                 break
             self.encoder_lr_scheduler.step()
             self.decoder_lr_scheduler.step()
             self.epoch += 1
-        metrics = self.early_stopper.get_best_vl_metrics()
-        print(self._get_metrics_string(metrics))
+        print(self._get_metrics_string(self.early_stopper.get_best_vl_metrics()))
 
     def log_before_training_status(self):
         with torch.no_grad():
@@ -279,14 +288,14 @@ class EncoderDecoderTrainer(BaseTrainer):
                 metric = [m(out, y) for m in self.metrics]
                 losses.append(loss)
                 metrics.append(metric)
-                if self.wandb:
-                    self.wandb.log({mode + "_loss": loss})
-                    self.wandb.log(
-                        {
-                            mode + "_" + key.name: value
-                            for key, value in zip(self.metrics, metric)
-                        }
-                    )
+                # if self.wandb:
+                #     self.wandb.log({mode + "_loss": loss})
+                #     self.wandb.log(
+                #         {
+                #             mode + "_" + key.name: value
+                #             for key, value in zip(self.metrics, metric)
+                #         }
+                #     )
 
     def train_one_epoch(self):
         self._setup_models("train")
@@ -318,14 +327,14 @@ class EncoderDecoderTrainer(BaseTrainer):
         self._cur_train_metrics = [mean(m) for m in zip(*batch_metrics)]
         self.train_losses.append(self._cur_train_loss)
         self.train_metrics.append(self._cur_train_metrics)
-        if self.wandb:
-            self.wandb.log({"train_loss": self._cur_train_loss})
-            self.wandb.log(
-                {
-                    "train_" + met.name: val
-                    for met, val in zip(self.metrics, self._cur_train_metrics)
-                }
-            )
+        # if self.wandb:
+        #     self.wandb.log({"train_loss": self._cur_train_loss})
+        #     self.wandb.log(
+        #         {
+        #             "train_" + met.name: val
+        #             for met, val in zip(self.metrics, self._cur_train_metrics)
+        #         }
+        #     )
 
     def validate(self):
         self._setup_models("eval")
@@ -349,14 +358,14 @@ class EncoderDecoderTrainer(BaseTrainer):
         for smet, met in zip(self.metrics, self._cur_val_metrics):
             print(f"{smet.name}: {met:.4f}", end=" ")
         print()
-        if self.wandb:
-            self.wandb.log({"val_loss": self._cur_val_loss})
-            self.wandb.log(
-                {
-                    "val_" + met.name: val
-                    for met, val in zip(self.metrics, self._cur_val_metrics)
-                }
-            )
+        # if self.wandb:
+        #     self.wandb.log({"val_loss": self._cur_val_loss})
+        #     self.wandb.log(
+        #         {
+        #             "val_" + met.name: val
+        #             for met, val in zip(self.metrics, self._cur_val_metrics)
+        #         }
+        #     )
 
     def _rooting(self, path):
         if path is None:
@@ -440,7 +449,7 @@ class EncoderClassifierTrainer(EncoderDecoderTrainer):
         decoder=None,
         train_loader=None,
         val_loader=None,
-        wandb=None,
+        # wandb=None,
     ):
         super().__init__(
             config=config,
@@ -448,7 +457,7 @@ class EncoderClassifierTrainer(EncoderDecoderTrainer):
             decoder=decoder,
             train_loader=train_loader,
             val_loader=val_loader,
-            wandb=wandb,
+            # wandb=wandb,
         )
 
     def _parse_config(self):
