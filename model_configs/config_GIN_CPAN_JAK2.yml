@@ -17,7 +17,7 @@ model:
   # -
   #   class: CPAN
   #   mod: scaled
-  # -
+  -
     class: GIN
 n_layer:
   - 4  # for CPAN
