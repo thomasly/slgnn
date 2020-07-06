@@ -1,9 +1,9 @@
 encoder_dataset:
-  - [ZINC1k, JAK1]
+  - [ZINC1k, JAK2]
   - [ZINC1k] 
-  - [JAK1]
-  - [JAK1Dude]
-  - [JAK1Dude, JAK1]
+  - [JAK2]
+  - [JAK2Dude]
+  - [JAK2Dude, JAK2]
 classifier_dataset:
   # - JAK2Pre
   - JAK2
