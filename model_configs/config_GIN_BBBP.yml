@@ -1,21 +1,19 @@
 encoder_dataset:
   - [ZINC1k, BBBP]
   - [ZINC1k] 
-  - [ZINC10k, BBBP]
-  - [ZINC10k]
+  # - [ZINC10k, BBBP]
+  # - [ZINC10k]
 classifier_dataset:
   - BBBP
 model:
-  - GIN
-  - CPAN
+  -
+    class: GIN
 n_layer:
   - 4  # for CPAN
 heads:
   - 1
-mod:
-  - origin
-  - additive
-  - scaled
+alpha:
+  - 0.2
 use_encoder:
    - true
   #  - false
@@ -83,18 +81,13 @@ encoder_early_stopper:
     class: Patience
     args:
       patience: 20
-      use_loss: True
 early_stopper:
   -
     class: Patience
     args:
       patience: 20
-      use_loss: False
-  # -
-  #   class: Patience
-  #   args:
-  #     patience: 20
-  #     use_loss: True
+      monitor: val_Average_precision
+      mode: max
 shuffle:
   - True
 resume:

@@ -1,12 +1,20 @@
 encoder_dataset:
   - [ZINC1k, Sider]
   - [ZINC1k] 
-  - [ZINC10k, Sider]
-  - [ZINC10k]
+  # - [ZINC10k, Sider]
+  # - [ZINC10k]
 classifier_dataset:
   - Sider
-# model:
-#   - GIN
+model:
+
+  -
+    class: GIN
+n_layer:
+  - 4  # for CPAN
+heads:
+  - 1
+alpha:
+  - 0.2
 use_encoder:
    - true
   #  - false
@@ -53,9 +61,9 @@ encoder_loss:
   - BCEWithLogitsLoss
   # - MulticlassClassificationLoss
 classifier_loss:
-  - BCEWithLogitsLoss
+  - CrossEntropyLoss
 metrics:
-  - [ROC_AUC, F1, Average_precision]
+  - [Accuracy, ROC_AUC, F1, Average_precision]
 train_eps:
   - true
   # - false
@@ -74,18 +82,13 @@ encoder_early_stopper:
     class: Patience
     args:
       patience: 20
-      use_loss: True
 early_stopper:
   -
     class: Patience
     args:
       patience: 20
-      use_loss: False
-  # -
-  #   class: Patience
-  #   args:
-  #     patience: 20
-  #     use_loss: True
+      monitor: val_Average_precision
+      mode: max
 shuffle:
   - True
 resume:
