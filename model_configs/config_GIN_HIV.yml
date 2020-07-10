@@ -4,7 +4,7 @@ encoder_dataset:
   # - [ZINC10k, HIV]
   # - [ZINC10k]
 classifier_dataset:
-  # - HIV
+  - HIV
   - HIVBalanced
 model:
   -
@@ -41,6 +41,9 @@ encoder_epochs:
 classifier_epochs:
   # - 100
   - 10000
+frozen_epochs:
+  - [10, 10, 10, 10, 10]
+  - [5, 10, 15, 20, 25]
 frozen_epochs:
   # - 3
   - 10

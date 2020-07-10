@@ -54,6 +54,9 @@ classifier_epochs:
   # - 100
   - 10000
 frozen_epochs:
+  - [10, 10, 10, 10, 10]
+  - [5, 10, 15, 20, 25]
+frozen_epochs:
   # - 3
   - 10
 hidden_units:  # Note: GIN add a first layer that simply adds up all node features
