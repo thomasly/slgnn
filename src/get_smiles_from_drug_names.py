@@ -4,7 +4,7 @@ import time
 from tqdm import tqdm
 import pandas as pd
 
-from pypubchem.get_cids_from_name import PubChemREST
+from pypubchem.pypubchem import PubChemREST
 
 
 if __name__ == "__main__":
