@@ -5,7 +5,7 @@
 #     -c model_configs/$conf
 # done
 
-for conf in config_GIN_BACE.yml config_GIN_BBBP.yml config_GIN_ClinTox.yml config_GIN_HIV.yml config_GIN_Sider.yml
+for conf in config_GIN_BACE.yml config_GIN_BBBP.yml config_GIN_ClinTox.yml config_GIN_HIV.yml config_GIN_Sider.yml  config_GIN_CPAN_JAK1 config_GIN_CPAN_JAK2 config_GIN_CPAN_JAK3
 do
     CUDA_VISIBLE_DEVICES=$1 \
     python -m slgnn.training.train_gin \
