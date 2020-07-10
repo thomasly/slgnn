@@ -60,11 +60,9 @@ class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
 
 
 class Sider(DeepchemDataset):
-    def __init__(self, root=None, name=None):
+    def __init__(self, root=None, name="sider"):
         if root is None:
             root = osp.join("data", "DeepChem", "Sider")
-        if name is None:
-            name = "sider"
         self.root = root
         self.name = name
         super().__init__(root=root, name=name)
@@ -84,11 +82,9 @@ class Sider(DeepchemDataset):
 
 
 class SiderFP(Sider):
-    def __init__(self, root=None, name=None):
+    def __init__(self, root=None, name="sider"):
         if root is None:
             root = osp.join("data", "DeepChem", "SiderFP")
-        if name is None:
-            name = "sider"
         self.root = root
         self.name = name
         super().__init__(root=root, name=name)
@@ -104,11 +100,9 @@ class SiderFP(Sider):
 
 
 class BACE(DeepchemDataset):
-    def __init__(self, root=None, name=None):
+    def __init__(self, root=None, name="bace"):
         if root is None:
             root = osp.join("data", "DeepChem", "BACE")
-        if name is None:
-            name = "bace"
         self.root = root
         self.name = name
         super().__init__(root=root, name=name)
@@ -128,11 +122,9 @@ class BACE(DeepchemDataset):
 
 
 class BACEFP(BACE):
-    def __init__(self, root=None, name=None):
+    def __init__(self, root=None, name="bace"):
         if root is None:
             root = osp.join("data", "DeepChem", "BACEFP")
-        if name is None:
-            name = "bace"
         self.root = root
         self.name = name
         super().__init__(root=root, name=name)
@@ -148,11 +140,9 @@ class BACEFP(BACE):
 
 
 class BBBP(DeepchemDataset):
-    def __init__(self, root=None, name=None):
+    def __init__(self, root=None, name="BBBP"):
         if root is None:
             root = osp.join("data", "DeepChem", "BBBP")
-        if name is None:
-            name = "BBBP"
         self.root = root
         self.name = name
         super().__init__(root=root, name=name)
@@ -172,11 +162,9 @@ class BBBP(DeepchemDataset):
 
 
 class BBBPFP(BBBP):
-    def __init__(self, root=None, name=None):
+    def __init__(self, root=None, name="BBBP"):
         if root is None:
             root = osp.join("data", "DeepChem", "BBBPFP")
-        if name is None:
-            name = "BBBP"
         self.root = root
         self.name = name
         super().__init__(root=root, name=name)
@@ -192,11 +180,9 @@ class BBBPFP(BBBP):
 
 
 class ClinTox(DeepchemDataset):
-    def __init__(self, root=None, name=None):
+    def __init__(self, root=None, name="clintox"):
         if root is None:
             root = osp.join("data", "DeepChem", "ClinTox")
-        if name is None:
-            name = "clintox"
         self.root = root
         self.name = name
         super().__init__(root=root, name=name)
@@ -216,13 +202,9 @@ class ClinTox(DeepchemDataset):
 
 
 class ClinToxFP(ClinTox):
-    def __init__(self, root=None, name=None):
+    def __init__(self, root=None, name="clintox"):
         if root is None:
             root = osp.join("data", "DeepChem", "ClinToxFP")
-        if name is None:
-            name = "clintox"
-        self.root = root
-        self.name = name
         super().__init__(root=root, name=name)
 
     def _get_labels(self):
@@ -239,11 +221,9 @@ class ClinToxFP(ClinTox):
 
 
 class ClinToxBalanced(ClinTox):
-    def __init__(self, root=None, name=None):
+    def __init__(self, root=None, name="clintox_balanced"):
         if root is None:
             root = osp.join("data", "DeepChem", "ClinToxBalanced")
-        if name is None:
-            name = "clintox_balanced"
         self.root = root
         self.name = name
         super().__init__(root=root, name=name)
@@ -253,11 +233,9 @@ class ClinToxBalanced(ClinTox):
 
 
 class HIV(DeepchemDataset):
-    def __init__(self, root=None, name=None):
+    def __init__(self, root=None, name="HIV"):
         if root is None:
             root = osp.join("data", "DeepChem", "HIV")
-        if name is None:
-            name = "HIV"
         self.root = root
         self.name = name
         super().__init__(root=root, name=name)
@@ -277,11 +255,9 @@ class HIV(DeepchemDataset):
 
 
 class HIVFP(HIV):
-    def __init__(self, root=None, name=None):
+    def __init__(self, root=None, name="HIV"):
         if root is None:
             root = osp.join("data", "DeepChem", "HIVFP")
-        if name is None:
-            name = "HIV"
         self.root = root
         self.name = name
         super().__init__(root=root, name=name)
@@ -297,14 +273,166 @@ class HIVFP(HIV):
 
 
 class HIVBalanced(HIV):
-    def __init__(self, root=None, name=None):
+    def __init__(self, root=None, name="hiv_balanced"):
         if root is None:
             root = osp.join("data", "DeepChem", "HIVBalanced")
-        if name is None:
-            name = "hiv_balanced"
         self.root = root
         self.name = name
         super().__init__(root=root, name=name)
 
     def process(self, verbose=0):
+        super().process(verbose)
+
+
+class Amu(DeepchemDataset):
+    def __init__(self, root=None, name="amu_sars_cov_2_in_vitro"):
+        if root is None:
+            root = osp.join("data", "Covid19", "Amu")
+        self.root = root
+        self.name = name
+        super().__init__(root=root, name=name)
+
+    def _get_smiles(self):
+        df = pd.read_csv(self.raw_paths[0])
+        smiles = iter(df["smiles"])
+        return smiles
+
+    def _get_labels(self):
+        df = pd.read_csv(self.raw_paths[0])
+        for lb in df["fda"]:
+            yield torch.tensor([lb], dtype=torch.long)
+
+    def process(self, verbose=0):
+        super().process(verbose)
+
+
+class AmuFP(Amu):
+    def __init__(self, root=None, name="amu_sars_cov_2_in_vitro"):
+        if root is None:
+            root = osp.join("data", "Covid19", "AmuFP")
+        super().__init__(root=root, name=name)
+
+    def _get_labels(self):
+        df = pd.read_csv(self.raw_paths[0])
+        for smi in df["smiles"]:
+            try:
+                fp = get_filtered_fingerprint(smi)
+            except OSError:  # Invalid SMILES input
+                continue
+            yield torch.tensor(list(fp), dtype=torch.long)[None, :]
+
+    def process(self, verbose=1):
+        super().process(verbose)
+
+
+class Ellinger(DeepchemDataset):
+    def __init__(self, root=None, name="ellinger"):
+        if root is None:
+            root = osp.join("data", "Covid19", "Ellinger")
+        self.root = root
+        self.name = name
+        super().__init__(root=root, name=name)
+
+    def _get_smiles(self):
+        df = pd.read_csv(self.raw_paths[0])
+        smiles = iter(df["Smiles"])
+        return smiles
+
+    def _get_labels(self):
+        df = pd.read_csv(self.raw_paths[0])
+        for lb in df["activity"]:
+            yield torch.tensor([lb], dtype=torch.long)
+
+    def process(self, verbose=0):
+        super().process(verbose)
+
+
+class EllingerFP(Ellinger):
+    def __init__(self, root=None, name="ellinger"):
+        if root is None:
+            root = osp.join("data", "Covid19", "EllingerFP")
+        super().__init__(root=root, name=name)
+
+    def _get_labels(self):
+        df = pd.read_csv(self.raw_paths[0])
+        for smi in df["Smiles"]:
+            try:
+                fp = get_filtered_fingerprint(smi)
+            except OSError:  # Invalid SMILES input
+                continue
+            yield torch.tensor(list(fp), dtype=torch.long)[None, :]
+
+    def process(self, verbose=1):
+        super().process(verbose)
+
+
+class Mpro(DeepchemDataset):
+    def __init__(self, root=None, name="mpro_xchem"):
+        if root is None:
+            root = osp.join("data", "Covid19", "Mpro")
+        self.root = root
+        self.name = name
+        super().__init__(root=root, name=name)
+
+    def _get_smiles(self):
+        df = pd.read_csv(self.raw_paths[0])
+        smiles = iter(df["smiles"])
+        return smiles
+
+    def _get_labels(self):
+        df = pd.read_csv(self.raw_paths[0])
+        for lb in df["activity"]:
+            yield torch.tensor([lb], dtype=torch.long)
+
+    def process(self, verbose=0):
+        super().process(verbose)
+
+
+class MproFP(Mpro):
+    def __init__(self, root=None, name="mpro_xchem"):
+        if root is None:
+            root = osp.join("data", "Covid19", "MproFP")
+        super().__init__(root=root, name=name)
+
+    def _get_labels(self):
+        df = pd.read_csv(self.raw_paths[0])
+        for smi in df["smiles"]:
+            try:
+                fp = get_filtered_fingerprint(smi)
+            except OSError:  # Invalid SMILES input
+                continue
+            yield torch.tensor(list(fp), dtype=torch.long)[None, :]
+
+    def process(self, verbose=1):
+        super().process(verbose)
+
+
+class RepurposingFP(DeepchemDataset):
+    def __init__(self, root=None, name="repurposing_drugs_smiles"):
+        if root is None:
+            root = osp.join("data", "Covid19", "RepurposingFP")
+        self.root = root
+        self.name = name
+        super().__init__(root=root, name=name)
+
+    @property
+    def raw_file_names(self):
+        raw_file_name = self.name + ".tsv"
+        return [raw_file_name]
+
+    def _get_smiles(self):
+        df = pd.read_csv(self.raw_paths[0], sep="\t")
+        smiles = iter(df["smiles"])
+        return smiles
+
+    def _get_labels(self):
+        df = pd.read_csv(self.raw_paths[0], sep="\t")
+        for smi in df["smiles"]:
+            try:
+                fp = get_filtered_fingerprint(smi)
+            except OSError:  # Invalid SMILES input
+                continue
+            yield torch.tensor(list(fp), dtype=torch.long)[None, :]
+
+    def process(self, verbose=1):
         super().process(verbose)

@@ -15,6 +15,13 @@ from slgnn.data_processing.deepchem_datasets import (
     HIV,
     HIVFP,
     HIVBalanced,
+    Amu,
+    AmuFP,
+    Ellinger,
+    EllingerFP,
+    Mpro,
+    MproFP,
+    RepurposingFP,
 )
 from slgnn.config import FILTERED_PUBCHEM_FP_LEN
 
@@ -159,3 +166,46 @@ class TestDeepChemDatasets(unittest.TestCase):
         self.assertEqual(data.x.size()[1], 6)
         self.assertEqual(data.y.size(), (1,))
         self.assertEqual(data.edge_index.size()[0], 2)
+
+
+class TestConvid19Datasets(unittest.TestCase):
+    def _test_base(
+        self, name, dataset, data_len, feat_size=6, label_shape=(1,), edge_index_size=2
+    ):
+        # path = osp.join("data", "Covid19", name, "processed")
+        # if osp.exists(path):
+        #     rmtree(path)
+        dataset = dataset()
+        self.assertEqual(len(dataset), data_len)
+        data = dataset[0]
+        self.assertEqual(data.x.size()[1], feat_size)
+        self.assertEqual(data.y.size(), label_shape)
+        self.assertEqual(data.edge_index.size()[0], edge_index_size)
+
+    def test_amu_dataset(self):
+        self._test_base("Amu", Amu, 1484)
+
+    def test_amufp_dataset(self):
+        self._test_base("AmuFP", AmuFP, 1484, label_shape=(1, FILTERED_PUBCHEM_FP_LEN))
+
+    def test_ellinger_dataset(self):
+        self._test_base("Ellinger", Ellinger, 5591)
+
+    def test_ellingerfp_dataset(self):
+        self._test_base(
+            "EllingerFP", EllingerFP, 5591, label_shape=(1, FILTERED_PUBCHEM_FP_LEN)
+        )
+
+    def test_mpro_dataset(self):
+        self._test_base("Mpro", Mpro, 880)
+
+    def test_mprofp_dataset(self):
+        self._test_base("MproFP", MproFP, 880, label_shape=(1, FILTERED_PUBCHEM_FP_LEN))
+
+    def test_reproposing_dataset(self):
+        self._test_base(
+            "RepurposingFP",
+            RepurposingFP,
+            6254,
+            label_shape=(1, FILTERED_PUBCHEM_FP_LEN),
+        )
