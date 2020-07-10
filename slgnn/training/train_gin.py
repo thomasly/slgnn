@@ -18,13 +18,12 @@ from .trainers import EncoderDecoderTrainer, EncoderClassifierTrainer
 
 
 if __name__ == "__main__":
-
-    torch.manual_seed(0)
-    random.seed(0)
     args = ModelTrainingArgs().parse_args()
     config_grid = Grid(args.config)
     time_stamp = datetime.now().strftime(r"%Y%m%d_%H%M%S")
     for config_idx, config_dict in enumerate(config_grid):
+        torch.manual_seed(0)
+        random.seed(0)
         config = Config.from_dict(config_dict)
         datasets = config["encoder_dataset"]
         log_dir = osp.join(

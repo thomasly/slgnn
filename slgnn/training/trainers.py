@@ -132,13 +132,22 @@ class EncoderDecoderTrainer(BaseTrainer):
         self._lr = self.config["learning_rate"]
         self._device = torch.device(self.config["device"])
         self._early_stopper = self.config["encoder_early_stopper"]()
-        self._encoder_optimizer = self.config["optimizer"](
-            self._encoder.parameters(), lr=self._lr
-        )
+
+        encoder_parameters = self._encoder.get_model_parameters_by_layer()
+        encoder_parameters = [
+            v for _, v in sorted(encoder_parameters.items(), reverse=True)
+        ]
+        self._encoder_optimizers = [
+            self.config["optimizer"](params, lr=self._lr)
+            for params in encoder_parameters
+        ]
         self._decoder_optimizer = self.config["optimizer"](
             self._decoder.parameters(), lr=self._lr
         )
-        self._encoder_lr_scheduler = self.config["scheduler"](self._encoder_optimizer)
+
+        self._encoder_lr_schedulers = [
+            self.config["scheduler"](opt) for opt in self._encoder_optimizers
+        ]
         self._decoder_lr_scheduler = self.config["scheduler"](self._decoder_optimizer)
         self._criterion = self.config["encoder_loss"]()
         self._metrics = [m() for m in self.config["metrics"]]
@@ -155,6 +164,36 @@ class EncoderDecoderTrainer(BaseTrainer):
 
     def load_optimizers(self, *optimizers):
         self._optimizers = optimizers
+
+    def load_schedulers(self, *schedulers):
+        self._schedulers = schedulers
+
+    def _get_current_idx(self):
+        for i, ep in enumerate(self.config["frozen_epochs"]):
+            if self.epoch > ep:
+                continue
+            return i
+        return i + 1
+
+    def _determine_optimizers(self):
+        if self.freeze_encoder:
+            idx = self._get_current_idx()
+            self.load_optimizers(
+                self._decoder_optimizer, *self._encoder_optimizers[0:idx]
+            )
+        else:
+            self.load_optimizers(self._decoder_optimizer, *self._encoder_optimizers)
+
+    def _determine_schedulers(self):
+        if self.freeze_encoder:
+            idx = self._get_current_idx()
+            self.load_schedulers(
+                self._decoder_lr_scheduler, *self._encoder_lr_schedulers[0:idx]
+            )
+        else:
+            self.load_schedulers(
+                self._decoder_lr_scheduler, *self._encoder_lr_schedulers
+            )
 
     @property
     def encoder(self):
@@ -228,11 +267,8 @@ class EncoderDecoderTrainer(BaseTrainer):
         while self.epoch < self.epochs:
             # if self.wandb:
             #     self.wandb.log({"epoch": self.epoch})
-            if self.epoch < self.config["frozen_epochs"] and self.freeze_encoder:
-                self.load_optimizers(self._decoder_optimizer)
-            else:
-                self.load_optimizers(self._encoder_optimizer, self._decoder_optimizer)
-
+            self._determine_optimizers()
+            self._determine_schedulers()
             self.train_one_epoch()
             self.validate()
             metrics_dict = {
@@ -258,8 +294,8 @@ class EncoderDecoderTrainer(BaseTrainer):
             stop = self.early_stopper.stop(self.epoch, metrics_dict)
             if stop:
                 break
-            self.encoder_lr_scheduler.step()
-            self.decoder_lr_scheduler.step()
+            for sch in self._schedulers:
+                sch.step()
             self.epoch += 1
         print(self._get_metrics_string(self.early_stopper.get_best_vl_metrics()))
 
@@ -288,14 +324,6 @@ class EncoderDecoderTrainer(BaseTrainer):
                 metric = [m(out, y) for m in self.metrics]
                 losses.append(loss)
                 metrics.append(metric)
-                # if self.wandb:
-                #     self.wandb.log({mode + "_loss": loss})
-                #     self.wandb.log(
-                #         {
-                #             mode + "_" + key.name: value
-                #             for key, value in zip(self.metrics, metric)
-                #         }
-                #     )
 
     def train_one_epoch(self):
         self._setup_models("train")
@@ -327,14 +355,6 @@ class EncoderDecoderTrainer(BaseTrainer):
         self._cur_train_metrics = [mean(m) for m in zip(*batch_metrics)]
         self.train_losses.append(self._cur_train_loss)
         self.train_metrics.append(self._cur_train_metrics)
-        # if self.wandb:
-        #     self.wandb.log({"train_loss": self._cur_train_loss})
-        #     self.wandb.log(
-        #         {
-        #             "train_" + met.name: val
-        #             for met, val in zip(self.metrics, self._cur_train_metrics)
-        #         }
-        #     )
 
     def validate(self):
         self._setup_models("eval")
@@ -358,14 +378,6 @@ class EncoderDecoderTrainer(BaseTrainer):
         for smet, met in zip(self.metrics, self._cur_val_metrics):
             print(f"{smet.name}: {met:.4f}", end=" ")
         print()
-        # if self.wandb:
-        #     self.wandb.log({"val_loss": self._cur_val_loss})
-        #     self.wandb.log(
-        #         {
-        #             "val_" + met.name: val
-        #             for met, val in zip(self.metrics, self._cur_val_metrics)
-        #         }
-        #     )
 
     def _rooting(self, path):
         if path is None:

@@ -1,4 +1,5 @@
 import copy
+from collections import defaultdict
 
 import torch
 import torch.nn as nn
@@ -91,6 +92,13 @@ class GIN(nn.Module):
                     training=self.training,
                 )
         return out
+
+    def get_model_parameters_by_layer(self):
+        params = defaultdict(list)
+        for name, param in self.named_parameters():
+            layer = name.split(".")[1]
+            params[layer].append(param)
+        return params
 
 
 class CPAN(nn.Module):
