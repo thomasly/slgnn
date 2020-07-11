@@ -38,6 +38,13 @@ from slgnn.data_processing.deepchem_datasets import (
     ClinTox,
     ClinToxFP,
     ClinToxBalanced,
+    Amu,
+    AmuFP,
+    Ellinger,
+    EllingerFP,
+    Mpro,
+    MproFP,
+    RepurposingFP,
 )
 from slgnn.training.utils import Patience
 from slgnn.metrics.metrics import Accuracy, ROC_AUC, F1, AP
@@ -83,6 +90,10 @@ class Config:
         "BBBP": BBBPFP,
         "ClinTox": ClinToxFP,
         "HIV": HIVFP,
+        "Repurposing": RepurposingFP,
+        "Amu": AmuFP,
+        "Ellinger": EllingerFP,
+        "Mpro": MproFP,
     }
 
     classifier_datasets = {
@@ -99,6 +110,9 @@ class Config:
         "ClinToxBalanced": ClinToxBalanced,
         "HIV": HIV,
         "HIVBalanced": HIVBalanced,
+        "Amu": Amu,
+        "Ellinger": Ellinger,
+        "Mpro": Mpro,
     }
 
     models = {

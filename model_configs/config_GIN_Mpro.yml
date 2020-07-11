@@ -1,0 +1,106 @@
+encoder_dataset:
+  - [Repurposing]
+  - [Repurposing, Mpro] 
+  # - [ZINC10k, BACE]
+  # - [ZINC10k]
+classifier_dataset:
+  - Mpro
+model:
+  # -
+  #   class: CPAN
+  #   mod: origin
+  # -
+  #   class: CPAN
+  #   mod: additive
+  # -
+  #   class: CPAN
+  #   mod: scaled
+  -
+    class: GIN
+n_layer:
+  - 4  # for CPAN
+heads:
+  - 1
+alpha:
+  - 0.2
+use_encoder:
+   - true
+  #  - false
+data_ratio:
+   - [0.9, 0.1, 0]
+   - [0.5, 0.5, 0]
+   - [0.1, 0.9, 0]
+embedding_dim:
+  - 128
+  # - 256
+  # - 512
+device:
+  - cuda:0
+batch_size:
+  - 64
+  # - 128
+learning_rate:
+  # - 0.01
+  # - 0.001
+  - 0.001
+encoder_epochs:
+  - 0
+  - 10000
+classifier_epochs:
+  # - 100
+  - 10000
+frozen_epochs:
+  - [10, 10, 10, 10, 10]
+  - [5, 10, 15, 20, 25]
+frozen_epochs:
+  # - 3
+  - 10
+hidden_units:  # Note: GIN add a first layer that simply adds up all node features
+  - [64, 64, 64, 64]
+  # - [32, 32, 32, 32]
+  # - [64]
+  # - [32, 32]
+optimizer:
+  - Adam
+scheduler:
+  -
+    class: StepLR
+    args:
+      step_size: 10
+      gamma: 0.5
+encoder_loss:
+  - BCEWithLogitsLoss
+  # - MulticlassClassificationLoss
+classifier_loss:
+  - CrossEntropyLoss
+metrics:
+  - [Accuracy, ROC_AUC, F1, Average_precision]
+train_eps:
+  - true
+  # - false
+l2:
+  - 0.
+aggregation:
+  - mean
+  # - sum
+gradient_clipping:
+  - null
+dropout:
+  - 0.5
+  # - 0.
+encoder_early_stopper:
+  -
+    class: Patience
+    args:
+      patience: 20
+early_stopper:
+  -
+    class: Patience
+    args:
+      patience: 20
+      monitor: val_Average_precision
+      mode: max
+shuffle:
+  - True
+resume:
+  - False
