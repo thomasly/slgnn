@@ -70,7 +70,7 @@ l2:
   - 0.
 aggregation:
   - mean
-  # - sum
+  - sum
 gradient_clipping:
   - null
 dropout:
