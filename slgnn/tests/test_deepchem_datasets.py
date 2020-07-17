@@ -15,6 +15,8 @@ from slgnn.data_processing.deepchem_datasets import (
     HIV,
     HIVFP,
     HIVBalanced,
+)
+from slgnn.data_processing.covid19_datasts import (
     Amu,
     AmuFP,
     Ellinger,
@@ -22,6 +24,7 @@ from slgnn.data_processing.deepchem_datasets import (
     Mpro,
     MproFP,
     RepurposingFP,
+    AntiviralFP,
 )
 from slgnn.config import FILTERED_PUBCHEM_FP_LEN
 
@@ -208,4 +211,9 @@ class TestConvid19Datasets(unittest.TestCase):
             RepurposingFP,
             6254,
             label_shape=(1, FILTERED_PUBCHEM_FP_LEN),
+        )
+
+    def test_antiviralfp_dataset(self):
+        self._test_base(
+            "AntiviralFP", AntiviralFP, 48876, label_shape=(1, FILTERED_PUBCHEM_FP_LEN)
         )

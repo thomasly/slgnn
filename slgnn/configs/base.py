@@ -38,6 +38,8 @@ from slgnn.data_processing.deepchem_datasets import (
     ClinTox,
     ClinToxFP,
     ClinToxBalanced,
+)
+from slgnn.data_processing.covid19_datasts import (
     Amu,
     AmuFP,
     Ellinger,
@@ -45,6 +47,7 @@ from slgnn.data_processing.deepchem_datasets import (
     Mpro,
     MproFP,
     RepurposingFP,
+    AntiviralFP,
 )
 from slgnn.training.utils import Patience
 from slgnn.metrics.metrics import Accuracy, ROC_AUC, F1, AP
@@ -94,6 +97,7 @@ class Config:
         "Amu": AmuFP,
         "Ellinger": EllingerFP,
         "Mpro": MproFP,
+        "Antiviral": AntiviralFP,
     }
 
     classifier_datasets = {
