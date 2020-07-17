@@ -8,7 +8,6 @@ import torch
 from tqdm import tqdm
 
 from slgnn.data_processing.zinc_to_hdf5 import Hdf5Loader
-from PyFingerprint.All_Fingerprint import get_fingerprint
 from chemreader.readers.readsmiles import Smiles
 from slgnn.config import PAD_ATOM, PAD_BOND
 
@@ -81,6 +80,8 @@ def get_filtered_fingerprint(smiles):
         fp (np.ndarray): The filtered PubChem fingerprint as a vector.
         length (int): length of the filtered vector.
     """
+    from PyFingerprint.All_Fingerprint import get_fingerprint
+
     fp = get_fingerprint(smiles, fp_type="pubchem", output="vector")
     del_pos = (
         [

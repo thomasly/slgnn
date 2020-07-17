@@ -47,6 +47,7 @@ class GIN(nn.Module):
 
         for layer, out_emb_dim in enumerate(self.embeddings_dim):
             if layer == 0:
+                # first hidden layer
                 self.first_h = Sequential(
                     Linear(dim_features, out_emb_dim),
                     BatchNorm1d(out_emb_dim),
