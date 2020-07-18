@@ -1,10 +1,13 @@
 from random import shuffle
+from abc import abstractmethod, ABC
 
+import torch
 from torch_geometric.data import DataLoader
 from torch.utils.data import ConcatDataset
+from rdkit.Chem.Scaffolds import MurckoScaffold
 
 
-class DataSplitter:
+class BaseSplitter(ABC):
     def __init__(self, dataset, ratio=[0.8, 0.1, 0.1], shuffle=True, batch_size=32):
         self._dataset = dataset
         self._ratio = ratio
@@ -65,6 +68,18 @@ class DataSplitter:
             else:
                 self._split_dataset()
         return self._test_loader
+
+    @abstractmethod
+    def _split_dataset(self):
+        ...
+
+
+class DataSplitter(BaseSplitter):
+    """ Split dataset with given ratio.
+    """
+
+    def __init__(self, dataset, ratio=[0.8, 0.1, 0.1], shuffle=True, batch_size=32):
+        super().__init__(dataset, ratio, shuffle, batch_size)
 
     def _split_dataset(self):
         assert sum(self.ratio) == 1
@@ -128,3 +143,79 @@ class DataSplitter:
             self._test_loader = DataLoader(
                 ConcatDataset(test_l), batch_size=self.batch_size, shuffle=self.shuffle
             )
+
+
+class ScaffoldSplitter(BaseSplitter):
+    """ Split dataset based on scaffold similarity.
+    """
+
+    def __init__(self, dataset, ratio=[0.8, 0.1, 0.1], shuffle=True, batch_size=32):
+        super().__init__(dataset, ratio, shuffle, batch_size)
+
+    def _generate_scaffold(self, smiles, include_chirality=False):
+        """
+        Obtain Bemis-Murcko scaffold from smiles
+        :param smiles:
+        :param include_chirality:
+        :return: smiles of scaffold
+        """
+        scaffold = MurckoScaffold.MurckoScaffoldSmiles(
+            smiles=smiles, includeChirality=include_chirality
+        )
+        return scaffold
+
+    def _split_dataset(self):
+        # create dict of the form {scaffold_i: [idx1, idx....]}
+        all_scaffolds = {}
+        for i, smiles in enumerate(self.dataset._get_smiles()):
+            scaffold = self._generate_scaffold(smiles, include_chirality=True)
+            if scaffold not in all_scaffolds:
+                all_scaffolds[scaffold] = [i]
+            else:
+                all_scaffolds[scaffold].append(i)
+
+        # sort from largest to smallest sets
+        all_scaffolds = {key: sorted(value) for key, value in all_scaffolds.items()}
+        all_scaffold_sets = [
+            scaffold_set
+            for (scaffold, scaffold_set) in sorted(
+                all_scaffolds.items(), key=lambda x: (len(x[1]), x[1][0]), reverse=True
+            )
+        ]
+
+        # get train, valid test indices
+        train_cutoff = self.ratio[0] * len(self.dataset)
+        valid_cutoff = (self.ratio[0] + self.ratio[1]) * len(self.dataset)
+        train_idx, valid_idx, test_idx = [], [], []
+        for scaffold_set in all_scaffold_sets:
+            if len(train_idx) + len(scaffold_set) > train_cutoff:
+                if len(train_idx) + len(valid_idx) + len(scaffold_set) > valid_cutoff:
+                    test_idx.extend(scaffold_set)
+                else:
+                    valid_idx.extend(scaffold_set)
+            else:
+                train_idx.extend(scaffold_set)
+
+        assert len(set(train_idx).intersection(set(valid_idx))) == 0
+        assert len(set(test_idx).intersection(set(valid_idx))) == 0
+
+        train_dataset = self.dataset[torch.tensor(train_idx)]
+        valid_dataset = self.dataset[torch.tensor(valid_idx)]
+        test_dataset = self.dataset[torch.tensor(test_idx)]
+
+        self._train_loader = DataLoader(
+            train_dataset, batch_size=self.batch_size, shuffle=self.shuffle
+        )
+        self._val_loader = DataLoader(
+            valid_dataset, batch_size=self.batch_size, shuffle=self.shuffle
+        )
+        if self.ratio[-1] != 0:
+            self._test_loader = DataLoader(
+                test_dataset, batch_size=self.batch_size, shuffle=self.shuffle
+            )
+
+
+class FixedSplitter(BaseSplitter):
+    """ Fix the test set based the given ratio.
+    """
+
