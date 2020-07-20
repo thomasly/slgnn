@@ -2,6 +2,7 @@ from pathlib import Path
 import json
 import pickle
 from copy import deepcopy
+import os.path as osp
 
 from torch.optim import Adam, SGD
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss
@@ -62,7 +63,9 @@ def read_config_file(dict_or_filelike):
     if path.suffix == ".json":
         return json.load(open(path, "r"))
     elif path.suffix in [".yaml", ".yml"]:
-        return yaml.load(open(path, "r"), Loader=yaml.FullLoader)
+        template = open(osp.join("model_configs", "config_template.txt"), "r").read()
+        config = yaml.load(open(path), "r")
+        return yaml.load(template.format(**config))
     elif path.suffix in [".pkl", ".pickle"]:
         return pickle.load(open(path, "rb"))
 

@@ -1,0 +1,4 @@
+encoder_dataset: "- [ZINC1k, Sider]\n  - [ZINC1k]"
+classifier_dataset: "- Sider"
+model: "-\n    class: GIN"
+classifier_loss: "- BCEWithLogitsLoss"

@@ -1,0 +1,4 @@
+encoder_dataset: "- [ZINC1k, BBBP]\n  - [ZINC1k]"
+classifier_dataset: "- BBBP"
+model: "-\n    class: GIN"
+classifier_loss: "- CrossEntropyLoss"

@@ -1,0 +1,4 @@
+encoder_dataset: "- [Repurposing]\n  - [Repurposing, Mpro]"
+classifier_dataset: "- Mpro"
+model: "-\n    class: GIN"
+classifier_loss: "- CrossEntropyLoss"

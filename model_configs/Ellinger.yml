@@ -1,0 +1,4 @@
+encoder_dataset: "- [Repurposing]\n  - [Repurposing, Ellinger]"
+classifier_dataset: "- Ellinger"
+model: "-\n    class: GIN"
+classifier_loss: "- CrossEntropyLoss"
