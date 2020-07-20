@@ -143,9 +143,24 @@ class TestPygDatasets(unittest.TestCase):
         self.assertEqual(data.y.size(), (32, 740))
 
 
+class ToolClass:
+    def foo(self):
+        rand_nums = list()
+        for _ in range(10):
+            rand_nums.append(random.randint(0, 10))
+        return rand_nums
+
+    @fix_random_seed(seed=1)
+    def bar(self):
+        rand_nums = list()
+        for _ in range(10):
+            rand_nums.append(random.randint(0, 10))
+        return rand_nums
+
+
 class TestUtils(unittest.TestCase):
     def test_fix_random_seed(self):
-        @fix_random_seed.seed(10)
+        @fix_random_seed(seed=0)
         def foo():
             rand_nums = list()
             for _ in range(10):
@@ -154,6 +169,7 @@ class TestUtils(unittest.TestCase):
 
         random_nums1 = foo()
         random_nums2 = foo()
+        self.assertEqual(foo.__name__, "foo")
         self.assertEqual(random_nums1, random_nums2)
 
         def bar():
@@ -165,3 +181,23 @@ class TestUtils(unittest.TestCase):
         random_nums1 = bar()
         random_nums2 = bar()
         self.assertNotEqual(random_nums1, random_nums2)
+
+        @fix_random_seed(seed=1)
+        def baz():
+            rand_nums = list()
+            for _ in range(10):
+                rand_nums.append(random.randint(0, 10))
+            return rand_nums
+
+        random_nums1 = bar()
+        random_nums2 = baz()
+        self.assertNotEqual(random_nums1, random_nums2)
+
+        tool_cls = ToolClass()
+        random_nums1 = tool_cls.foo()
+        random_nums2 = tool_cls.foo()
+        self.assertNotEqual(random_nums1, random_nums2)
+
+        random_nums1 = tool_cls.bar()
+        random_nums2 = tool_cls.bar()
+        self.assertEqual(random_nums1, random_nums2)

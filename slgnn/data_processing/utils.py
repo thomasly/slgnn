@@ -1,4 +1,7 @@
 import random
+import functools
+
+# import inspect
 
 
 def get_pubchem_fingerprint(sm):
@@ -8,19 +11,15 @@ def get_pubchem_fingerprint(sm):
 
 
 class fix_random_seed:
+    def __init__(self, seed=0):
+        self._seed = seed
 
-    _seed = 0
+    def __call__(self, func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            random.seed(self._seed)
+            ret = func(*args, **kwargs)
+            random.seed()
+            return ret
 
-    def __init__(self, func):
-        self.func = func
-
-    def __call__(self, *args, **kwargs):
-        random.seed(self._seed)
-        ret = self.func(*args, **kwargs)
-        random.seed()
-        return ret
-
-    @classmethod
-    def seed(cls, value: int):
-        cls._seed = value
-        return cls
+        return wrapper

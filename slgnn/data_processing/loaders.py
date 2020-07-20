@@ -1,10 +1,12 @@
 from random import shuffle
 from abc import abstractmethod, ABC
+import logging
 
 import torch
 from torch_geometric.data import DataLoader
 from torch.utils.data import ConcatDataset
 from rdkit.Chem.Scaffolds import MurckoScaffold
+from slgnn.data_processing.utils import fix_random_seed
 
 
 class BaseSplitter(ABC):
@@ -216,6 +218,54 @@ class ScaffoldSplitter(BaseSplitter):
 
 
 class FixedSplitter(BaseSplitter):
-    """ Fix the test set based the given ratio.
+    """ Fix the test set based on the given ratio. The test set has the same
+    data distribution with the training set, especially when the dataset labels are very
+    imbalanced.
     """
 
+    def __init__(self, dataset, ratio=[0.8, 0.1, 0.1], shuffle=True, batch_size=32):
+        super().__init__(dataset, ratio, shuffle, batch_size)
+
+    @fix_random_seed(seed=0)
+    def _split_dataset(self):
+        mask = self.dataset.data.y == 1
+        positive_dataset = self.dataset[mask]
+        negative_dataset = self.dataset[~mask]
+        positive_indices = list(range(len(positive_dataset)))
+        negative_indices = list(range(len(negative_dataset)))
+        if shuffle:
+            shuffle(positive_indices)
+            shuffle(negative_indices)
+
+        pos_sep1 = int(len(positive_dataset) * self.ratio[0])
+        pos_sep2 = int(len(positive_dataset) * (self.ratio[0] + self.ratio[1]))
+        pos_sep3 = int(len(positive_dataset) * self.ratio[2])
+        neg_sep1 = int(len(negative_dataset) * self.ratio[0])
+        neg_sep2 = int(len(negative_dataset) * (self.ratio[0] + self.ratio[1]))
+        neg_sep3 = int(len(negative_dataset) * self.ratio[2])
+
+        positive_train_indices = positive_indices[:pos_sep1]
+        positive_val_indices = positive_indices[pos_sep1:pos_sep2]
+        positive_test_indices = positive_indices[-pos_sep3:]
+        negative_train_indices = negative_indices[:neg_sep1]
+        negative_val_indices = negative_indices[neg_sep1:neg_sep2]
+        negative_test_indices = negative_indices[-neg_sep3:]
+
+        train_indices = positive_train_indices + negative_train_indices
+        val_indices = positive_val_indices + negative_val_indices
+        test_indices = positive_test_indices + negative_test_indices
+        logging.debug(f"train indices len: {len(train_indices)}")
+        logging.debug(f"val indices len: {len(val_indices)}")
+        logging.debug(f"test indices len: {len(test_indices)}")
+
+        self._train_loader = DataLoader(
+            self.dataset[train_indices],
+            batch_size=self.batch_size,
+            shuffle=self.shuffle,
+        )
+        self._val_loader = DataLoader(
+            self.dataset[val_indices], batch_size=self.batch_size, shuffle=self.shuffle
+        )
+        self._test_loader = DataLoader(
+            self.dataset[test_indices], batch_size=self.batch_size, shuffle=self.shuffle
+        )
