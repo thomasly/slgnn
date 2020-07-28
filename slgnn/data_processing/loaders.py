@@ -1,15 +1,34 @@
 from random import shuffle
 from abc import abstractmethod, ABC
-import logging
 
 import torch
 from torch_geometric.data import DataLoader
 from torch.utils.data import ConcatDataset
 from rdkit.Chem.Scaffolds import MurckoScaffold
+from rdkit.Chem import MolFromSmiles
 from slgnn.data_processing.utils import fix_random_seed
 
 
 class BaseSplitter(ABC):
+    """ Base class for dataloaders.
+
+    Args:
+        dataset (torch_geometric.data.DataSet): the dataset to be used in training.
+        ratio (list): list of floats indicating the splitting ratios. The numbers
+            represent fractions of training, validating, and testing sets, respectively.
+        shuffle (bool): Whether shuffle the dataset.
+        batch_size (int): size of every mini batches.
+
+    Attributes:
+        dataset: the underhood dataset. Immutable.
+        ratio: the fractions of training, validating, and testing sets. Immutable.
+        shuffle: whether shuffle the dataset while loading. Mutable.
+        batch_size: size of mini batches. Mutable.
+        train_loader: the training set data loader.
+        val_loader: the validation set data loader.
+        test_loader: the testing set data loader. None if the testing ratio is 0.
+    """
+
     def __init__(self, dataset, ratio=[0.8, 0.1, 0.1], shuffle=True, batch_size=32):
         self._dataset = dataset
         self._ratio = ratio
@@ -73,6 +92,8 @@ class BaseSplitter(ABC):
 
     @abstractmethod
     def _split_dataset(self):
+        """ The method splitting the dataset. Need to be implemented by subclasses.
+        """
         ...
 
 
@@ -116,6 +137,8 @@ class DataSplitter(BaseSplitter):
                 )
 
     def _split_from_list(self):
+        """ Split and combine multiple datasets.
+        """
         datasets = self.dataset.copy()
         train_l, val_l, test_l = list(), list(), list()
         for dataset in datasets:
@@ -149,6 +172,13 @@ class DataSplitter(BaseSplitter):
 
 class ScaffoldSplitter(BaseSplitter):
     """ Split dataset based on scaffold similarity.
+
+    Args:
+        dataset (torch_geometric.data.DataSet): the dataset to be used in training.
+        ratio (list): list of floats indicating the splitting ratios. The numbers
+            represent fractions of training, validating, and testing sets, respectively.
+        shuffle (bool): Whether shuffle the dataset.
+        batch_size (int): size of every mini batches.
     """
 
     def __init__(self, dataset, ratio=[0.8, 0.1, 0.1], shuffle=True, batch_size=32):
@@ -157,9 +187,13 @@ class ScaffoldSplitter(BaseSplitter):
     def _generate_scaffold(self, smiles, include_chirality=False):
         """
         Obtain Bemis-Murcko scaffold from smiles
-        :param smiles:
-        :param include_chirality:
-        :return: smiles of scaffold
+
+        Args:
+            smiles (str): SMILES string
+            include_chirality (bool): Whether taking chirality into consideration when
+                generating MurckoScaffolds.
+        Returns:
+            SMILES of scaffold
         """
         scaffold = MurckoScaffold.MurckoScaffoldSmiles(
             smiles=smiles, includeChirality=include_chirality
@@ -169,12 +203,16 @@ class ScaffoldSplitter(BaseSplitter):
     def _split_dataset(self):
         # create dict of the form {scaffold_i: [idx1, idx....]}
         all_scaffolds = {}
-        for i, smiles in enumerate(self.dataset._get_smiles()):
+        i = 0
+        for smiles in self.dataset._get_smiles():
+            if MolFromSmiles(smiles) is None:
+                continue
             scaffold = self._generate_scaffold(smiles, include_chirality=True)
             if scaffold not in all_scaffolds:
                 all_scaffolds[scaffold] = [i]
             else:
                 all_scaffolds[scaffold].append(i)
+            i += 1
 
         # sort from largest to smallest sets
         all_scaffolds = {key: sorted(value) for key, value in all_scaffolds.items()}
@@ -185,7 +223,7 @@ class ScaffoldSplitter(BaseSplitter):
             )
         ]
 
-        # get train, valid test indices
+        # get train, valid, and test indices
         train_cutoff = self.ratio[0] * len(self.dataset)
         valid_cutoff = (self.ratio[0] + self.ratio[1]) * len(self.dataset)
         train_idx, valid_idx, test_idx = [], [], []
@@ -221,6 +259,13 @@ class FixedSplitter(BaseSplitter):
     """ Fix the test set based on the given ratio. The test set has the same
     data distribution with the training set, especially when the dataset labels are very
     imbalanced.
+
+    Args:
+        dataset (torch_geometric.data.DataSet): the dataset to be used in training.
+        ratio (list): list of floats indicating the splitting ratios. The numbers
+            represent fractions of training, validating, and testing sets, respectively.
+        shuffle (bool): Whether shuffle the dataset.
+        batch_size (int): size of every mini batches.
     """
 
     def __init__(self, dataset, ratio=[0.8, 0.1, 0.1], shuffle=True, batch_size=32):
@@ -233,7 +278,7 @@ class FixedSplitter(BaseSplitter):
         negative_dataset = self.dataset[~mask]
         positive_indices = list(range(len(positive_dataset)))
         negative_indices = list(range(len(negative_dataset)))
-        if shuffle:
+        if self.shuffle:
             shuffle(positive_indices)
             shuffle(negative_indices)
 
@@ -251,21 +296,33 @@ class FixedSplitter(BaseSplitter):
         negative_val_indices = negative_indices[neg_sep1:neg_sep2]
         negative_test_indices = negative_indices[-neg_sep3:]
 
-        train_indices = positive_train_indices + negative_train_indices
-        val_indices = positive_val_indices + negative_val_indices
-        test_indices = positive_test_indices + negative_test_indices
-        logging.debug(f"train indices len: {len(train_indices)}")
-        logging.debug(f"val indices len: {len(val_indices)}")
-        logging.debug(f"test indices len: {len(test_indices)}")
-
         self._train_loader = DataLoader(
-            self.dataset[train_indices],
+            ConcatDataset(
+                [
+                    positive_dataset[positive_train_indices],
+                    negative_dataset[negative_train_indices],
+                ]
+            ),
             batch_size=self.batch_size,
             shuffle=self.shuffle,
         )
         self._val_loader = DataLoader(
-            self.dataset[val_indices], batch_size=self.batch_size, shuffle=self.shuffle
+            ConcatDataset(
+                [
+                    positive_dataset[positive_val_indices],
+                    negative_dataset[negative_val_indices],
+                ]
+            ),
+            batch_size=self.batch_size,
+            shuffle=self.shuffle,
         )
         self._test_loader = DataLoader(
-            self.dataset[test_indices], batch_size=self.batch_size, shuffle=self.shuffle
+            ConcatDataset(
+                [
+                    positive_dataset[positive_test_indices],
+                    negative_dataset[negative_test_indices],
+                ]
+            ),
+            batch_size=self.batch_size,
+            shuffle=self.shuffle,
         )
