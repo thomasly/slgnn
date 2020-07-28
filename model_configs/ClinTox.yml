@@ -1,4 +1,4 @@
 encoder_dataset: "- [ZINC1k, ClinTox]\n  - [ZINC1k]"
 classifier_dataset: "- ClinTox"
 model: "-\n    class: GIN"
-classifier_loss: "- CrossEntropyLoss"
+classifier_loss: "- BCEWithLogitsLoss"

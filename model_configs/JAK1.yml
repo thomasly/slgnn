@@ -1,4 +1,4 @@
-encoder_dataset: "- [ZINC1k, JAK1]\n  - [ZINC1k]\n  - [JAK1]\n  - [JAK1Dude]\n  - [JAK1Dude, JAK1]"
+encoder_dataset: "- [JAK1]\n  - [JAK1Dude]\n  - [JAK1Dude, JAK1]"
 classifier_dataset: "- JAK1"
 model: "-\n    class: GIN"
 classifier_loss: "- CrossEntropyLoss"
