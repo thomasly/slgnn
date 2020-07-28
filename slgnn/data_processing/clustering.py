@@ -4,6 +4,17 @@ from tqdm import tqdm
 
 
 class Cluster:
+    """ Cluster dataset based on Tanimoto scores.
+
+    Args:
+        threshold (float): the cutoff value used to determine if two chemicals are
+            similar. Chemicals with a Tanimoto similarity score higher than the value
+            will be considered similar to each other.
+
+    Attributes:
+        threshold (float): the cutoff value.
+    """
+
     def __init__(self, threshold=0.5):
         self._threshold = threshold
 
@@ -17,6 +28,13 @@ class Cluster:
 
     def clustering(self, smiles: list, verbose=0):
         """ Clustering the smiles with Tanimoto similarity.
+
+        Args:
+            smiles (list): list of SMILES strings.
+            verbose (bool): whether showing the progress bar.
+
+        Returns:
+            list: SMILES clusters.
         """
         self.clusters = dict()
         counter = 0
@@ -50,9 +68,9 @@ class Cluster:
             return None
 
     def _update_cluster(self, idx, smiles):
-        """ If idx has only one element, add smiles to self.cluster accordingly.
-        If idx has more than one element, combine theses clusters and add smiles to the
-        combined cluster.
+        """ Helper function of clustering. If idx has only one element, add smiles to
+        self.cluster accordingly. If idx has more than one element, combine theses
+        clusters and add smiles to the combined cluster.
         """
         self.clusters[idx[0]].append(smiles)
         if len(idx) == 1:
