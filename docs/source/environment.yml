@@ -6,6 +6,7 @@ channels:
   - thomasly
   - defaults
 dependencies:
+  - pip=20.0.2=py36_3
   - rdkit=2020.03.2=py36h7c5ad62_0
   - cudatoolkit=10.2.89=h74a9793_1
   - jinja2=2.11.2=py_0
