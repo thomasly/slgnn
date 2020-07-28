@@ -2,6 +2,8 @@ name: pytorch
 channels:
   - pytorch
   - conda-forge
+  - rdkit
+  - thomasly
   - defaults
 dependencies:
   - boost=1.72.0=py36h96a391d_0
