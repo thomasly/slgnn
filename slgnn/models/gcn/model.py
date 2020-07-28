@@ -12,6 +12,15 @@ from slgnn.models.gcn.layers import GraphConvolution, CPANConv
 
 
 class GCN(nn.Module):
+    """ A simple GCN model as in https://arxiv.org/abs/1609.02907
+
+    Args:
+        nfeat (int): number of input features.
+        nhid (int): number of nodes in hidden layers.
+        nclass (int): number of target classes.
+        dropout (float): dropout probability.
+    """
+
     def __init__(self, nfeat, nhid, nclass, dropout):
         super().__init__()
         # self.gc1 = GraphConvolution(nfeat, nclass)
@@ -27,6 +36,15 @@ class GCN(nn.Module):
 
 
 class GIN(nn.Module):
+    """ The GIN model as in https://arxiv.org/abs/1810.00826
+
+    Args:
+        dim_features (int): dimension of features.
+        dim_target (int): dimension of output.
+        config: an instance of slgnn.configs.base.Config class. Must have dropout,
+            hidden_units, train_eps, aggregation attributes.
+    """
+
     def __init__(self, dim_features, dim_target, config):
         super().__init__()
 
@@ -95,6 +113,12 @@ class GIN(nn.Module):
         return out
 
     def get_model_parameters_by_layer(self):
+        """ Get model parameters by layer.
+
+        Returns:
+            dict: model parameters with layer names as keys and list of parameters as
+                values.
+        """
         params = defaultdict(list)
         for name, param in self.named_parameters():
             layer = name.split(".")[1]
@@ -103,6 +127,16 @@ class GIN(nn.Module):
 
 
 class CPAN(nn.Module):
+    """ Shuo's CPAN model.
+
+    Args:
+        dim_features (int): dimension of features.
+        dim_target (int): dimension of output.
+        config: an instance of slgnn.configs.base.Config class. Must have alpha (leacky
+        ReLU), dropout, hidden_units, train_eps, aggregation, n_layer attributes.
+        mod (str): one of "origin", "additive", and "scaled".
+    """
+
     def __init__(self, dim_features, dim_target, config, mod):
         super(CPAN, self).__init__()
 

@@ -63,6 +63,14 @@ class GraphConvolution(Module):
 
 
 class CPANConv(MessagePassing):
+    """ CPAN layers.
+    
+    Args:
+        config: an instance of slgnn.config.base.Config class. Must have heads, alpha,
+            dropout, hidden_units attributes.
+        mod: "origin", "additive", or "scaled".
+    """
+
     def __init__(self, config, mod):
 
         super(CPANConv, self).__init__()

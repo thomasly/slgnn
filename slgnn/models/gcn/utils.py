@@ -13,6 +13,16 @@ from slgnn.config import PAD_ATOM, PAD_BOND
 
 
 def encode_onehot(labels, len_label=None):
+    """ Convert labels to one-hot.
+
+    Args:
+        labels (list): the labels to be converted.
+        len_label (int): optional. If is None, the max length of the labels will be
+            inferred from the provided label list.
+            
+    Returns:
+        numpy.ndarray: the converted one-hot labels.
+    """
     classes = set(labels)
     if len_label is None:
         classes_dict = {c: np.identity(len(classes))[i] for i, c in enumerate(classes)}
@@ -34,6 +44,14 @@ def encode_onehot(labels, len_label=None):
 
 
 def normalize(matrices):
+    """ Normalize matrices to make the summation of every row equal to 1.
+    
+    Args:
+        matrices (list): list of matrices.
+        
+    Returns:
+        list: normalized matrices.
+    """
     for i, mx in enumerate(matrices):
         rowsum = np.array(mx.sum(0))
         r_inv = np.power(rowsum, -1).flatten()
@@ -45,6 +63,15 @@ def normalize(matrices):
 
 
 def accuracy(output, labels):
+    """ Calculate accuracy.
+    
+    Args:
+        output: output of a model.
+        labels: ground truth labels.
+        
+    Returns:
+        float: accuracy score.
+    """
     if any([s > 1 for s in labels.shape]):
         s = output.round() + labels
         numerator = (s == 2).sum().double() + (s == 0).sum().double()
@@ -60,6 +87,14 @@ def accuracy(output, labels):
 
 
 def sparse_mx_to_torch_spare_tensor(sparse_mx):
+    """ Covert numpy spare matrix to pytorch sparse tensor.
+
+    Args:
+        sparse_mx: the sparse matrix to be converted.
+        
+    Returns:
+        torch.sparse.FloatTensor:
+    """
     sparse_mx = sparse_mx.tocoo().astype(np.float32)
     indices = torch.from_numpy(
         np.vstack((sparse_mx.row, sparse_mx.col)).astype(np.int64)
@@ -132,8 +167,6 @@ def load_encoder_data(path, type_="txt"):
 
 
 def load_encoder_hdf5_data(path):
-    """ Load the data for training autoencoder
-    """
     loader = Hdf5Loader(path)
     train, valid = dict(), dict()
     sep = int(loader.total * 0.9)

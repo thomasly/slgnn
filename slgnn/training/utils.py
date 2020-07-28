@@ -49,17 +49,40 @@ def plot_train_val_acc(train_accs: list, val_accs: list, output):
 
 
 class EarlyStopper:
+    """ Base class of Early stoppers.
+
+    Args:
+        epoch (int): current epoch number.
+        metrics_dict (dict): dict of current metrics.
+    """
+
     def stop(self, epoch, metrics_dict):
+        """ Decide if the training should stop.
+
+        Returns:
+            bool:
+        """
         raise NotImplementedError("Implement this method!")
 
     def get_best_vl_metrics(self):
+        """ Get the best metrics values.
+
+        Returns:
+            dict: the metrics values when the monitored metric reaches the best
+                value.
+        """
         return self.opt_metrics
 
 
 class Patience(EarlyStopper):
 
-    """
-    Implement common "patience" technique
+    """ Implement common "patience" technique.
+
+    Args:
+        patience (int): number of patience. Default 20.
+        monitor (str): name of the metric to monitor. Default "val_loss".
+        mode (str): "min" or "max". Minimize or maxiumize the monitored metric. Default
+            "min".
     """
 
     def __init__(self, patience=20, monitor="val_loss", mode="min"):

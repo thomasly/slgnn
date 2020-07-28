@@ -5,6 +5,8 @@ from slgnn.config import PAD_ATOM
 
 
 class Decoder(nn.Module):
+    """ A simple decoder with one fully connected layer.
+    """
 
     def __init__(self, n_feat, n_hid, n_out, dropout):
         super().__init__()
@@ -30,6 +32,13 @@ class Decoder(nn.Module):
 
 
 class GINDecoder(nn.Module):
+    """ The decoder for GIN model.
+
+    Args:
+        n_in (int): number of the input features.
+        n_out (int): number of the ouput features.
+        dropout (float): dropout probability (1 - keep_probability).
+    """
 
     def __init__(self, n_in, n_out, dropout):
         super().__init__()
