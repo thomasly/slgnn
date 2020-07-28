@@ -15,6 +15,12 @@ from slgnn.data_processing.deepchem_datasets import (
     HIV,
     HIVFP,
     HIVBalanced,
+    Tox21,
+    Tox21FP,
+    ToxCast,
+    ToxCastFP,
+    MUV,
+    MUVFP,
 )
 from slgnn.data_processing.covid19_datasts import (
     Amu,
@@ -49,6 +55,84 @@ class TestDeepChemDatasets(unittest.TestCase):
             rmtree(path)
         dataset = SiderFP()
         self.assertEqual(len(dataset), 1427)
+        data = dataset[0]
+        self.assertEqual(data.x.size()[1], 6)
+        self.assertEqual(data.y.size(), (1, FILTERED_PUBCHEM_FP_LEN))
+        self.assertEqual(data.edge_index.size()[0], 2)
+
+    def test_tox21_dataset(self):
+        path = osp.join("data", "DeepChem", "Tox21", "processed")
+        if osp.exists(path):
+            rmtree(path)
+        dataset = Tox21()
+        self.assertEqual(len(dataset), 7831)
+        data = dataset[0]
+        self.assertEqual(data.x.size()[1], 6)
+        self.assertEqual(data.y.size(), (1, 12))
+        self.assertEqual(
+            list(data.y.numpy().squeeze()), [0, 0, 1, 2, 2, 0, 0, 1, 0, 0, 0, 0]
+        )
+        self.assertEqual(data.edge_index.size()[0], 2)
+
+    def test_tox21fp_dataset(self):
+        # remove processed data
+        path = osp.join("data", "DeepChem", "Tox21FP", "processed")
+        if osp.exists(path):
+            rmtree(path)
+        dataset = Tox21FP()
+        self.assertEqual(len(dataset), 7831)
+        data = dataset[0]
+        self.assertEqual(data.x.size()[1], 6)
+        self.assertEqual(data.y.size(), (1, FILTERED_PUBCHEM_FP_LEN))
+        self.assertEqual(data.edge_index.size()[0], 2)
+
+    def test_toxcast_dataset(self):
+        path = osp.join("data", "DeepChem", "ToxCast", "processed")
+        if osp.exists(path):
+            rmtree(path)
+        dataset = ToxCast()
+        self.assertEqual(len(dataset), 8576)
+        data = dataset[0]
+        self.assertEqual(data.x.size()[1], 6)
+        self.assertEqual(data.y.size(), (1, 617))
+        label = list(data.y.numpy().squeeze())
+        self.assertEqual(label[0], 0)
+        self.assertEqual(label[138], 1)
+        self.assertEqual(label[2], 2)
+        self.assertEqual(data.edge_index.size()[0], 2)
+
+    def test_toxcastfp_dataset(self):
+        # remove processed data
+        path = osp.join("data", "DeepChem", "ToxCastFP", "processed")
+        if osp.exists(path):
+            rmtree(path)
+        dataset = ToxCastFP()
+        self.assertEqual(len(dataset), 8576)
+        data = dataset[0]
+        self.assertEqual(data.x.size()[1], 6)
+        self.assertEqual(data.y.size(), (1, FILTERED_PUBCHEM_FP_LEN))
+        self.assertEqual(data.edge_index.size()[0], 2)
+
+    def test_muv_dataset(self):
+        # path = osp.join("data", "DeepChem", "MUV", "processed")
+        # if osp.exists(path):
+        #     rmtree(path)
+        dataset = MUV()
+        self.assertEqual(len(dataset), 93087)
+        data = dataset[0]
+        self.assertEqual(data.x.size()[1], 6)
+        self.assertEqual(data.y.size(), (1, 17))
+        label = list(data.y.numpy().squeeze())
+        self.assertEqual(label[7], 0)
+        self.assertEqual(label[0], 2)
+        self.assertEqual(data.edge_index.size()[0], 2)
+
+        # remove processed data
+        # path = osp.join("data", "DeepChem", "MUVFP", "processed")
+        # if osp.exists(path):
+        #     rmtree(path)
+        dataset = MUVFP()
+        self.assertEqual(len(dataset), 93087)
         data = dataset[0]
         self.assertEqual(data.x.size()[1], 6)
         self.assertEqual(data.y.size(), (1, FILTERED_PUBCHEM_FP_LEN))
