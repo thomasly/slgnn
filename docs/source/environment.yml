@@ -1,4 +1,4 @@
-name: pytorch
+name: pytorch2
 channels:
   - pytorch
   - conda-forge
@@ -158,10 +158,10 @@ dependencies:
   - zstd=1.3.7=h508b16e_0
   - pytorch=1.5.0=py3.6_cuda102_cudnn7_0
   - torchvision=0.6.0=py36_cu102
+  - chemreader==0.2.1
   - pip:
     - -atplotlib==3.2.1
     - argh==0.26.2
-    - chemreader==0.2.0
     - configparser==5.0.0
     - docker-pycreds==0.4.0
     - future==0.18.2
