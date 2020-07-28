@@ -41,7 +41,7 @@ from slgnn.data_processing.deepchem_datasets import (
     ClinToxFP,
     ClinToxBalanced,
 )
-from slgnn.data_processing.covid19_datasts import (
+from slgnn.data_processing.covid19_datasets import (
     Amu,
     AmuFP,
     Ellinger,
