@@ -5,6 +5,8 @@ import os.path as osp
 from datetime import datetime
 import random
 
+# import logging
+
 import torch
 import yaml
 
@@ -13,11 +15,11 @@ from slgnn.configs.arg_parsers import ModelTrainingArgs
 
 # from slgnn.models.gcn.model import GIN
 from slgnn.models.decoder.model import GINDecoder
-from slgnn.data_processing.loaders import DataSplitter
 from .trainers import EncoderDecoderTrainer, EncoderClassifierTrainer
 
 
 if __name__ == "__main__":
+    # logging.basicConfig(level=logging.INFO)
     args = ModelTrainingArgs().parse_args()
     config_grid = Grid(args.config)
     time_stamp = datetime.now().strftime(r"%Y%m%d_%H%M%S")
@@ -26,13 +28,26 @@ if __name__ == "__main__":
         random.seed(0)
         config = Config.from_dict(config_dict)
         datasets = config["encoder_dataset"]
-        log_dir = osp.join(
-            "logs",
-            config["model_name"],
-            time_stamp,
-            config["encoder_dataset_name"],
-            str(config_idx),
+        if config["encoder_epochs"] == 0:
+            ifencoder = "noencoder"
+        else:
+            ifencoder = "encoder"
+        log_name = "_".join(
+            [
+                config["encoder_dataset_name"],
+                config["classifier_dataset_name"],
+                config["classifier_data_splitter_name"],
+                "_".join(map(str, config["data_splitting_ratio"])),
+                "embed{}".format(config["embedding_dim"]),
+                # str(config["batch_size"]),
+                # str(config["learning_rate"]),
+                ifencoder,
+                "_".join(map(str, config["frozen_epochs"])),
+                config["aggregation"],
+                str(config_idx),
+            ]
         )
+        log_dir = osp.join("logs", time_stamp, log_name)
         os.makedirs(log_dir)
         with open(osp.join(log_dir, "configs.yml"), "w") as f:
             f.write(yaml.dump(config_dict))
@@ -48,12 +63,8 @@ if __name__ == "__main__":
         if config["encoder_epochs"] > 0:
             decoder = GINDecoder(dim_encoder_target, dim_decoder_target, dropout)
 
-            dloader = DataSplitter(
-                datasets, ratio=[0.9, 0.1, 0], batch_size=config["batch_size"]
-            )
-            encoder_trainer = EncoderDecoderTrainer(
-                config, encoder, decoder, dloader.train_loader, dloader.val_loader,
-            )
+            dloader = config["encoder_data_splitter"](datasets)
+            encoder_trainer = EncoderDecoderTrainer(config, encoder, decoder, dloader)
             encoder_trainer.metrics = []
             encoder_trainer.freeze_encoder = False
             encoder_trainer.train()
@@ -68,18 +79,13 @@ if __name__ == "__main__":
 
         cls_dataset = config["classifier_dataset"]()
         classifier = GINDecoder(dim_encoder_target, cls_dataset.num_classes, dropout)
-        cls_dloader = DataSplitter(
-            cls_dataset, ratio=config["data_ratio"], batch_size=config["batch_size"]
-        )
+        cls_dloader = config["classifier_data_splitter"](cls_dataset)
         cls_trainer = EncoderClassifierTrainer(
-            config,
-            encoder,
-            classifier,
-            cls_dloader.train_loader,
-            cls_dloader.val_loader,
+            config, encoder, classifier, cls_dloader,
         )
         cls_trainer.train()
         cls_trainer.plot_training_metrics(log_dir)
+        cls_trainer.test()
         cls_trainer.log_results(
             out=log_dir,
             txt_name="classifier_metrics.txt",
