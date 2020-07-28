@@ -3,6 +3,7 @@ import json
 import pickle
 from copy import deepcopy
 import os.path as osp
+import logging
 
 from torch.optim import Adam, SGD
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss
@@ -51,11 +52,22 @@ from slgnn.data_processing.covid19_datasts import (
     AntiviralFP,
 )
 from slgnn.training.utils import Patience
-from slgnn.metrics.metrics import Accuracy, ROC_AUC, F1, AP
+from slgnn.data_processing.loaders import ScaffoldSplitter, FixedSplitter, DataSplitter
+from slgnn.metrics.metrics import Accuracy, ROC_AUC, F1, AP, FocalLoss
 from slgnn.models.gcn.model import GIN, CPAN
 
 
 def read_config_file(dict_or_filelike):
+    """ Load config from file
+
+    Args:
+        dict_or_filelike (dict or str): config dictionary or the file in yaml, pickle,
+            or json format that can be converted to config dict.
+
+    Returns:
+        If the input is dict, return directly. If the input is file, return the config
+        dict load from the file.
+    """
     if isinstance(dict_or_filelike, dict):
         return dict_or_filelike
 
@@ -64,21 +76,38 @@ def read_config_file(dict_or_filelike):
         return json.load(open(path, "r"))
     elif path.suffix in [".yaml", ".yml"]:
         template = open(osp.join("model_configs", "config_template.txt"), "r").read()
-        config = yaml.load(open(path), "r")
-        return yaml.load(template.format(**config))
+        config = yaml.load(open(path, "r"), Loader=yaml.FullLoader)
+        logging.debug(f"config: {config}")
+        return yaml.load(template.format(**config), Loader=yaml.FullLoader)
     elif path.suffix in [".pkl", ".pickle"]:
         return pickle.load(open(path, "rb"))
 
     raise ValueError("Only JSON, YaML and pickle files supported.")
 
 
-class ConfigError(Exception):
-    pass
+# class ConfigError(Exception):
+#     pass
 
 
 class Config:
     """
     Specifies the configuration for a single model.
+
+    Args:
+        attrs: the configuration options and values.
+
+    Usage:
+        There two types of configuration options this class can handle.
+        1. Configurations with direct values. In this case, no modification to this
+        class is needed. The value is accessible as a attribute of the instance of this
+        class automatically.
+        e.g. conf = Config(**{"foo": 1})
+             conf["foo"]  >>  1
+        2. Configurations with parsers. In this case, add the configuration to the
+        attrnames list in the __init__. So the name of the configuration is accessible
+        through ``conf["{configuration}_name"]``. You also need to define a static
+        method named ``parse_{configuration}``. In the method, you can handle the
+        configuration and return the value or object you need.
     """
 
     encoder_datasets = {
@@ -103,6 +132,11 @@ class Config:
         "Antiviral": AntiviralFP,
     }
 
+    encoder_data_splitters = {
+        "DataSplitter": DataSplitter,
+        "FixedSplitter": FixedSplitter,
+    }
+
     classifier_datasets = {
         "JAK1": JAK1,
         "JAK2": JAK2,
@@ -122,27 +156,25 @@ class Config:
         "Mpro": Mpro,
     }
 
+    classifier_data_splitters = {
+        "DataSplitter": DataSplitter,
+        "ScaffoldSplitter": ScaffoldSplitter,
+        "FixedSplitter": FixedSplitter,
+    }
+
     models = {
         "CPAN": CPAN,
         "GIN": GIN,
-        # 'ECC': ECC,
-        # "DiffPool": DiffPool,
-        # "DGCNN": DGCNN,
-        # "MolecularFingerprint": MolecularFingerprint,
-        # "DeepMultisets": DeepMultisets,
-        # "GraphSAGE": GraphSAGE
     }
 
     encoder_losses = {
         "BCEWithLogitsLoss": BCEWithLogitsLoss,
-        # 'MulticlassClassificationLoss': MulticlassClassificationLoss,
-        # 'NN4GMCLoss': NN4GMulticlassClassificationLoss,
-        # 'DMCL': DiffPoolMulticlassClassificationLoss,
     }
 
     classifier_losses = {
         "BCEWithLogitsLoss": BCEWithLogitsLoss,
         "CrossEntropyLoss": CrossEntropyLoss,
+        "FocalLoss": FocalLoss,
     }
 
     metrics = {
@@ -177,6 +209,8 @@ class Config:
             attrnames = [
                 "encoder_dataset",
                 "classifier_dataset",
+                "encoder_data_splitter",
+                "classifier_data_splitter",
                 "model",
                 "encoder_loss",
                 "classifier_loss",
@@ -199,6 +233,9 @@ class Config:
                     setattr(self, "classifier_loss_name", value)
                 if attrname == "metrics":
                     setattr(self, "metrics_name", value)
+                if attrname == "classifier_data_splitter":
+                    setattr(self, "classifier_data_splitter_name", value["class"])
+                    setattr(self, "data_splitting_ratio", value["args"]["ratio"])
 
                 fn = getattr(self, f"parse_{attrname}")
                 setattr(self, attrname, fn(value))
@@ -256,6 +293,11 @@ class Config:
 
     @staticmethod
     def parse_classifier_loss(loss_s):
+        if isinstance(loss_s, dict):
+            loss_cls = loss_s["class"]
+            args = loss_s["args"]
+            assert loss_cls in Config.classifier_losses, f"Could not find {loss_cls}"
+            return lambda: Config.classifier_losses[loss_cls](**args)
         assert loss_s in Config.classifier_losses, f"Could not find {loss_s}"
         return Config.classifier_losses[loss_s]
 
@@ -283,6 +325,24 @@ class Config:
         assert sched_s in Config.schedulers, f"Could not find {sched_s}"
 
         return lambda opt: Config.schedulers[sched_s](opt, **args)
+
+    @staticmethod
+    def parse_encoder_data_splitter(splitter_dict):
+        spltr_s = splitter_dict["class"]
+        args = splitter_dict["args"]
+        assert spltr_s in Config.encoder_data_splitters, f"Could not find {spltr_s}"
+        return lambda dataset: Config.encoder_data_splitters[spltr_s](dataset, **args)
+
+    @staticmethod
+    def parse_classifier_data_splitter(splitter_dict):
+        spltr_s = splitter_dict["class"]
+        args = splitter_dict["args"]
+        assert spltr_s in Config.classifier_data_splitters, f"Could not find {spltr_s}"
+
+        def splitter(dataset):
+            return Config.classifier_data_splitters[spltr_s](dataset, **args)
+
+        return splitter
 
     @staticmethod
     def parse_early_stopper(stopper_dict):
@@ -322,8 +382,29 @@ class Config:
 
 
 class Grid:
-    """
-    Specifies the configuration for multiple models.
+    """ Generate a configuration grid with different hyper parameters in the config
+    file. The class read the first level lists of the configuration and generate all
+    value combinations. The instance can be used as a generator.
+
+    Example:
+        ::
+
+            config = {
+                "foo": [1, 2],
+                "bar": [3, 4]
+            }
+            grid = Grid(config)
+            for conf in grid:
+                ...
+
+        | >>
+        | conf["foo"] == 1, conf["bar"] == 3
+        | conf["foo"] == 2, conf["bar"] == 3
+        | conf["foo"] == 1, conf["bar"] == 4
+        | conf["foo"] == 2, conf["bar"] == 4
+
+    Args:
+        path_or_dict: the path to the config file or a config dict.
     """
 
     def __init__(self, path_or_dict):
