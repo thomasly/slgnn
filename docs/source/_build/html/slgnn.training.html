@@ -1,0 +1,578 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>slgnn.training package &#8212; slgnn  documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="slgnn.models.gcn package" href="slgnn.models.gcn.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="slgnn.models.gcn.html" title="slgnn.models.gcn package"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">slgnn  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="slgnn.html" accesskey="U">slgnn package</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">slgnn.training package</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="slgnn-training-package">
+<h1>slgnn.training package<a class="headerlink" href="#slgnn-training-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-slgnn.training.trainers">
+<span id="slgnn-training-trainers-module"></span><h2>slgnn.training.trainers module<a class="headerlink" href="#module-slgnn.training.trainers" title="Permalink to this headline">¶</a></h2>
+<p><strong>Trainers used to train encoder and classifier.</strong></p>
+<dl class="py class">
+<dt id="slgnn.training.trainers.BaseTrainer">
+<em class="property">class </em><code class="sig-prename descclassname">slgnn.training.trainers.</code><code class="sig-name descname">BaseTrainer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span></em>, <em class="sig-param"><span class="n">model</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dataloader</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.BaseTrainer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<p>The base class for trainers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> – an instance of slgnn.configs.base.Config class.</p></li>
+<li><p><strong>model</strong> – pytorch model.</p></li>
+<li><p><strong>dataloader</strong> – pytorch-geometric dataloader.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="slgnn.training.trainers.BaseTrainer.config">
+<em class="property">property </em><code class="sig-name descname">config</code><a class="headerlink" href="#slgnn.training.trainers.BaseTrainer.config" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Config instance. Mutable.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.BaseTrainer.criterion">
+<em class="property">abstract property </em><code class="sig-name descname">criterion</code><a class="headerlink" href="#slgnn.training.trainers.BaseTrainer.criterion" title="Permalink to this definition">¶</a></dt>
+<dd><p>The criterion used to calculate loss.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.BaseTrainer.dataloader">
+<em class="property">property </em><code class="sig-name descname">dataloader</code><a class="headerlink" href="#slgnn.training.trainers.BaseTrainer.dataloader" title="Permalink to this definition">¶</a></dt>
+<dd><p>The dataloader. Mutable.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.BaseTrainer.device">
+<em class="property">property </em><code class="sig-name descname">device</code><a class="headerlink" href="#slgnn.training.trainers.BaseTrainer.device" title="Permalink to this definition">¶</a></dt>
+<dd><p>The device on which to train the model.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.BaseTrainer.early_stopper">
+<em class="property">property </em><code class="sig-name descname">early_stopper</code><a class="headerlink" href="#slgnn.training.trainers.BaseTrainer.early_stopper" title="Permalink to this definition">¶</a></dt>
+<dd><p>The early stopper used in training.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.BaseTrainer.train_losses">
+<em class="property">property </em><code class="sig-name descname">train_losses</code><a class="headerlink" href="#slgnn.training.trainers.BaseTrainer.train_losses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Recorded train losses.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.BaseTrainer.val_losses">
+<em class="property">property </em><code class="sig-name descname">val_losses</code><a class="headerlink" href="#slgnn.training.trainers.BaseTrainer.val_losses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Recorded validation losses.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="slgnn.training.trainers.EncoderClassifierTrainer">
+<em class="property">class </em><code class="sig-prename descclassname">slgnn.training.trainers.</code><code class="sig-name descname">EncoderClassifierTrainer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span></em>, <em class="sig-param"><span class="n">encoder</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">decoder</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dataloader</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.EncoderClassifierTrainer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#slgnn.training.trainers.EncoderDecoderTrainer" title="slgnn.training.trainers.EncoderDecoderTrainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">slgnn.training.trainers.EncoderDecoderTrainer</span></code></a></p>
+<p>Trainer for encoder and classifier.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> – An instance of slgnn.configs.base.Config class.</p></li>
+<li><p><strong>encoder</strong> – encoder model.</p></li>
+<li><p><strong>decoder</strong> – decoder model.</p></li>
+<li><p><strong>dataloader</strong> – the dataloader feeding training, validation, and testing data.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderClassifierTrainer._parse_config">
+<code class="sig-name descname">_parse_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.EncoderClassifierTrainer._parse_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse the config instance and initialize neccessary components for training.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderClassifierTrainer.criterion">
+<em class="property">property </em><code class="sig-name descname">criterion</code><a class="headerlink" href="#slgnn.training.trainers.EncoderClassifierTrainer.criterion" title="Permalink to this definition">¶</a></dt>
+<dd><p>The criterion used to calculate loss.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderClassifierTrainer.epochs">
+<em class="property">property </em><code class="sig-name descname">epochs</code><a class="headerlink" href="#slgnn.training.trainers.EncoderClassifierTrainer.epochs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of total epoch to train the classifier.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderClassifierTrainer.plot_training_metrics">
+<code class="sig-name descname">plot_training_metrics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.EncoderClassifierTrainer.plot_training_metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot classifier training and validation losses.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<em>str</em>) – optional. Path to save the plottings. Default is the current
+working directory.</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – optional. Name of the plotting. Default is
+“classifier_train_val_losses.png”.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer">
+<em class="property">class </em><code class="sig-prename descclassname">slgnn.training.trainers.</code><code class="sig-name descname">EncoderDecoderTrainer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span></em>, <em class="sig-param"><span class="n">encoder</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">decoder</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dataloader</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#slgnn.training.trainers.BaseTrainer" title="slgnn.training.trainers.BaseTrainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">slgnn.training.trainers.BaseTrainer</span></code></a></p>
+<p>Trainer class used to pre-train encoder with a decoder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> – An instance of slgnn.configs.base.Config class.</p></li>
+<li><p><strong>encoder</strong> – encoder model.</p></li>
+<li><p><strong>decoder</strong> – decoder model.</p></li>
+<li><p><strong>dataloader</strong> – the dataloader feeding training, validation, and testing data.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer._determine_optimizers">
+<code class="sig-name descname">_determine_optimizers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer._determine_optimizers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load optimizers based on current epoch.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer._determine_schedulers">
+<code class="sig-name descname">_determine_schedulers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer._determine_schedulers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load schedulers based on current epoch.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer._get_current_idx">
+<code class="sig-name descname">_get_current_idx</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer._get_current_idx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the index of unfreezing stage. The index is used to decide which
+optimizers and schedulers should be loaded.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>the first index in frozen_epochs that current epoch is less than. If</dt><dd><p>current epoch is greater than all of the numbers in frozen_epochs,
+return the length of the frozen_epochs list.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>If current epoch is 16. The config[“frozen_epochs”] have value
+[5, 10, 15, 20, 25]. 16 is greater than 15 and less than 20, so 3 (index of
+20) is returned. If current epoch is greater than 25, 5 is returned.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer._get_metrics_string">
+<code class="sig-name descname">_get_metrics_string</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">metrics</span></em><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer._get_metrics_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a printable string of the best metrics values returned by
+early_stopper.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>metrics</strong> (<em>dict</em>) – recorded best metrics.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a printable string.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer._parse_config">
+<code class="sig-name descname">_parse_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer._parse_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse the config instance and initialize neccessary components for training.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer._setup_models">
+<code class="sig-name descname">_setup_models</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">mode</span><span class="o">=</span><span class="default_value">'train'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer._setup_models" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change model status and move the model to self.device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>mode</strong> (<em>str</em>) – Set encoder and decoder to train status (enable normalization
+and dropout) if mode == “train”. Otherwise set encoder and decoder to
+eval mode.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer.criterion">
+<em class="property">property </em><code class="sig-name descname">criterion</code><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer.criterion" title="Permalink to this definition">¶</a></dt>
+<dd><p>The criterion used to calculate loss.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer.decoder">
+<em class="property">property </em><code class="sig-name descname">decoder</code><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer.decoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>The decoder model. Mutable.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer.decoder_lr_scheduler">
+<em class="property">property </em><code class="sig-name descname">decoder_lr_scheduler</code><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer.decoder_lr_scheduler" title="Permalink to this definition">¶</a></dt>
+<dd><p>The learning rate scheduler for decoder.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer.encoder">
+<em class="property">property </em><code class="sig-name descname">encoder</code><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer.encoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>The encoder model. Mutable.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer.encoder_lr_scheduler">
+<em class="property">property </em><code class="sig-name descname">encoder_lr_scheduler</code><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer.encoder_lr_scheduler" title="Permalink to this definition">¶</a></dt>
+<dd><p>The learning rate schedulers for encoder.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer.epochs">
+<em class="property">property </em><code class="sig-name descname">epochs</code><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer.epochs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total number of training epochs.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer.freeze_encoder">
+<em class="property">property </em><code class="sig-name descname">freeze_encoder</code><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer.freeze_encoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>A boolean value. Whether freeze the encoder parameters. Mutable.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer.load_optimizers">
+<code class="sig-name descname">load_optimizers</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">optimizers</span></em><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer.load_optimizers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the optimizers to be used in training. Encoder and decoder have
+seperated optimizers. Encoder has more than one optimizer for gradient
+parameter unfreeze. Only the loaded optimizers will be used to update model
+parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>*optimizers</strong> – optimizers to be loaded.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer.load_schedulers">
+<code class="sig-name descname">load_schedulers</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">schedulers</span></em><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer.load_schedulers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the learning rate schedulers needed to be updated. The scheduler for
+frozen parameters should not be updated before unfreezing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>*schedulers</strong> – learning rate schedulers to be loaded.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer.log_before_training_status">
+<code class="sig-name descname">log_before_training_status</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer.log_before_training_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log the metrics before the first epoch with the randomly initialized model.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer.log_results">
+<code class="sig-name descname">log_results</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">txt_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pk_name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer.log_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log training results:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>out</strong> (<em>str</em>) – optional. Path to save the results. Default is the current
+working direcory.</p></li>
+<li><p><strong>txt_name</strong> (<em>str</em>) – optional. Name of the txt file saving the best training
+metrics. Default is “training_metrics.txt”.</p></li>
+<li><p><strong>pk_name</strong> (<em>str</em>) – optional. Name of the pickle file saving all metrics values
+during the whole training process. Default is “losses.pk”. (Not only
+losses, but all metrics values are saved in the file.)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer.metrics">
+<em class="property">property </em><code class="sig-name descname">metrics</code><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer.metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Metrics used for monitoring training. Mutable.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer.plot_reconstructions">
+<code class="sig-name descname">plot_reconstructions</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">index</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer.plot_reconstructions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot reconstruction bar chart with validation data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>index</strong> (<em>int</em>) – optional. The index of the validation data to use. Default is
+0.</p></li>
+<li><p><strong>path</strong> (<em>str</em>) – optional. Path to save the plottings. Default is the current
+working directory.</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – optional. Name of the saved plotting. Default is
+“reconstructions.png”.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer.plot_training_metrics">
+<code class="sig-name descname">plot_training_metrics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer.plot_training_metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plotting the training and validation loss curves.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<em>str</em>) – optional. Path to save the plottings. Default is the current
+working directory.</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – optional. Filename of the plotting. Default:
+“train_val_losses.png”.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer.test">
+<code class="sig-name descname">test</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer.test" title="Permalink to this definition">¶</a></dt>
+<dd><p>Testing the encoder and decoder with test dataset.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer.train">
+<code class="sig-name descname">train</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer.train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train encoder and decoder.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer.train_metrics">
+<em class="property">property </em><code class="sig-name descname">train_metrics</code><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer.train_metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>The recorded training metrics values.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer.train_one_epoch">
+<code class="sig-name descname">train_one_epoch</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer.train_one_epoch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train the encoder and decoder one epoch.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer.val_metrics">
+<em class="property">property </em><code class="sig-name descname">val_metrics</code><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer.val_metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>The recorded validating metrics values.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.trainers.EncoderDecoderTrainer.validate">
+<code class="sig-name descname">validate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.trainers.EncoderDecoderTrainer.validate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validating the encoder and decoder with validating dataset.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-slgnn.training.train_gin">
+<span id="slgnn-training-train-gin-module"></span><h2>slgnn.training.train_gin module<a class="headerlink" href="#module-slgnn.training.train_gin" title="Permalink to this headline">¶</a></h2>
+<p>A easy script to run GIN model.</p>
+</div>
+<div class="section" id="module-slgnn.training.utils">
+<span id="slgnn-training-utils-module"></span><h2>slgnn.training.utils module<a class="headerlink" href="#module-slgnn.training.utils" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="slgnn.training.utils.EarlyStopper">
+<em class="property">class </em><code class="sig-prename descclassname">slgnn.training.utils.</code><code class="sig-name descname">EarlyStopper</code><a class="headerlink" href="#slgnn.training.utils.EarlyStopper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Base class of Early stoppers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>epoch</strong> (<em>int</em>) – current epoch number.</p></li>
+<li><p><strong>metrics_dict</strong> (<em>dict</em>) – dict of current metrics.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="slgnn.training.utils.EarlyStopper.get_best_vl_metrics">
+<code class="sig-name descname">get_best_vl_metrics</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.utils.EarlyStopper.get_best_vl_metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the best metrics values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>the metrics values when the monitored metric reaches the best</dt><dd><p>value.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="slgnn.training.utils.EarlyStopper.stop">
+<code class="sig-name descname">stop</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">epoch</span></em>, <em class="sig-param"><span class="n">metrics_dict</span></em><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.utils.EarlyStopper.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decide if the training should stop.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="slgnn.training.utils.Patience">
+<em class="property">class </em><code class="sig-prename descclassname">slgnn.training.utils.</code><code class="sig-name descname">Patience</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">patience</span><span class="o">=</span><span class="default_value">20</span></em>, <em class="sig-param"><span class="n">monitor</span><span class="o">=</span><span class="default_value">'val_loss'</span></em>, <em class="sig-param"><span class="n">mode</span><span class="o">=</span><span class="default_value">'min'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.utils.Patience" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#slgnn.training.utils.EarlyStopper" title="slgnn.training.utils.EarlyStopper"><code class="xref py py-class docutils literal notranslate"><span class="pre">slgnn.training.utils.EarlyStopper</span></code></a></p>
+<p>Implement common “patience” technique.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>patience</strong> (<em>int</em>) – number of patience. Default 20.</p></li>
+<li><p><strong>monitor</strong> (<em>str</em>) – name of the metric to monitor. Default “val_loss”.</p></li>
+<li><p><strong>mode</strong> (<em>str</em>) – “min” or “max”. Minimize or maxiumize the monitored metric. Default
+“min”.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="slgnn.training.utils.Patience.stop">
+<code class="sig-name descname">stop</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">epoch</span></em>, <em class="sig-param"><span class="n">metrics_dict</span></em><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.training.utils.Patience.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decide if the training should stop.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-slgnn.training">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-slgnn.training" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">slgnn.training package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-slgnn.training.trainers">slgnn.training.trainers module</a></li>
+<li><a class="reference internal" href="#module-slgnn.training.train_gin">slgnn.training.train_gin module</a></li>
+<li><a class="reference internal" href="#module-slgnn.training.utils">slgnn.training.utils module</a></li>
+<li><a class="reference internal" href="#module-slgnn.training">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="slgnn.models.gcn.html"
+                        title="previous chapter">slgnn.models.gcn package</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/slgnn.training.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="slgnn.models.gcn.html" title="slgnn.models.gcn package"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">slgnn  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="slgnn.html" >slgnn package</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">slgnn.training package</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Yang Liu.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+  </body>
+</html>

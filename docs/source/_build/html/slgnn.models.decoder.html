@@ -1,0 +1,185 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>slgnn.models.decoder package &#8212; slgnn  documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="slgnn.models.gcn package" href="slgnn.models.gcn.html" />
+    <link rel="prev" title="slgnn.models package" href="slgnn.models.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="slgnn.models.gcn.html" title="slgnn.models.gcn package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="slgnn.models.html" title="slgnn.models package"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">slgnn  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="slgnn.html" >slgnn package</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="slgnn.models.html" accesskey="U">slgnn.models package</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">slgnn.models.decoder package</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="slgnn-models-decoder-package">
+<h1>slgnn.models.decoder package<a class="headerlink" href="#slgnn-models-decoder-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-slgnn.models.decoder.model">
+<span id="slgnn-models-decoder-model-module"></span><h2>slgnn.models.decoder.model module<a class="headerlink" href="#module-slgnn.models.decoder.model" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="slgnn.models.decoder.model.Decoder">
+<em class="property">class </em><code class="sig-prename descclassname">slgnn.models.decoder.model.</code><code class="sig-name descname">Decoder</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n_feat</span></em>, <em class="sig-param"><span class="n">n_hid</span></em>, <em class="sig-param"><span class="n">n_out</span></em>, <em class="sig-param"><span class="n">dropout</span></em><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.models.decoder.model.Decoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>A simple decoder with one fully connected layer.</p>
+<dl class="py method">
+<dt id="slgnn.models.decoder.model.Decoder.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.models.decoder.model.Decoder.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="slgnn.models.decoder.model.GINDecoder">
+<em class="property">class </em><code class="sig-prename descclassname">slgnn.models.decoder.model.</code><code class="sig-name descname">GINDecoder</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n_in</span></em>, <em class="sig-param"><span class="n">n_out</span></em>, <em class="sig-param"><span class="n">dropout</span></em><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.models.decoder.model.GINDecoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>The decoder for GIN model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n_in</strong> (<em>int</em>) – number of the input features.</p></li>
+<li><p><strong>n_out</strong> (<em>int</em>) – number of the ouput features.</p></li>
+<li><p><strong>dropout</strong> (<em>float</em>) – dropout probability (1 - keep_probability).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="slgnn.models.decoder.model.GINDecoder.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#slgnn.models.decoder.model.GINDecoder.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-slgnn.models.decoder">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-slgnn.models.decoder" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">slgnn.models.decoder package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-slgnn.models.decoder.model">slgnn.models.decoder.model module</a></li>
+<li><a class="reference internal" href="#module-slgnn.models.decoder">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="slgnn.models.html"
+                        title="previous chapter">slgnn.models package</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="slgnn.models.gcn.html"
+                        title="next chapter">slgnn.models.gcn package</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/slgnn.models.decoder.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="slgnn.models.gcn.html" title="slgnn.models.gcn package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="slgnn.models.html" title="slgnn.models package"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">slgnn  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="slgnn.html" >slgnn package</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="slgnn.models.html" >slgnn.models package</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">slgnn.models.decoder package</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Yang Liu.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+  </body>
+</html>
