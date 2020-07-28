@@ -1,3 +1,6 @@
+""" **Datasets related to Covid-19.**
+"""
+
 import os.path as osp
 
 import torch
@@ -9,6 +12,10 @@ from slgnn.models.gcn.utils import get_filtered_fingerprint
 
 
 class Amu(DeepchemDataset):
+    """ Amu dataset. FDA-approved compounds screened against SARS-CoV-2 in vitro.
+    1,484 compounds, 88 hits.
+    """
+
     def __init__(self, root=None, name="amu_sars_cov_2_in_vitro"):
         if root is None:
             root = osp.join("data", "Covid19", "Amu")
@@ -31,6 +38,9 @@ class Amu(DeepchemDataset):
 
 
 class AmuFP(Amu):
+    """ Amu dataset with fingerprints as labels.
+    """
+
     def __init__(self, root=None, name="amu_sars_cov_2_in_vitro"):
         if root is None:
             root = osp.join("data", "Covid19", "AmuFP")
@@ -50,6 +60,10 @@ class AmuFP(Amu):
 
 
 class Ellinger(DeepchemDataset):
+    """ Ellinger dataset. A large scale drug repurposing collection of compounds
+    screened against SARS-CoV-2 in vitro. 5,632 compounds, 67 hits.
+    """
+
     def __init__(self, root=None, name="ellinger"):
         if root is None:
             root = osp.join("data", "Covid19", "Ellinger")
@@ -72,6 +86,9 @@ class Ellinger(DeepchemDataset):
 
 
 class EllingerFP(Ellinger):
+    """ Ellinger dataset with fingerprints as labels.
+    """
+
     def __init__(self, root=None, name="ellinger"):
         if root is None:
             root = osp.join("data", "Covid19", "EllingerFP")
@@ -91,6 +108,10 @@ class EllingerFP(Ellinger):
 
 
 class Mpro(DeepchemDataset):
+    """ Mpro dataset. fragments screened for 3CL protease binding using crystallography
+    techniques. 880 compounds, 78 hits.
+    """
+
     def __init__(self, root=None, name="mpro_xchem"):
         if root is None:
             root = osp.join("data", "Covid19", "Mpro")
@@ -113,6 +134,9 @@ class Mpro(DeepchemDataset):
 
 
 class MproFP(Mpro):
+    """ Mpro dataset with fingerprints as labels.
+    """
+
     def __init__(self, root=None, name="mpro_xchem"):
         if root is None:
             root = osp.join("data", "Covid19", "MproFP")
@@ -132,6 +156,10 @@ class MproFP(Mpro):
 
 
 class RepurposingFP(DeepchemDataset):
+    """ Drug repurposing dataset from Broad Institue with fingerprints as labels. Can
+    be used for pretraining.
+    """
+
     def __init__(self, root=None, name="repurposing_drugs_smiles"):
         if root is None:
             root = osp.join("data", "Covid19", "RepurposingFP")
@@ -163,6 +191,11 @@ class RepurposingFP(DeepchemDataset):
 
 
 class AntiviralFP(DeepchemDataset):
+    """ known anti-viral drugs and related chemical compounds that are structurally
+    similar to known antivirals from CAS with fingerprints as labels. Can be used for
+    pretraining.
+    """
+
     def __init__(self, root=None, name="antiviral_updated"):
         if root is None:
             root = osp.join("data", "Covid19", "AntiviralFP")

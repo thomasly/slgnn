@@ -1,9 +1,13 @@
+""" **TU formatted datasets and JAK datases.**
+"""
+
 import os
 import os.path as osp
 import glob
 from abc import ABCMeta, abstractmethod
 
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn.functional as F
 from torch_sparse import coalesce
@@ -16,9 +20,13 @@ from chemreader.readers import Smiles
 from tqdm import tqdm
 
 from slgnn.models.gcn.utils import get_filtered_fingerprint
+from slgnn.data_processing.deepchem_datasets import DeepchemDataset
 
 
 class ZINCDataset(TUDataset):
+    """ The base class for TU formatted datasets.
+    """
+
     @staticmethod
     def read_file(folder, prefix, name, dtype=None):
         path = osp.join(folder, "{}_{}.txt".format(prefix, name))
@@ -149,6 +157,9 @@ class ZINCDataset(TUDataset):
 
 
 class JAKDataset(TUDataset):
+    """ The base class of JAK datasets.
+    """
+
     @property
     def raw_file_names(self):
         names = [
@@ -171,6 +182,14 @@ class JAKDataset(TUDataset):
 
 
 class ZINC1k(ZINCDataset):
+    """ ZINC1k dataset. Contains 1k chemicals sampled from ZINC dataset. The chemicals
+    are checked with Tanimoto similarity in order to make them dissimilar with each
+    other.
+
+    Args:
+        root (str): path to the root directory.
+    """
+
     def __init__(self, root=None):
         if root is None:
             root = osp.join("data", "ZINC", "graphs")
@@ -185,6 +204,14 @@ class ZINC1k(ZINCDataset):
 
 
 class ZINC10k(ZINCDataset):
+    """ ZINC10k dataset. Contains 10k chemicals sampled from ZINC dataset. The chemicals
+    are checked with Tanimoto similarity in order to make them dissimilar with each
+    other.
+
+    Args:
+        root (str): path to the root directory.
+    """
+
     def __init__(self):
         root = osp.join("data", "ZINC", "graphs")
         name = "ZINC10k"
@@ -198,6 +225,14 @@ class ZINC10k(ZINCDataset):
 
 
 class ZINC100k(ZINCDataset):
+    """ ZINC100k dataset. Contains 100k chemicals sampled from ZINC dataset. The
+    chemicals are checked with Tanimoto similarity in order to make them dissimilar with
+    each other.
+
+    Args:
+        root (str): path to the root directory.
+    """
+
     def __init__(self):
         root = osp.join("data", "ZINC", "graphs")
         name = "ZINC100k"
@@ -210,48 +245,106 @@ class ZINC100k(ZINCDataset):
         return "ZINC100k"
 
 
-class JAK1(JAKDataset):
-    def __init__(self, root=None, name=None):
-        if root is None:
-            root = osp.join("data", "JAK", "graphs")
-        if name is None:
-            name = "JAK1"
-        super().__init__(root=root, name=name, use_node_attr=True)
+class JAK1(DeepchemDataset):
+    """ Chemicals that bind to JAK1 kinase.
 
-    def process(self):
-        super().process()
+    Args:
+        root (str): path to the root directory.
+        name (str): name of the file prefix. Default is "filtered_JAK1".
+    """
+
+    def __init__(self, root=None, name="filtered_JAK1"):
+        if root is None:
+            root = osp.join("data", "JAK", "graphs", "JAK1")
+        super().__init__(root=root, name=name)
+
+    def _get_smiles(self):
+        df = pd.read_csv(self.raw_paths[0])
+        smiles = iter(df["Smiles"])
+        return smiles
+
+    def _get_labels(self):
+        df = pd.read_csv(self.raw_paths[0])
+        for lb in df["Activity"]:
+            if lb == -1:
+                lb = 0
+            yield torch.tensor([lb], dtype=torch.long)
+
+    def process(self, verbose=0):
+        super().process(verbose)
 
     def __str__(self):
         return "JAK1"
 
 
-class JAK2(JAKDataset):
-    def __init__(self):
-        root = osp.join("data", "JAK", "graphs")
-        name = "JAK2"
-        super().__init__(root=root, name=name, use_node_attr=True)
+class JAK2(DeepchemDataset):
+    """ Chemicals that bind to JAK2 kinase.
 
-    def process(self):
-        super().process()
+    Args:
+        root (str): path to the root directory.
+        name (str): name of the file prefix. Default is "filtered_JAK2".
+    """
+
+    def __init__(self, root=None, name="filtered_JAK2"):
+        if root is None:
+            root = osp.join("data", "JAK", "graphs", "JAK2")
+        super().__init__(root=root, name=name)
+
+    def _get_smiles(self):
+        df = pd.read_csv(self.raw_paths[0])
+        smiles = iter(df["Smiles"])
+        return smiles
+
+    def _get_labels(self):
+        df = pd.read_csv(self.raw_paths[0])
+        for lb in df["Activity"]:
+            if lb == -1:
+                lb = 0
+            yield torch.tensor([lb], dtype=torch.long)
+
+    def process(self, verbose=0):
+        super().process(verbose)
 
     def __str__(self):
         return "JAK2"
 
 
-class JAK3(JAKDataset):
-    def __init__(self):
-        root = osp.join("data", "JAK", "graphs")
-        name = "JAK3"
-        super().__init__(root=root, name=name, use_node_attr=True)
+class JAK3(DeepchemDataset):
+    """ Chemicals that bind to JAK3 kinase.
 
-    def process(self):
-        super().process()
+    Args:
+        root (str): path to the root directory.
+        name (str): name of the file prefix. Default is "filtered_JAK3".
+    """
+
+    def __init__(self, root=None, name="filtered_JAK3"):
+        if root is None:
+            root = osp.join("data", "JAK", "graphs", "JAK3")
+        super().__init__(root=root, name=name)
+
+    def _get_smiles(self):
+        df = pd.read_csv(self.raw_paths[0])
+        smiles = iter(df["Smiles"])
+        return smiles
+
+    def _get_labels(self):
+        df = pd.read_csv(self.raw_paths[0])
+        for lb in df["Activity"]:
+            if lb == -1:
+                lb = 0
+            yield torch.tensor([lb], dtype=torch.long)
+
+    def process(self, verbose=0):
+        super().process(verbose)
 
     def __str__(self):
         return "JAK3"
 
 
 class JAK1FP(JAKDataset):
+    """ Chemicals that bind to JAK1 kinase with fingerprints as labels.
+    """
+
     def __init__(self):
         root = osp.join("data", "JAK", "graphs")
         name = "JAK1FP"
@@ -265,6 +358,9 @@ class JAK1FP(JAKDataset):
 
 
 class JAK2FP(JAKDataset):
+    """ Chemicals that bind to JAK2 kinase with fingerprints as labels.
+    """
+
     def __init__(self):
         root = osp.join("data", "JAK", "graphs")
         name = "JAK2FP"
@@ -278,6 +374,9 @@ class JAK2FP(JAKDataset):
 
 
 class JAK3FP(JAKDataset):
+    """ Chemicals that bind to JAK3 kinase with fingerprints as labels.
+    """
+
     def __init__(self):
         root = osp.join("data", "JAK", "graphs")
         name = "JAK3FP"
@@ -291,6 +390,12 @@ class JAK3FP(JAKDataset):
 
 
 class JAK1Train(JAKDataset):
+    """ The presplitted JAK1 training dataset. The presplitting process was done by
+    clustering chemicals based on Tanimoto similarity and then splitting the clusters
+    to make sure training set and testing set are dissimilar. While splitting, the
+    ratio of positive and negative samples was retained.
+    """
+
     def __init__(self):
         root = osp.join("data", "JAK", "graphs")
         name = "JAK1_train"
@@ -304,6 +409,9 @@ class JAK1Train(JAKDataset):
 
 
 class JAK1Test(JAKDataset):
+    """ The presplitted JAK1 testing dataset corresponding to the training set above.
+    """
+
     def __init__(self):
         root = osp.join("data", "JAK", "graphs")
         name = "JAK1_test"
@@ -317,6 +425,10 @@ class JAK1Test(JAKDataset):
 
 
 class JAK2Train(JAKDataset):
+    """ The presplitted JAK2 training dataset. The presplitting method is the same as
+    JAK1Train and JAK1Test datasets.
+    """
+
     def __init__(self):
         root = osp.join("data", "JAK", "graphs")
         name = "JAK2_train"
@@ -330,6 +442,9 @@ class JAK2Train(JAKDataset):
 
 
 class JAK2Test(JAKDataset):
+    """ The presplitted JAK2 testing dataset corresponding to the training set above.
+    """
+
     def __init__(self):
         root = osp.join("data", "JAK", "graphs")
         name = "JAK2_test"
@@ -343,6 +458,10 @@ class JAK2Test(JAKDataset):
 
 
 class JAK3Train(JAKDataset):
+    """ The presplitted JAK3 training dataset. The presplitting method is the same as
+    JAK1Train and JAK1Test datasets.
+    """
+
     def __init__(self):
         root = osp.join("data", "JAK", "graphs")
         name = "JAK3_train"
@@ -356,6 +475,9 @@ class JAK3Train(JAKDataset):
 
 
 class JAK3Test(JAKDataset):
+    """ The presplitted JAK3 testing dataset corresponding to the training set above.
+    """
+
     def __init__(self):
         root = osp.join("data", "JAK", "graphs")
         name = "JAK3_test"
@@ -369,6 +491,18 @@ class JAK3Test(JAKDataset):
 
 
 class PresplittedBase:
+    """ The base class can be used by data loader to load presplitted datasets.
+
+    Args:
+        shuffle_ (bool): Whether shuffling the dataset.
+        batch_size (int): The size of mini batches.
+
+    Attributes:
+        train_data: the training dataset.
+        val_data: the validation dataset.
+        num_classes: number of labeled classes.
+    """
+
     def __init__(self, shuffle_=None, batch_size=None):
         self._shuffle = shuffle_
         self._batch_size = batch_size
@@ -392,19 +526,43 @@ class PresplittedBase:
         return self.train_data.num_classes
 
     def train_loader(self):
+        """ Must be implemented by subclasses.
+
+        Returns:
+            DataLoader: a instance of pytorch-geometric DataLoader class with training
+                dataset underhood.
+        """
         raise NotImplementedError
 
     def val_loader(self):
+        """ Must be implemented by subclasses.
+
+        Returns:
+            DataLoader: a instance of pytorch-geometric DataLoader class with validation
+                dataset underhood.
+        """
         raise NotImplementedError
 
     def __str__(self):
         return self._str()
 
     def _str(self):
+        """ Must be implemented by subclasses.
+
+        Returns:
+            str: Name or description of the class.
+        """
         raise NotImplementedError
 
 
 class JAK1Presplitted(PresplittedBase):
+    """ The class can be used by dataloaders for JAK1 presplitted dataset.
+
+    Args:
+        shuffle_ (bool): Whether shuffling the dataset.
+        batch_size (int): The size of mini batches.
+    """
+
     def __init__(self, shuffle_=None, batch_size=None):
         super().__init__(shuffle_, batch_size)
         self._train_data = JAK1Train()
@@ -425,6 +583,13 @@ class JAK1Presplitted(PresplittedBase):
 
 
 class JAK2Presplitted(PresplittedBase):
+    """ The class can be used by dataloaders for JAK2 presplitted dataset.
+
+    Args:
+        shuffle_ (bool): Whether shuffling the dataset.
+        batch_size (int): The size of mini batches.
+    """
+
     def __init__(self, shuffle_=None, batch_size=None):
         super().__init__(shuffle_, batch_size)
         self._train_data = JAK2Train()
@@ -445,6 +610,13 @@ class JAK2Presplitted(PresplittedBase):
 
 
 class JAK3Presplitted(PresplittedBase):
+    """ The class can be used by dataloaders for JAK3 presplitted dataset.
+
+    Args:
+        shuffle_ (bool): Whether shuffling the dataset.
+        batch_size (int): The size of mini batches.
+    """
+
     def __init__(self, shuffle_=None, batch_size=None):
         super().__init__(shuffle_, batch_size)
         self._train_data = JAK3Train()
@@ -465,12 +637,29 @@ class JAK3Presplitted(PresplittedBase):
 
 
 class DudeDecoys(InMemoryDataset, metaclass=ABCMeta):
+    """ The base class handling decoys from DUD*E server.
+
+    Args:
+        root (str): root path.
+        transform: optional. The transformer transforms data on the fly.
+        pre_transform: optional. The transformer transforms data while converting raw
+            data to graphs.
+        pre_filter: optional. The filter function filters data while converting raw
+            data to graphs.
+    """
+
     def __init__(self, root, transform=None, pre_transform=None, pre_filter=None):
         super().__init__(root, transform, pre_transform, pre_filter)
         self.data, self.slices = torch.load(self.processed_paths[0])
 
     @abstractmethod
     def raw_file_names(self):
+        """ Must be implemented by subclasses.
+
+        Returns:
+            list: decoys filenames. Does not need the full list of all files. One
+                filename to make the class constuctor skip download is enough.
+        """
         raw_file_name = "decoys.P10000001.picked"
         return [raw_file_name]
 
@@ -482,6 +671,11 @@ class DudeDecoys(InMemoryDataset, metaclass=ABCMeta):
         pass
 
     def process(self, verbose=0):
+        """ Mothed processes decoys from DUD*E.
+
+        Args:
+            verbose (bool): Whether showing the process bar.
+        """
         smiles = self._get_smiles(verbose)
         fingerprints = self._get_fingerprints(smiles, verbose)
         data_list = list()
@@ -528,6 +722,12 @@ class DudeDecoys(InMemoryDataset, metaclass=ABCMeta):
 
 
 class JAK1Dude(DudeDecoys):
+    """ DUD*E decoys generated with JAK1 dataset.
+
+    Args:
+        root (str): root path to the dataset directory.
+    """
+
     def __init__(self, root="data/JAK/DUDE_decoys/JAK1"):
         super().__init__(root=root)
 
@@ -542,6 +742,12 @@ class JAK1Dude(DudeDecoys):
 
 
 class JAK2Dude(DudeDecoys):
+    """ DUD*E decoys generated with JAK2 dataset.
+
+    Args:
+        root (str): root path to the dataset directory.
+    """
+
     def __init__(self, root="data/JAK/DUDE_decoys/JAK2"):
         super().__init__(root=root)
 
@@ -556,6 +762,12 @@ class JAK2Dude(DudeDecoys):
 
 
 class JAK3Dude(DudeDecoys):
+    """ DUD*E decoys generated with JAK3 dataset.
+
+    Args:
+        root (str): root path to the dataset directory.
+    """
+
     def __init__(self, root="data/JAK/DUDE_decoys/JAK3"):
         super().__init__(root=root)
 
