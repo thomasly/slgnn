@@ -12,7 +12,6 @@ dependencies:
   - cffi=1.14.0
   - cycler=0.10.0
   - freetype=2.10.2
-  - icc_rt
   - icu=58.2
   - intel-openmp=2020.1
   - jpeg=9b
@@ -52,10 +51,7 @@ dependencies:
   - sqlite=3.32.3
   - tk=8.6.10
   - tornado=6.0.4
-  - vc
-  - vs2015_runtime
   - wheel=0.34.2
-  - wincertstore
   - xz=5.2.5
   - yaml=0.2.5
   - zlib=1.2.11
