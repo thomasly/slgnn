@@ -10,13 +10,13 @@ sphinx:
 #mkdocs:
 # configuration: mkdocs.yml
 # Optionally build your docs in additional formats such as PDF
-formats:
-  - pdf
+# formats:
+#   - pdf
 # Optionally set the version of Python and requirements required to build your docs
-python:
-  version: 3.6
-  install:
-    - requirements: docs/source/requirements.txt
+# python:
+#   version: 3.6
+#   install:
+#     - requirements: docs/source/requirements.txt
 
 conda:
   environment: docs/source/environment.yml
