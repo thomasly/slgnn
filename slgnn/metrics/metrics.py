@@ -6,6 +6,7 @@ import warnings
 
 import torch
 import torch.nn as nn
+from torch.nn import BCEWithLogitsLoss
 import torch.nn.functional as F
 from torch.autograd import Variable
 from sklearn.metrics import (
@@ -55,6 +56,7 @@ class AUC(ABC):
             float: the calculated AUC score. If the score is not calculatable (all of
                 targets belongs to the same class), return the last available score.
         """
+        is_valid = ~(target == -1).cpu().detach()
         if _one_class(target):
             pred = torch.softmax(pred, 1)[:, 1]
         else:
@@ -63,7 +65,7 @@ class AUC(ABC):
         with warnings.catch_warnings():
             warnings.filterwarnings("error")
             try:
-                score = self.judger(target, pred)
+                score = self.judger(target[is_valid], pred[is_valid])
                 self._last = score
             except ValueError:
                 score = self._last
@@ -85,12 +87,13 @@ class Accuracy:
             pred:
             target:
         """
+        is_valid = ~(target == -1).cpu().detach()
         pred, target = _to_numpy(pred, target)
         if _one_class(target):
             _, pred = pred.max(dim=1)
         else:
             pred = torch.round(torch.sigmoid(pred))
-        return accuracy_score(target, pred)
+        return accuracy_score(target[is_valid], pred[is_valid])
 
     @property
     def name(self):
@@ -129,12 +132,13 @@ class F1:
             pred:
             target:
         """
+        is_valid = ~(target == -1).cpu().detach()
         if _one_class(target):
             _, pred = pred.max(dim=1)
         else:
             pred = torch.round(torch.sigmoid(pred))
         pred, target = _to_numpy(pred, target)
-        return f1_score(target, pred, average="micro")
+        return f1_score(target[is_valid], pred[is_valid], average="micro")
 
     @property
     def name(self):
@@ -189,11 +193,23 @@ class FocalLoss(nn.Module):
         self.size_average = size_average
 
     def forward(self, input, target):
+        """ Calculate focal loss. If your target have missing values, just fill the
+        missing values with -1. This loss will apply a mask to the missing labels and
+        calculate the loss with unmasked data.
+
+        Args:
+            input (torch.tensor): shape (N, C) where C = number of classes.
+            target (torch.tensor): shape(N) where each value is
+                :math:`0 \leq \text{targets}[i] \leq C-1`
+        """
         if input.dim() > 2:
             input = input.view(input.size(0), input.size(1), -1)  # N,C,H,W => N,C,H*W
             input = input.transpose(1, 2)  # N,C,H*W => N,H*W,C
             input = input.contiguous().view(-1, input.size(2))  # N,H*W,C => N*H*W,C
         target = target.view(-1, 1)
+        target = target.to(torch.long)
+        is_valid = ~(target == -1).squeeze().cpu().detach()
+        target[target == -1] = 0
 
         logpt = F.log_softmax(input, dim=1)
         logpt = logpt.gather(1, target)
@@ -206,8 +222,38 @@ class FocalLoss(nn.Module):
             at = self.alpha.gather(0, target.data.view(-1))
             logpt = logpt * Variable(at)
 
-        loss = -1 * (1 - pt) ** self.gamma * logpt
+        loss = -1 * (1 - pt[is_valid]) ** self.gamma * logpt[is_valid]
         if self.size_average:
             return loss.mean()
         else:
             return loss.sum()
+
+
+class MaskedBCEWithLogitsLoss(BCEWithLogitsLoss):
+    __doc__ = f""" Maksed binary cross entropy loss. Filter out the effects of missing
+    labels. In practise, missing labels should be filled with a number -1.
+
+    {BCEWithLogitsLoss.__doc__}
+    """
+
+    def __init__(
+        self, weight=None, reduction="mean", pos_weight=None,
+    ):
+        super().__init__(weight=weight, reduction=reduction, pos_weight=pos_weight)
+
+    def forward(self, pred, target):
+        mask = target == -1
+        unmasked_loss = F.binary_cross_entropy_with_logits(
+            pred, target, self.weight, pos_weight=self.pos_weight, reduction="none"
+        )
+        pad = (
+            torch.zeros(unmasked_loss.shape)
+            .to(unmasked_loss.device)
+            .to(unmasked_loss.dtype)
+        )
+        masked_loss = torch.where(mask, pad, unmasked_loss)
+        if self.reduction == "mean":
+            loss = torch.sum(masked_loss) / torch.sum(~mask)
+        else:  # "sum"
+            loss = torch.sum(masked_loss)
+        return loss
