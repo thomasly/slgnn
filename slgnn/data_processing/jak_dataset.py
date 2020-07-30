@@ -28,8 +28,7 @@ def filter_(path):
     add_back = jak.loc[gt & eq_1um]
     filtered = filtered.append(add_back)
     filtered["Activity"] = filtered["Standard Value"].apply(_is_active)
-    out_path = os.path.join(
-        os.path.dirname(path), "filtered_"+os.path.basename(path))
+    out_path = os.path.join(os.path.dirname(path), "filtered_" + os.path.basename(path))
     filtered[["Smiles", "Activity"]].to_csv(out_path)
 
 
@@ -54,13 +53,13 @@ def write_graphs(inpath, outpath, prefix=None):
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("-p", "--path", help="Path to the JAK file")
     args = parser.parse_args()
     filter_(args.path)
     inpath = os.path.join(
-        os.path.dirname(args.path), "filtered_"+os.path.basename(args.path))
+        os.path.dirname(args.path), "filtered_" + os.path.basename(args.path)
+    )
     pre = os.path.basename(args.path).split(".")[0]
-    write_graphs(inpath,
-                 os.path.join(os.path.dirname(args.path), "graphs"),
-                 prefix=pre)
+    write_graphs(inpath, os.path.join(os.path.dirname(args.path), "graphs"), prefix=pre)
