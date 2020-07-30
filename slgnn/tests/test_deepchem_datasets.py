@@ -22,7 +22,7 @@ from slgnn.data_processing.deepchem_datasets import (
     MUV,
     MUVFP,
 )
-from slgnn.data_processing.covid19_datasts import (
+from slgnn.data_processing.covid19_datasets import (
     Amu,
     AmuFP,
     Ellinger,
@@ -70,7 +70,7 @@ class TestDeepChemDatasets(unittest.TestCase):
         self.assertEqual(data.x.size()[1], 6)
         self.assertEqual(data.y.size(), (1, 12))
         self.assertEqual(
-            list(data.y.numpy().squeeze()), [0, 0, 1, 2, 2, 0, 0, 1, 0, 0, 0, 0]
+            list(data.y.numpy().squeeze()), [0, 0, 1, -1, -1, 0, 0, 1, 0, 0, 0, 0]
         )
         self.assertEqual(data.edge_index.size()[0], 2)
 
@@ -98,7 +98,7 @@ class TestDeepChemDatasets(unittest.TestCase):
         label = list(data.y.numpy().squeeze())
         self.assertEqual(label[0], 0)
         self.assertEqual(label[138], 1)
-        self.assertEqual(label[2], 2)
+        self.assertEqual(label[2], -1)
         self.assertEqual(data.edge_index.size()[0], 2)
 
     def test_toxcastfp_dataset(self):
@@ -124,7 +124,7 @@ class TestDeepChemDatasets(unittest.TestCase):
         self.assertEqual(data.y.size(), (1, 17))
         label = list(data.y.numpy().squeeze())
         self.assertEqual(label[7], 0)
-        self.assertEqual(label[0], 2)
+        self.assertEqual(label[0], -1)
         self.assertEqual(data.edge_index.size()[0], 2)
 
         # remove processed data

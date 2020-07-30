@@ -347,7 +347,7 @@ class Tox21(DeepchemDataset):
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])
         for row in df.iterrows():
-            label = row[1][:-2].fillna(2)
+            label = row[1][:-2].fillna(-1)
             yield torch.tensor(list(label), dtype=torch.long)[None, :]
 
     def process(self, verbose=0):
@@ -388,7 +388,7 @@ class ToxCast(DeepchemDataset):
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])
         for row in df.iterrows():
-            label = row[1][1:].fillna(2)
+            label = row[1][1:].fillna(-1)
             yield torch.tensor(list(label), dtype=torch.long)[None, :]
 
     def process(self, verbose=0):
@@ -442,7 +442,7 @@ class MUV(DeepchemDataset):
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])
         for row in df.iterrows():
-            label = row[1][:-2].fillna(2)
+            label = row[1][:-2].fillna(-1)
             yield torch.tensor(list(label), dtype=torch.long)[None, :]
 
     def process(self, verbose=1):
