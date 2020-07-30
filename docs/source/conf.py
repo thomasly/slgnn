@@ -13,8 +13,6 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath("."))
-sys.path.insert(0, os.path.abspath(".."))
 sys.path.insert(0, os.path.abspath("../.."))
 
 
@@ -31,12 +29,12 @@ author = "Yang Liu"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ["sphinx.ext.autodoc", "sphinx.ext.napoleon"]
-
-# Add any paths that contain templates here, relative to this directory.
-templates_path = ["_templates"]
 napoleon_google_docstring = True
 napoleon_use_param = False
 napoleon_use_ivar = False
+
+# Add any paths that contain templates here, relative to this directory.
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -55,4 +53,5 @@ html_theme = "default"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 
+# For Readthedocs
 master_doc = "index"
