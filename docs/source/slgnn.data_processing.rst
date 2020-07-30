@@ -2,7 +2,7 @@ slgnn.data\_processing package
 ==============================
 
 Submodules
-----------
+-----------------
 
 slgnn.data\_processing.deepchem\_datasets module
 ------------------------------------------------
@@ -50,7 +50,7 @@ slgnn.data\_processing.utils module
    :show-inheritance:
 
 Module contents
----------------
+--------------------
 
 .. automodule:: slgnn.data_processing
    :members:

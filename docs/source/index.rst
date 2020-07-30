@@ -10,7 +10,7 @@ Welcome to slgnn's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   slgnn
+   modules
 
 
 Indices and tables
