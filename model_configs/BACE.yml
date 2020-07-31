@@ -108,7 +108,7 @@ early_stopper:
     args:
       patience: 20
       # monitor: val_Average_precision
-      monitor: val_ROC
+      monitor: val_ROC_AUC
       mode: max
 shuffle:
   - True

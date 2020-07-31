@@ -32,22 +32,42 @@ if __name__ == "__main__":
             ifencoder = "noencoder"
         else:
             ifencoder = "encoder"
-        log_name = "_".join(
-            [
-                config["encoder_dataset_name"],
-                config["classifier_dataset_name"],
-                config["classifier_data_splitter_name"],
-                "_".join(map(str, config["data_splitting_ratio"])),
-                "embed{}".format(config["embedding_dim"]),
-                config["classifier_loss_name"],
-                # str(config["batch_size"]),
-                # str(config["learning_rate"]),
-                ifencoder,
-                "_".join(map(str, config["frozen_epochs"])),
-                # config["aggregation"],
-                str(config_idx),
-            ]
-        )
+        try:
+            log_name = "_".join(
+                [
+                    config["encoder_dataset_name"],
+                    config["classifier_dataset_name"],
+                    config["classifier_data_splitter_name"],
+                    "_".join(map(str, config["data_splitting_ratio"])),
+                    "embed{}".format(config["embedding_dim"]),
+                    config["classifier_loss_name"],
+                    str(config["classifier_loss_args"]["gamma"]),
+                    str(config["classifier_loss_args"]["alpha"]),
+                    # str(config["batch_size"]),
+                    # str(config["learning_rate"]),
+                    ifencoder,
+                    "_".join(map(str, config["frozen_epochs"])),
+                    # config["aggregation"],
+                    str(config_idx),
+                ]
+            )
+        except AttributeError:
+            log_name = "_".join(
+                [
+                    config["encoder_dataset_name"],
+                    config["classifier_dataset_name"],
+                    config["classifier_data_splitter_name"],
+                    "_".join(map(str, config["data_splitting_ratio"])),
+                    "embed{}".format(config["embedding_dim"]),
+                    config["classifier_loss_name"],
+                    # str(config["batch_size"]),
+                    # str(config["learning_rate"]),
+                    ifencoder,
+                    "_".join(map(str, config["frozen_epochs"])),
+                    # config["aggregation"],
+                    str(config_idx),
+                ]
+            )
         log_dir = osp.join("logs", time_stamp, log_name)
         os.makedirs(log_dir)
         with open(osp.join(log_dir, "configs.yml"), "w") as f:

@@ -2,8 +2,9 @@ from pathlib import Path
 import json
 import pickle
 from copy import deepcopy
-import os.path as osp
-import logging
+
+# import os.path as osp
+# import logging
 
 from torch.optim import Adam, SGD
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss
@@ -243,6 +244,7 @@ class Config:
                         setattr(self, "classifier_loss_name", value)
                     if isinstance(value, dict):
                         setattr(self, "classifier_loss_name", value["class"])
+                        setattr(self, "classifier_loss_args", value["args"])
                 if attrname == "metrics":
                     setattr(self, "metrics_name", value)
                 if attrname == "classifier_data_splitter":
