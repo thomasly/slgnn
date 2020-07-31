@@ -20,6 +20,17 @@ classifier_data_splitter:
 #     class: FixedSplitter
 #     args:
 #       ratio: [0.1, 0.1, 0.1]
+random_seed:
+  - 0
+  - 5
+  - 193
+  - 84234
+  - 839574
+  - 828649
+  - 939786
+  - 158736
+  - 986386
+  - 658349
 model:
   -
     class: GIN
@@ -55,27 +66,7 @@ classifier_loss:
   -
     class: FocalLoss
     args:
-      gamma: 0.5
-      alpha: 0.3
-  -
-    class: FocalLoss
-    args:
-      gamma: 1
-      alpha: 0.3
-  -
-    class: FocalLoss
-    args:
       gamma: 2
-      alpha: 0.3
-  -
-    class: FocalLoss
-    args:
-      gamma: 3
-      alpha: 0.3
-  -
-    class: FocalLoss
-    args:
-      gamma: 4
       alpha: 0.3
 metrics:
   - [Accuracy, ROC_AUC, F1, Average_precision]
