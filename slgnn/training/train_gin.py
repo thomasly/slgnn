@@ -39,11 +39,12 @@ if __name__ == "__main__":
                 config["classifier_data_splitter_name"],
                 "_".join(map(str, config["data_splitting_ratio"])),
                 "embed{}".format(config["embedding_dim"]),
+                config["classifier_loss_name"],
                 # str(config["batch_size"]),
                 # str(config["learning_rate"]),
                 ifencoder,
                 "_".join(map(str, config["frozen_epochs"])),
-                config["aggregation"],
+                # config["aggregation"],
                 str(config_idx),
             ]
         )

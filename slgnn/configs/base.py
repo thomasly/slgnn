@@ -53,7 +53,14 @@ from slgnn.data_processing.covid19_datasets import (
 )
 from slgnn.training.utils import Patience
 from slgnn.data_processing.loaders import ScaffoldSplitter, FixedSplitter, DataSplitter
-from slgnn.metrics.metrics import Accuracy, ROC_AUC, F1, AP, FocalLoss
+from slgnn.metrics.metrics import (
+    Accuracy,
+    ROC_AUC,
+    MaskedBCEWithLogitsLoss,
+    F1,
+    AP,
+    FocalLoss,
+)
 from slgnn.models.gcn.model import GIN, CPAN
 
 
@@ -75,10 +82,11 @@ def read_config_file(dict_or_filelike):
     if path.suffix == ".json":
         return json.load(open(path, "r"))
     elif path.suffix in [".yaml", ".yml"]:
-        template = open(osp.join("model_configs", "config_template.txt"), "r").read()
-        config = yaml.load(open(path, "r"), Loader=yaml.FullLoader)
-        logging.debug(f"config: {config}")
-        return yaml.load(template.format(**config), Loader=yaml.FullLoader)
+        return yaml.load(open(path, "r"), Loader=yaml.FullLoader)
+        # template = open(osp.join("model_configs", "config_template.txt"), "r").read()
+        # config = yaml.load(open(path, "r"), Loader=yaml.FullLoader)
+        # logging.debug(f"config: {config}")
+        # return yaml.load(template.format(**config), Loader=yaml.FullLoader)
     elif path.suffix in [".pkl", ".pickle"]:
         return pickle.load(open(path, "rb"))
 
@@ -173,6 +181,7 @@ class Config:
 
     classifier_losses = {
         "BCEWithLogitsLoss": BCEWithLogitsLoss,
+        "MaskedBCEWithLogitsLoss": MaskedBCEWithLogitsLoss,
         "CrossEntropyLoss": CrossEntropyLoss,
         "FocalLoss": FocalLoss,
     }
@@ -230,7 +239,10 @@ class Config:
                 if attrname == "encoder_loss":
                     setattr(self, "encoder_loss_name", value)
                 if attrname == "classifier_loss":
-                    setattr(self, "classifier_loss_name", value)
+                    if isinstance(value, str):
+                        setattr(self, "classifier_loss_name", value)
+                    if isinstance(value, dict):
+                        setattr(self, "classifier_loss_name", value["class"])
                 if attrname == "metrics":
                     setattr(self, "metrics_name", value)
                 if attrname == "classifier_data_splitter":
