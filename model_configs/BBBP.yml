@@ -1,5 +1,5 @@
 encoder_dataset:
-  - [ZINK, BBBP]
+  - [ZINC, BBBP]
 classifier_dataset:
   - BBBP
 encoder_data_splitter:
