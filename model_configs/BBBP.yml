@@ -52,27 +52,16 @@ scheduler:
 encoder_loss:
   - BCEWithLogitsLoss
 classifier_loss:
-  - CrossEntropyLoss
   -
     class: FocalLoss
     args:
-      gamma: 2
-      alpha: 0.1
+      gamma: 0.5
+      alpha: 0.3
   -
     class: FocalLoss
     args:
-      gamma: 2
-      alpha: 0.9
-  -
-    class: FocalLoss
-    args:
-      gamma: 2
-      alpha: 0.2
-  -
-    class: FocalLoss
-    args:
-      gamma: 2
-      alpha: 0.8
+      gamma: 1
+      alpha: 0.3
   -
     class: FocalLoss
     args:
@@ -81,8 +70,13 @@ classifier_loss:
   -
     class: FocalLoss
     args:
-      gamma: 2
-      alpha: 0.7
+      gamma: 3
+      alpha: 0.3
+  -
+    class: FocalLoss
+    args:
+      gamma: 4
+      alpha: 0.3
 metrics:
   - [Accuracy, ROC_AUC, F1, Average_precision]
 train_eps:
