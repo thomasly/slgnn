@@ -41,6 +41,12 @@ from slgnn.data_processing.deepchem_datasets import (
     ClinTox,
     ClinToxFP,
     ClinToxBalanced,
+    Tox21,
+    Tox21FP,
+    MUV,
+    MUVFP,
+    ToxCast,
+    ToxCastFP,
 )
 from slgnn.data_processing.covid19_datasets import (
     Amu,
@@ -139,6 +145,9 @@ class Config:
         "Ellinger": EllingerFP,
         "Mpro": MproFP,
         "Antiviral": AntiviralFP,
+        "Tox21": Tox21FP,
+        "MUV": MUVFP,
+        "ToxCast": ToxCastFP,
     }
 
     encoder_data_splitters = {
@@ -163,6 +172,9 @@ class Config:
         "Amu": Amu,
         "Ellinger": Ellinger,
         "Mpro": Mpro,
+        "Tox21": Tox21,
+        "ToxCast": ToxCast,
+        "MUV": MUV,
     }
 
     classifier_data_splitters = {

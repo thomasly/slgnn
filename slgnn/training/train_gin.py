@@ -24,9 +24,9 @@ if __name__ == "__main__":
     config_grid = Grid(args.config)
     time_stamp = datetime.now().strftime(r"%Y%m%d_%H%M%S")
     for config_idx, config_dict in enumerate(config_grid):
-        torch.manual_seed(0)
-        random.seed(0)
         config = Config.from_dict(config_dict)
+        torch.manual_seed(config["random_seed"])
+        random.seed(config["random_seed"])
         datasets = config["encoder_dataset"]
         if config["encoder_epochs"] == 0:
             ifencoder = "noencoder"

@@ -1,9 +1,9 @@
 encoder_dataset:
   # - [BACE]
-  - [ZINC1k, BACE]
+  - [ZINC1k, Tox21]
   # - [ZINC1k]
 classifier_dataset:
-  - BACE
+  - Tox21
 encoder_data_splitter:
   -
     class: DataSplitter
@@ -46,7 +46,7 @@ batch_size:
 learning_rate:
   - 0.001
 encoder_epochs:
-  # - 0
+  - 0
   - 10000
 classifier_epochs:
   - 10000
@@ -65,11 +65,7 @@ scheduler:
 encoder_loss:
   - BCEWithLogitsLoss
 classifier_loss:
-  -
-    class: FocalLoss
-    args:
-      gamma: 4
-      alpha: 0.9
+  - MaskedBCEWithLogitsLoss
 metrics:
   - [Accuracy, ROC_AUC, F1, Average_precision]
 train_eps:
