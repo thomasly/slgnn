@@ -69,32 +69,37 @@ classifier_loss:
     class: FocalLoss
     args:
       gamma: 2
-      alpha: 0.9
-  -
-    class: FocalLoss
-    args:
-      gamma: 2
-      alpha: 0.8
-  -
-    class: FocalLoss
-    args:
-      gamma: 2
-      alpha: 0.7
-  -
-    class: FocalLoss
-    args:
-      gamma: 2
-      alpha: 0.3
-  -
-    class: FocalLoss
-    args:
-      gamma: 2
-      alpha: 0.2
-  -
-    class: FocalLoss
-    args:
-      gamma: 2
       alpha: 0.1
+  -
+    class: FocalLoss
+    args:
+      gamma: 2
+      alpha: 0.05
+  -
+    class: FocalLoss
+    args:
+      gamma: 2
+      alpha: 0.01
+  -
+    class: FocalLoss
+    args:
+      gamma: 2
+      alpha: 0.005
+  -
+    class: FocalLoss
+    args:
+      gamma: 2
+      alpha: 0.001
+  -
+    class: FocalLoss
+    args:
+      gamma: 2
+      alpha: 0.0005
+  -
+    class: FocalLoss
+    args:
+      gamma: 2
+      alpha: 0.0001
 metrics:
   - [Accuracy, ROC_AUC, F1, Average_precision]
 train_eps:
