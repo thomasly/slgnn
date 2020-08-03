@@ -12,10 +12,10 @@ classifier_data_splitter:
     class: ScaffoldSplitter
     args:
       ratio: [0.8, 0.1, 0.1]
-#   -
-#     class: FixedSplitter
-#     args:
-#       ratio: [0.8, 0.1, 0.1]
+  -
+    class: FixedSplitter
+    args:
+      ratio: [0.8, 0.1, 0.1]
 #   -
 #     class: FixedSplitter
 #     args:
@@ -44,7 +44,7 @@ batch_size:
 learning_rate:
   - 0.001
 encoder_epochs:
-  # - 0
+  - 0
   - 10000
 classifier_epochs:
   - 10000
