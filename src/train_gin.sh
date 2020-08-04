@@ -5,7 +5,7 @@
 #     -c model_configs/$conf
 # done
 
-for conf in HIV.yml
+for conf in Tox21.yml ToxCast.yml MUV.yml Sider.yml
 do
     CUDA_VISIBLE_DEVICES=$1 \
     python -m slgnn.training.train_gin \
