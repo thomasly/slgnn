@@ -195,7 +195,7 @@ class TestDeepChemDatasets(unittest.TestCase):
         self.assertEqual(len(dataset), 1477)
         data = dataset[0]
         self.assertEqual(data.x.size()[1], 6)
-        self.assertEqual(data.y.size(), (1,))
+        self.assertEqual(data.y.size(), (1, 2))
         self.assertEqual(data.edge_index.size()[0], 2)
 
     def test_clintoxFP_dataset(self):

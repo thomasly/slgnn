@@ -24,15 +24,15 @@ classifier_data_splitter:
 #       ratio: [0.1, 0.1, 0.1]
 random_seed:
   - 0
-  # - 5
-  # - 193
-  # - 84234
-  # - 839574
-  # - 828649
-  # - 939786
-  # - 158736
-  # - 986386
-  # - 658349
+  - 5
+  - 193
+  - 84234
+  - 839574
+  - 828649
+  - 939786
+  - 158736
+  - 986386
+  - 658349
 model:
   -
     class: GIN
@@ -46,7 +46,7 @@ batch_size:
 learning_rate:
   - 0.001
 encoder_epochs:
-  # - 0
+  - 0
   - 10000
 classifier_epochs:
   - 10000
@@ -70,36 +70,6 @@ classifier_loss:
     args:
       gamma: 2
       alpha: 0.1
-  -
-    class: FocalLoss
-    args:
-      gamma: 2
-      alpha: 0.05
-  -
-    class: FocalLoss
-    args:
-      gamma: 2
-      alpha: 0.01
-  -
-    class: FocalLoss
-    args:
-      gamma: 2
-      alpha: 0.005
-  -
-    class: FocalLoss
-    args:
-      gamma: 2
-      alpha: 0.001
-  -
-    class: FocalLoss
-    args:
-      gamma: 2
-      alpha: 0.0005
-  -
-    class: FocalLoss
-    args:
-      gamma: 2
-      alpha: 0.0001
 metrics:
   - [Accuracy, ROC_AUC, F1, Average_precision]
 train_eps:
