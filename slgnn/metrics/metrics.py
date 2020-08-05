@@ -3,6 +3,7 @@
 
 from abc import ABC, abstractmethod
 import warnings
+import logging
 
 import torch
 import torch.nn as nn
@@ -15,9 +16,9 @@ from sklearn.metrics import (
     f1_score,
     average_precision_score,
 )
-import numpy
+import numpy as np
 
-numpy.set_printoptions(threshold=100000)
+np.set_printoptions(threshold=100000)
 
 
 def _to_numpy(*tensors):
@@ -56,21 +57,43 @@ class AUC(ABC):
             float: the calculated AUC score. If the score is not calculatable (all of
                 targets belongs to the same class), return the last available score.
         """
-        is_valid = ~(target == -1).cpu().detach()
+        # is_valid = ~(target == -1).cpu().detach()
         if _one_class(target):
             pred = torch.softmax(pred, 1)[:, 1]
         else:
             pred = torch.sigmoid(pred)
         pred, target = _to_numpy(pred, target)
-        with warnings.catch_warnings():
-            warnings.filterwarnings("error")
-            try:
-                score = self.judger(target[is_valid], pred[is_valid])
-                self._last = score
-            except ValueError:
-                score = self._last
-            except RuntimeWarning:
-                score = self._last
+        pred, target = pred.numpy(), target.numpy()
+        # pred
+        # logging.debug(f"pred: {pred}")
+        # logging.debug(f"target: {target}")
+        # logging.debug(f"masked pred: {pred[is_valid]}")
+        # logging.debug(f"masked target: {target[is_valid]}")
+        # with warnings.catch_warnings():
+        #     warnings.filterwarnings("error")
+        #     try:
+        #         score = self.judger(target[is_valid], pred[is_valid])
+        #         # score = self.judger(target, pred)
+        #         logging.debug(f"correct score: {score}")
+        #         self._last = score
+        #     except ValueError:
+        #         score = self._last
+        #         logging.debug(f"not valid score: {score}")
+        #     except RuntimeWarning:
+        #         score = self._last
+        #         logging.debug(f"not valid score: {score}")
+        # return score
+        roc_list = []
+        for i in range(target.shape[1]):
+            # AUC is only defined when there is at least one positive data.
+            if np.sum(target[:, i] == 1) > 0 and np.sum(target[:, i] == 0) > 0:
+                is_valid = target[:, i] != -1
+                roc_list.append(self.judger(target[is_valid, i], pred[is_valid, i]))
+
+        try:
+            score = sum(roc_list) / len(roc_list)  # y_true.shape[1]
+        except ZeroDivisionError:
+            score = self._last
         return score
 
 
