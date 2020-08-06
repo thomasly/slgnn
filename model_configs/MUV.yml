@@ -70,6 +70,7 @@ encoder_loss:
   - BCEWithLogitsLoss
 classifier_loss:
   - MaskedBCEWithLogitsLoss
+  # - FocalLoss2d
 metrics:
   - [Accuracy, ROC_AUC, F1, Average_precision]
 train_eps:
