@@ -2,8 +2,8 @@
 """
 
 from abc import ABC, abstractmethod
+
 import warnings
-import logging
 
 import torch
 import torch.nn as nn
@@ -64,37 +64,32 @@ class AUC(ABC):
             pred = torch.sigmoid(pred)
         pred, target = _to_numpy(pred, target)
         pred, target = pred.numpy(), target.numpy()
-        # pred
-        # logging.debug(f"pred: {pred}")
-        # logging.debug(f"target: {target}")
-        # logging.debug(f"masked pred: {pred[is_valid]}")
-        # logging.debug(f"masked target: {target[is_valid]}")
-        # with warnings.catch_warnings():
-        #     warnings.filterwarnings("error")
-        #     try:
-        #         score = self.judger(target[is_valid], pred[is_valid])
-        #         # score = self.judger(target, pred)
-        #         logging.debug(f"correct score: {score}")
-        #         self._last = score
-        #     except ValueError:
-        #         score = self._last
-        #         logging.debug(f"not valid score: {score}")
-        #     except RuntimeWarning:
-        #         score = self._last
-        #         logging.debug(f"not valid score: {score}")
-        # return score
-        roc_list = []
-        for i in range(target.shape[1]):
-            # AUC is only defined when there is at least one positive data.
-            if np.sum(target[:, i] == 1) > 0 and np.sum(target[:, i] == 0) > 0:
-                is_valid = target[:, i] != -1
-                roc_list.append(self.judger(target[is_valid, i], pred[is_valid, i]))
+        if len(target.shape) == 1:  # multi-class
+            with warnings.catch_warnings():
+                warnings.filterwarnings("error")
+                try:
+                    # score = self.judger(target[is_valid], pred[is_valid])
+                    score = self.judger(target, pred)
+                    self._last = score
+                except ValueError:
+                    score = self._last
+                except RuntimeWarning:
+                    score = self._last
+            return score
+        else:  # multi-label
+            roc_list = []
+            for i in range(target.shape[1]):
+                # AUC is only defined when there is at least one positive data.
+                if np.sum(target[:, i] == 1) > 0 and np.sum(target[:, i] == 0) > 0:
+                    is_valid = target[:, i] != -1
+                    roc_list.append(self.judger(target[is_valid, i], pred[is_valid, i]))
 
-        try:
-            score = sum(roc_list) / len(roc_list)  # y_true.shape[1]
-        except ZeroDivisionError:
-            score = self._last
-        return score
+            try:
+                score = sum(roc_list) / len(roc_list)  # y_true.shape[1]
+                self._last = score
+            except ZeroDivisionError:
+                score = self._last
+            return score
 
 
 class Accuracy:
@@ -196,8 +191,8 @@ class FocalLoss(nn.Module):
         FL(p_t) = -(1-p_t)^\gamma log(p_t)
 
     Args:
-        gamma (float): a float scalar larger than 0. The loss revert to cross entropy if
-            gamma equals to 0.
+        gamma (float): a float scalar larger than 0. The loss revert to cross entropy
+            if gamma equals to 0.
         alpha (float): a float scalar between 0 and 1. Controls the contribution of
             possitive and negative samples. It should be set to a value less than 0.5
             when the dataset contains more negative samples than positive ones.
@@ -250,6 +245,60 @@ class FocalLoss(nn.Module):
             return loss.mean()
         else:
             return loss.sum()
+
+
+class FocalLoss2d(nn.modules.loss._WeightedLoss):
+    def __init__(
+        self,
+        gamma=2,
+        weight=None,
+        size_average=None,
+        ignore_index=-100,
+        reduce=None,
+        reduction="mean",
+        alpha=0.5,
+    ):
+        super(FocalLoss2d, self).__init__(weight, size_average, reduce, reduction)
+        self.gamma = gamma
+        self.weight = weight
+        self.size_average = size_average
+        self.ignore_index = ignore_index
+        self.balance_param = alpha
+
+    def forward(self, input, target):
+
+        # inputs and targets are assumed to be BatchxClasses
+        assert len(input.shape) == len(target.shape)
+        assert input.size(0) == target.size(0)
+        assert input.size(1) == target.size(1)
+
+        weight = Variable(self.weight)
+        mask = target == -1
+        # compute the negative likelyhood
+        unmasked_loss = -torch.binary_cross_entropy_with_logits(
+            input, target, pos_weight=weight, reduction="none"
+        )
+        pad = (
+            torch.zeros(unmasked_loss.shape)
+            .to(unmasked_loss.device)
+            .to(unmasked_loss.dtype)
+        )
+        masked_loss = torch.where(mask, pad, unmasked_loss)
+        pt = torch.exp(masked_loss)
+        if self.reduction == "mean":
+            loss = torch.sum(masked_loss) / torch.sum(~mask)
+        else:  # "sum"
+            loss = torch.sum(masked_loss)
+        # compute the loss
+        focal_loss = -((1 - pt) ** self.gamma) * loss
+        balanced_focal_loss = self.balance_param * focal_loss
+        return balanced_focal_loss
+
+        if self.reduction == "mean":
+            loss = torch.sum(masked_loss) / torch.sum(~mask)
+        else:  # "sum"
+            loss = torch.sum(masked_loss)
+        return loss
 
 
 class MaskedBCEWithLogitsLoss(BCEWithLogitsLoss):
