@@ -13,11 +13,11 @@ classifier_data_splitter:
   -
     class: ScaffoldSplitter
     args:
-      ratio: [0.8, 0.1, 0.1]
+      ratio: [0.6, 0.1, 0.3]
   -
     class: DataSplitter
     args:
-      ratio: [0.8, 0.1, 0.1]
+      ratio: [0.6, 0.1, 0.3]
 #   -
 #     class: FixedSplitter
 #     args:

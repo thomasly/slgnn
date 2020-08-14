@@ -29,11 +29,19 @@ class BaseSplitter(ABC):
         test_loader: the testing set data loader. None if the testing ratio is 0.
     """
 
-    def __init__(self, dataset, ratio=[0.8, 0.1, 0.1], shuffle=True, batch_size=32):
+    def __init__(
+        self,
+        dataset,
+        ratio=[0.8, 0.1, 0.1],
+        shuffle=True,
+        batch_size=32,
+        dataloader=DataLoader,
+    ):
         self._dataset = dataset
         self._ratio = ratio
         self._shuffle = shuffle
         self._batch_size = batch_size
+        self._dataloader = dataloader
         self._train_loader = None
         self._val_loader = None
         self._test_loader = None
@@ -101,8 +109,15 @@ class DataSplitter(BaseSplitter):
     """ Split dataset with given ratio.
     """
 
-    def __init__(self, dataset, ratio=[0.8, 0.1, 0.1], shuffle=True, batch_size=32):
-        super().__init__(dataset, ratio, shuffle, batch_size)
+    def __init__(
+        self,
+        dataset,
+        ratio=[0.8, 0.1, 0.1],
+        shuffle=True,
+        batch_size=32,
+        dataloader=DataLoader,
+    ):
+        super().__init__(dataset, ratio, shuffle, batch_size, dataloader)
 
     def _split_dataset(self):
         assert sum(self.ratio) == 1
@@ -121,18 +136,18 @@ class DataSplitter(BaseSplitter):
                 dataset = self.dataset[indices]
             sep1 = int(len(dataset) * self.ratio[0])
             sep2 = min(int(len(dataset) * self.ratio[1]) + sep1, len(dataset))
-            self._train_loader = DataLoader(
+            self._train_loader = self._dataloader(
                 dataset[:sep1], batch_size=self.batch_size, shuffle=self.shuffle
             )
             if self.ratio[-1] == 0:
-                self._val_loader = DataLoader(
+                self._val_loader = self._dataloader(
                     dataset[sep1:], batch_size=self.batch_size, shuffle=self.shuffle
                 )
             else:
-                self._val_loader = DataLoader(
+                self._val_loader = self._dataloader(
                     dataset[sep1:sep2], batch_size=self.batch_size, shuffle=self.shuffle
                 )
-                self._test_loader = DataLoader(
+                self._test_loader = self._dataloader(
                     dataset[sep2:], batch_size=self.batch_size, shuffle=self.shuffle
                 )
 
@@ -158,14 +173,14 @@ class DataSplitter(BaseSplitter):
             else:
                 val_l.append(dataset[sep1:sep2])
                 test_l.append(dataset[sep2:])
-        self._train_loader = DataLoader(
+        self._train_loader = self._dataloader(
             ConcatDataset(train_l), batch_size=self.batch_size, shuffle=self.shuffle
         )
-        self._val_loader = DataLoader(
+        self._val_loader = self._dataloader(
             ConcatDataset(val_l), batch_size=self.batch_size, shuffle=self.shuffle
         )
         if self.ratio[-1] != 0:
-            self._test_loader = DataLoader(
+            self._test_loader = self._dataloader(
                 ConcatDataset(test_l), batch_size=self.batch_size, shuffle=self.shuffle
             )
 
@@ -181,8 +196,15 @@ class ScaffoldSplitter(BaseSplitter):
         batch_size (int): size of every mini batches.
     """
 
-    def __init__(self, dataset, ratio=[0.8, 0.1, 0.1], shuffle=True, batch_size=32):
-        super().__init__(dataset, ratio, shuffle, batch_size)
+    def __init__(
+        self,
+        dataset,
+        ratio=[0.8, 0.1, 0.1],
+        shuffle=True,
+        batch_size=32,
+        dataloader=DataLoader,
+    ):
+        super().__init__(dataset, ratio, shuffle, batch_size, dataloader=dataloader)
 
     def _generate_scaffold(self, smiles, include_chirality=False):
         """
@@ -243,14 +265,14 @@ class ScaffoldSplitter(BaseSplitter):
         valid_dataset = self.dataset[torch.tensor(valid_idx)]
         test_dataset = self.dataset[torch.tensor(test_idx)]
 
-        self._train_loader = DataLoader(
+        self._train_loader = self._dataloader(
             train_dataset, batch_size=self.batch_size, shuffle=self.shuffle
         )
-        self._val_loader = DataLoader(
+        self._val_loader = self._dataloader(
             valid_dataset, batch_size=self.batch_size, shuffle=self.shuffle
         )
         if self.ratio[-1] != 0:
-            self._test_loader = DataLoader(
+            self._test_loader = self._dataloader(
                 test_dataset, batch_size=self.batch_size, shuffle=self.shuffle
             )
 
@@ -268,8 +290,15 @@ class FixedSplitter(BaseSplitter):
         batch_size (int): size of every mini batches.
     """
 
-    def __init__(self, dataset, ratio=[0.8, 0.1, 0.1], shuffle=True, batch_size=32):
-        super().__init__(dataset, ratio, shuffle, batch_size)
+    def __init__(
+        self,
+        dataset,
+        ratio=[0.8, 0.1, 0.1],
+        shuffle=True,
+        batch_size=32,
+        dataloader=DataLoader,
+    ):
+        super().__init__(dataset, ratio, shuffle, batch_size, dataloader=dataloader)
 
     @fix_random_seed(seed=0)
     def _split_dataset(self):
@@ -296,7 +325,7 @@ class FixedSplitter(BaseSplitter):
         negative_val_indices = negative_indices[neg_sep1:neg_sep2]
         negative_test_indices = negative_indices[-neg_sep3:]
 
-        self._train_loader = DataLoader(
+        self._train_loader = self._dataloader(
             ConcatDataset(
                 [
                     positive_dataset[positive_train_indices],
@@ -306,7 +335,7 @@ class FixedSplitter(BaseSplitter):
             batch_size=self.batch_size,
             shuffle=self.shuffle,
         )
-        self._val_loader = DataLoader(
+        self._val_loader = self._dataloader(
             ConcatDataset(
                 [
                     positive_dataset[positive_val_indices],
@@ -316,7 +345,7 @@ class FixedSplitter(BaseSplitter):
             batch_size=self.batch_size,
             shuffle=self.shuffle,
         )
-        self._test_loader = DataLoader(
+        self._test_loader = self._dataloader(
             ConcatDataset(
                 [
                     positive_dataset[positive_test_indices],

@@ -4,8 +4,7 @@ import os
 import os.path as osp
 from datetime import datetime
 import random
-
-# import logging
+import logging
 
 import torch
 import yaml
@@ -19,8 +18,9 @@ from .trainers import EncoderDecoderTrainer, EncoderClassifierTrainer
 
 
 if __name__ == "__main__":
-    # logging.basicConfig(level=logging.INFO)
     args = ModelTrainingArgs().parse_args()
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
     config_grid = Grid(args.config)
     time_stamp = datetime.now().strftime(r"%Y%m%d_%H%M%S")
     for config_idx, config_dict in enumerate(config_grid):

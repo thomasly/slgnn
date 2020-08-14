@@ -1,3 +1,9 @@
+# training scripts
+slgnn/src/train_gin.bat
+slgnn/src/train_gin.sh
+slgnn/src/train_gcn.bat
+slgnn/src/train_gcn.sh
+
 # results analyzers
 results_analyzers/
 

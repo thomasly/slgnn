@@ -8,6 +8,7 @@ from copy import deepcopy
 
 from torch.optim import Adam, SGD
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss
+from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import StepLR  # , ReduceLROnPlateau
 import yaml
 
@@ -67,8 +68,10 @@ from slgnn.metrics.metrics import (
     F1,
     AP,
     FocalLoss,
+    FocalLoss2d,
 )
 from slgnn.models.gcn.model import GIN, CPAN
+from contextPred.chem.dataloader import DataLoaderMasking
 
 
 def read_config_file(dict_or_filelike):
@@ -183,6 +186,11 @@ class Config:
         "FixedSplitter": FixedSplitter,
     }
 
+    dataloaders = {
+        "DataLoader": DataLoader,
+        "DataLoaderMasking": DataLoaderMasking,
+    }
+
     models = {
         "CPAN": CPAN,
         "GIN": GIN,
@@ -190,6 +198,7 @@ class Config:
 
     encoder_losses = {
         "BCEWithLogitsLoss": BCEWithLogitsLoss,
+        "CrossEntropyLoss": CrossEntropyLoss,
     }
 
     classifier_losses = {
@@ -197,6 +206,7 @@ class Config:
         "MaskedBCEWithLogitsLoss": MaskedBCEWithLogitsLoss,
         "CrossEntropyLoss": CrossEntropyLoss,
         "FocalLoss": FocalLoss,
+        "FocalLoss2d": FocalLoss2d,
     }
 
     metrics = {
@@ -356,6 +366,8 @@ class Config:
     def parse_encoder_data_splitter(splitter_dict):
         spltr_s = splitter_dict["class"]
         args = splitter_dict["args"]
+        if "dataloader" in args:
+            args["dataloader"] = Config.dataloaders[args["dataloader"]]
         assert spltr_s in Config.encoder_data_splitters, f"Could not find {spltr_s}"
         return lambda dataset: Config.encoder_data_splitters[spltr_s](dataset, **args)
 

@@ -1,42 +1,15 @@
-encoder_dataset:
-  # - [BACE]
-  - [ZINC1k, Tox21]
-  # - [ZINC1k]
-classifier_dataset:
-  - Tox21
+# encoder_dataset:
+#   - [BACE]
 encoder_data_splitter:
   -
     class: DataSplitter
     args:
       ratio: [0.9, 0.1, 0.]
-classifier_data_splitter:
-  -
-    class: ScaffoldSplitter
-    args:
-      ratio: [0.8, 0.1, 0.1]
-  -
-    class: DataSplitter
-    args:
-      ratio: [0.8, 0.1, 0.1]
-#   -
-#     class: FixedSplitter
-#     args:
-#       ratio: [0.8, 0.1, 0.1]
-#   -
-#     class: FixedSplitter
-#     args:
-#       ratio: [0.1, 0.1, 0.1]
+      dataloader: DataLoaderMasking
+mask_rate:
+  - 0.2
 random_seed:
   - 0
-  - 5
-  - 193
-  - 84234
-  - 839574
-  - 828649
-  - 939786
-  - 158736
-  - 986386
-  - 658349
 model:
   -
     class: GIN
@@ -50,12 +23,7 @@ batch_size:
 learning_rate:
   - 0.001
 encoder_epochs:
-  - 0
-  - 1
-classifier_epochs:
-  - 1
-frozen_epochs:
-  - [5, 10, 15, 20, 25]
+  - 10000
 hidden_units:
   - [600, 600, 600, 600]
 optimizer:
@@ -67,11 +35,9 @@ scheduler:
       step_size: 10
       gamma: 0.5
 encoder_loss:
-  - BCEWithLogitsLoss
-classifier_loss:
-  - MaskedBCEWithLogitsLoss
+  - CrossEntropyLoss
 metrics:
-  - [Accuracy, ROC_AUC, F1, Average_precision]
+  - [Accuracy]
 train_eps:
   - true
 l2:

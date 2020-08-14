@@ -670,3 +670,100 @@ class EncoderClassifierTrainer(EncoderDecoderTrainer):
             axes[i + 1].legend()
         fig.savefig(filep, dpi=300, bbox_inches="tight")
         plt.close()
+
+
+class MaskedGraphTrainer(EncoderDecoderTrainer):
+    def _parse_config(self):
+        super()._parse_config()
+        self._mask_rate = self.config["mask_rate"]
+
+    def log_before_training_status(self):
+        """ Log the metrics before the first epoch with the randomly initialized model.
+        """
+        with torch.no_grad():
+            self._setup_models("train")
+            it = zip(
+                [self.dataloader.train_loader, self.dataloader.val_loader],
+                [self.train_losses, self.val_losses],
+                [self.train_metrics, self.val_metrics],
+                ["train", "val"],
+            )
+            for loader, losses, metrics, mode in it:
+                outputs = list()
+                labels = list()
+                for batch in loader:
+                    batch = batch.to(self.device)
+                    outputs.append(
+                        self.decoder(self.encoder(batch)[batch.masked_atom_indices])
+                    )
+                    labels.append(batch.mask_node_label[:, 0])
+                out = torch.cat(outputs, 0)
+                y = torch.cat(labels)
+                try:
+                    loss = self.criterion(out, y).item()
+                except RuntimeError:
+                    loss = self.criterion(out, y.float()).item()
+                metric = [m(out, y) for m in self.metrics]
+                losses.append(loss)
+                metrics.append(metric)
+
+    def train_one_epoch(self):
+        """ Train the encoder and decoder one epoch.
+        """
+        self._setup_models("train")
+        batch_losses = list()
+        batch_metrics = list()
+        for i, batch in enumerate(self.dataloader.train_loader):
+            batch = batch.to(self.device)
+            node_rep = self.encoder(batch)
+            out = self.decoder(node_rep[batch.masked_atom_indices])
+            try:
+                train_loss = self.criterion(out, batch.mask_node_label[:, 0])
+            except RuntimeError:
+                train_loss = self.criterion(out, batch.mask_node_label[:, 0].float())
+            batch_losses.append(train_loss.item())
+            for opt in self._optimizers:
+                opt.zero_grad()
+            train_loss.backward()
+            for opt in self._optimizers:
+                opt.step()
+            metrics = [m(out, batch.y) for m in self.metrics]
+            batch_metrics.append(metrics)
+            print(
+                f"\repoch: {self.epoch+1}, batch: {i+1}, "
+                f"train_loss: {train_loss.item():.4f}",
+                end=" ",
+            )
+            for smet, met in zip(self.metrics, metrics):
+                print(f"{smet.name}: {met:.4f}", end=" ")
+        self._cur_train_loss = mean(batch_losses)
+        self._cur_train_metrics = [mean(m) for m in zip(*batch_metrics)]
+        self.train_losses.append(self._cur_train_loss)
+        self.train_metrics.append(self._cur_train_metrics)
+
+    def validate(self):
+        """ Validating the encoder and decoder with validating dataset.
+        """
+        self._setup_models("eval")
+        with torch.no_grad():
+            outputs = list()
+            labels = list()
+            for batch in self.dataloader.val_loader:
+                batch = batch.to(self.device)
+                outputs.append(
+                    self.decoder(self.encoder(batch)[batch.masked_atom_indices])
+                )
+                labels.append(batch.mask_node_label[:, 0])
+            out = torch.cat(outputs, 0)
+            y = torch.cat(labels)
+            try:
+                self._cur_val_loss = self.criterion(out, y).item()
+            except RuntimeError:
+                self._cur_val_loss = self.criterion(out, y.float()).item()
+            self._cur_val_metrics = [m(out, y) for m in self.metrics]
+        self.val_losses.append(self._cur_val_loss)
+        self.val_metrics.append(self._cur_val_metrics)
+        print(f"val_loss: {self._cur_val_loss:.4f}", end=" ")
+        for smet, met in zip(self.metrics, self._cur_val_metrics):
+            print(f"{smet.name}: {met:.4f}", end=" ")
+        print()

@@ -143,10 +143,10 @@ class BACE(DeepchemDataset):
     """ Class for BACE dataset
     """
 
-    def __init__(self, root=None, name="bace"):
+    def __init__(self, root=None, name="bace", transform=None):
         if root is None:
             root = osp.join("data", "DeepChem", "BACE")
-        super().__init__(root=root, name=name)
+        super().__init__(root=root, name=name, transform=transform)
 
     def _get_smiles(self):
         return _smiles_from_csv(self.raw_paths[0], "mol")

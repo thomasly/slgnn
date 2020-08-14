@@ -2,7 +2,6 @@
 """
 
 from abc import ABC, abstractmethod
-
 import warnings
 
 import torch
@@ -46,6 +45,22 @@ class AUC(ABC):
         """
         pass
 
+    def auc_along_col(self, col):
+        """ The argument col is a concatenation of prediction and target. This function
+        treats the upper half of the col as prediction and the lower half as the target
+        and apply scoring function to them.
+        """
+        with warnings.catch_warnings():
+            warnings.filterwarnings("error")
+            length = col.shape[0]
+            pred, target = col[: int(length / 2)], col[int(length / 2) :]
+            is_valid = target != -1
+            try:
+                score = self.judger(target[is_valid], pred[is_valid])
+                return score
+            except (ValueError, IndexError, RuntimeWarning):
+                return np.nan
+
     def __call__(self, pred, target):
         """ Calculate the AUC score.
 
@@ -77,15 +92,11 @@ class AUC(ABC):
                     score = self._last
             return score
         else:  # multi-label
-            roc_list = []
-            for i in range(target.shape[1]):
-                # AUC is only defined when there is at least one positive data.
-                if np.sum(target[:, i] == 1) > 0 and np.sum(target[:, i] == 0) > 0:
-                    is_valid = target[:, i] != -1
-                    roc_list.append(self.judger(target[is_valid, i], pred[is_valid, i]))
-
+            pred_tar = np.concatenate([pred, target], 0)
+            score = np.apply_along_axis(self.auc_along_col, 0, pred_tar)
+            score = score[~np.isnan(score)]
             try:
-                score = sum(roc_list) / len(roc_list)  # y_true.shape[1]
+                score = np.sum(score) / score.shape[0]
                 self._last = score
             except ZeroDivisionError:
                 score = self._last
