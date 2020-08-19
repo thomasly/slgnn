@@ -17,6 +17,7 @@ trained_models/
 
 # Logs
 logs/
+dgx_logs/
 
 # playground scripts
 playground/
