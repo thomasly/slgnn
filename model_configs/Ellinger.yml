@@ -1,4 +1,100 @@
-encoder_dataset: "- [Repurposing]\n  - [Repurposing, Ellinger]"
-classifier_dataset: "- Ellinger"
-model: "-\n    class: GIN"
-classifier_loss: "- CrossEntropyLoss"
+encoder_dataset:
+  - [Ellinger]
+  - [Repurposing, Ellinger]
+classifier_dataset:
+  - Ellinger
+encoder_data_splitter:
+  -
+    class: DataSplitter
+    args:
+      ratio: [0.9, 0.1, 0.]
+classifier_data_splitter:
+  # -
+  #   class: ScaffoldSplitter
+  #   args:
+  #     ratio: [0.8, 0.1, 0.1]
+  -
+    class: FixedSplitter
+    args:
+      ratio: [0.8, 0.1, 0.1]
+#   -
+#     class: FixedSplitter
+#     args:
+#       ratio: [0.1, 0.1, 0.1]
+random_seed:
+  - 0
+  - 5
+  - 193
+  - 84234
+  - 839574
+  - 828649
+  - 939786
+  - 158736
+  - 986386
+  - 658349
+model:
+  -
+    class: GIN
+embedding_dim:
+  - 300
+  # - 128
+device:
+  - cuda:0
+batch_size:
+  - 32
+learning_rate:
+  - 0.001
+encoder_epochs:
+  - 0
+  - 10000
+classifier_epochs:
+  - 10000
+frozen_epochs:
+  - [5, 10, 15, 20, 25]
+hidden_units:
+  - [600, 600, 600, 600]
+optimizer:
+  - Adam
+scheduler:
+  -
+    class: StepLR
+    args:
+      step_size: 10
+      gamma: 0.5
+encoder_loss:
+  - BCEWithLogitsLoss
+classifier_loss:
+  -
+    class: FocalLoss
+    args:
+      gamma: 2
+      alpha: 0.9
+metrics:
+  - [Accuracy, ROC_AUC, F1, Average_precision]
+train_eps:
+  - true
+l2:
+  - 0.001
+aggregation:
+  - mean
+gradient_clipping:
+  - null
+dropout:
+  - 0.2
+encoder_early_stopper:
+  -
+    class: Patience
+    args:
+      patience: 20
+early_stopper:
+  -
+    class: Patience
+    args:
+      patience: 20
+      # monitor: val_Average_precision
+      monitor: val_ROC_AUC
+      mode: max
+shuffle:
+  - True
+resume:
+  - False
