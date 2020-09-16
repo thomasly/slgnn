@@ -1,15 +1,10 @@
 import torch
-import copy
 import random
 
 import networkx as nx
-import numpy as np
-from torch_geometric.utils import convert
-from rdkit import Chem
 from rdkit.Chem import AllChem
 
 from .loader import graph_data_obj_to_nx_simple, nx_to_graph_data_obj_simple
-from .loader import mol_to_graph_data_obj_simple, graph_data_obj_to_mol_simple
 
 from .loader import MoleculeDataset
 
@@ -201,7 +196,7 @@ def reset_idxes(G):
 
 # TODO(Bowen): more unittests
 class MaskAtom:
-    def __init__(self, num_atom_type, num_edge_type, mask_rate, mask_edge=True):
+    def __init__(self, num_atom_features, num_edge_type, mask_rate, mask_edge=True):
         """
         Randomly masks an atom, and optionally masks edges connecting to it.
         The mask atom type index is num_possible_atom_type
@@ -212,7 +207,7 @@ class MaskAtom:
         :param mask_edge: If True, also mask the edges that connect to the
         masked atoms
         """
-        self.num_atom_type = num_atom_type
+        self.num_atom_features = num_atom_features
         self.num_edge_type = num_edge_type
         self.mask_rate = mask_rate
         self.mask_edge = mask_edge
@@ -240,7 +235,9 @@ class MaskAtom:
             # sample x distinct atoms to be masked, based on mask rate. But
             # will sample at least 1 atom
             num_atoms = data.x.size()[0]
-            sample_size = int(num_atoms * self.mask_rate + 1)
+            sample_size = int(round(num_atoms * self.mask_rate))
+            if sample_size == 0:
+                sample_size = 1
             masked_atom_indices = random.sample(range(num_atoms), sample_size)
 
         # create mask node label by copying atom feature of mask atom
@@ -252,7 +249,7 @@ class MaskAtom:
 
         # modify the original node feature of the masked node
         for atom_idx in masked_atom_indices:
-            data.x[atom_idx] = torch.tensor([-1, -1, -1, -1, -1, -1])
+            data.x[atom_idx] = torch.tensor([0] * self.num_atom_features)
 
         if self.mask_edge:
             # create mask edge labels by copying edge features of edges that are bonded
@@ -294,10 +291,10 @@ class MaskAtom:
         return data
 
     def __repr__(self):
-        reprs = "{}(num_atom_type={}, num_edge_type={}, mask_rate={}, mask_edge={})"
+        reprs = "{}(num_atom_features={}, num_edge_type={}, mask_rate={}, mask_edge={})"
         return reprs.format(
             self.__class__.__name__,
-            self.num_atom_type,
+            self.num_atom_features,
             self.num_edge_type,
             self.mask_rate,
             self.mask_edge,
@@ -375,7 +372,8 @@ if __name__ == "__main__":
     # k = 1
     # l1 = 1
     # l2 = 2
-    # transform = ExtractSubstructureContextPaidata = mol_to_graph_data_obj_simple(m)r(k, l1, l2)
+    # transform = ExtractSubstructureContextPaidata =
+    # mol_to_graph_data_obj_simple(m)r(k, l1, l2)
     # transform(data, root_idx)
     pass
 
@@ -440,4 +438,3 @@ if __name__ == "__main__":
     # such that two directions of a single edge occur in pairs, so to get the
     # unique undirected edge indices, we take every 2nd edge index from list
     """
-
