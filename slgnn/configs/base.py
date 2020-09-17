@@ -59,6 +59,7 @@ from slgnn.data_processing.covid19_datasets import (
     RepurposingFP,
     AntiviralFP,
 )
+from slgnn.data_processing.zinc_dataset import ZINC
 from slgnn.training.utils import Patience
 from slgnn.data_processing.loaders import ScaffoldSplitter, FixedSplitter, DataSplitter
 from slgnn.metrics.metrics import (
@@ -129,6 +130,7 @@ class Config:
     """
 
     encoder_datasets = {
+        "ZINC": ZINC,
         "ZINC1k": ZINC1k,
         "ZINC10k": ZINC10k,
         "ZINC100k": ZINC100k,

@@ -23,7 +23,7 @@ class ZINC(Dataset):
 
     @property
     def processed_file_names(self):
-        return ["data_1.pt", "data_2.pt", "data_10000.pt"]
+        return ["data_1.pt", "data_2.pt", "data_9999.pt"]
 
     def download(self):
         """ Get raw data and save to raw directory.

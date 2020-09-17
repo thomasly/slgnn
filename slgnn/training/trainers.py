@@ -343,8 +343,12 @@ class EncoderDecoderTrainer(BaseTrainer):
         # remove the last comma
         return s[:-2]
 
-    def train(self):
+    def train(self, save_model=False, save_path="."):
         """ Train encoder and decoder.
+        
+        Args:
+            save_model (bool): Save model after every epoch.
+            save_path (str): Path to save the model state_dicts. Default is current dir.
         """
         self.epoch = 0
         self.log_before_training_status()
@@ -375,6 +379,11 @@ class EncoderDecoderTrainer(BaseTrainer):
                     )
                 }
             )
+            if save_model:
+                torch.save(
+                    self.encoder.state_dict(),
+                    os.path.join(save_path, f"model_{self.epoch}.pt"),
+                )
             stop = self.early_stopper.stop(self.epoch, metrics_dict)
             if stop:
                 break
@@ -483,7 +492,7 @@ class EncoderDecoderTrainer(BaseTrainer):
             out = torch.cat(outputs, 0)
             y = torch.cat(labels)
             self.test_metrics = [m(out, y) for m in self.metrics]
-        print(f"test:", end=" ")
+        print("test:", end=" ")
         for smet, met in zip(self.metrics, self.test_metrics):
             print(f"{smet.name}: {met:.4f}", end=" ")
         print()

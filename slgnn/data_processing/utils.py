@@ -48,8 +48,11 @@ class AtomFeaturesOneHotTransformer:
             oh_aromatic,
             oh_charality,
         ]
+        # make formal charge value positive
+        data.x[data.x == -1] = 3
+        data.x[data.x == -2] = 4
         for dt, feat in zip(data.x.T, features):
-            feat.scatter_(1, dt.view(-1, 1).type(torch.int64), 1)
+            feat.scatter_(1, dt.unsqueeze(1).type(torch.int64), 1)
         data.x = torch.cat(features, 1)
         return data
 
@@ -94,7 +97,7 @@ class MaskOneHot:
 
 
 def get_pubchem_fingerprint(smiles):
-    """ Generate pubchem fingerprint from SMILES.
+    """Generate pubchem fingerprint from SMILES.
 
     Args:
         smiles (str): the SMILES string
@@ -105,7 +108,7 @@ def get_pubchem_fingerprint(smiles):
 
 
 class fix_random_seed:
-    """ Decorator fix the random seed within the span of a function. The random seed is
+    """Decorator fix the random seed within the span of a function. The random seed is
     revert to None after the function's execution.
 
     Args:
