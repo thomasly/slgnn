@@ -17,7 +17,7 @@ matplotlib.use("Agg")
 
 
 class BaseTrainer(ABC):
-    """ The base class for trainers.
+    """The base class for trainers.
 
     Args:
         config: an instance of slgnn.configs.base.Config class.
@@ -47,14 +47,12 @@ class BaseTrainer(ABC):
 
     @property
     def device(self):
-        """ The device on which to train the model.
-        """
+        """The device on which to train the model."""
         return self._device
 
     @property
     def dataloader(self):
-        """ The dataloader. Mutable.
-        """
+        """The dataloader. Mutable."""
         if self._dataloader is None:
             raise AttributeError(
                 "dataloader is not initialized. Please initialize the "
@@ -69,8 +67,7 @@ class BaseTrainer(ABC):
 
     @property
     def config(self):
-        """ The Config instance. Mutable.
-        """
+        """The Config instance. Mutable."""
         return self._config
 
     @config.setter
@@ -88,32 +85,28 @@ class BaseTrainer(ABC):
 
     @property
     def train_losses(self):
-        """ Recorded train losses.
-        """
+        """Recorded train losses."""
         return self._tr_losses
 
     @property
     def val_losses(self):
-        """ Recorded validation losses.
-        """
+        """Recorded validation losses."""
         return self._val_losses
 
     @property
     def early_stopper(self):
-        """ The early stopper used in training.
-        """
+        """The early stopper used in training."""
         return self._early_stopper
 
     @property
     @abstractmethod
     def criterion(self):
-        """ The criterion used to calculate loss.
-        """
+        """The criterion used to calculate loss."""
         pass
 
 
 class EncoderDecoderTrainer(BaseTrainer):
-    """ Trainer class used to pre-train encoder with a decoder.
+    """Trainer class used to pre-train encoder with a decoder.
 
     Args:
         config: An instance of slgnn.configs.base.Config class.
@@ -142,8 +135,7 @@ class EncoderDecoderTrainer(BaseTrainer):
         )
 
     def _parse_config(self):
-        """ Parse the config instance and initialize neccessary components for training.
-        """
+        """Parse the config instance and initialize neccessary components for training."""
         self._lr = self.config["learning_rate"]
         self._device = torch.device(self.config["device"])
         self._early_stopper = self.config["encoder_early_stopper"]()
@@ -168,7 +160,7 @@ class EncoderDecoderTrainer(BaseTrainer):
         self._metrics = [m() for m in self.config["metrics"]]
 
     def _setup_models(self, mode="train"):
-        """ Change model status and move the model to self.device.
+        """Change model status and move the model to self.device.
 
         Args:
             mode (str): Set encoder and decoder to train status (enable normalization
@@ -185,7 +177,7 @@ class EncoderDecoderTrainer(BaseTrainer):
             self.decoder.eval()
 
     def load_optimizers(self, *optimizers):
-        """ Load the optimizers to be used in training. Encoder and decoder have
+        """Load the optimizers to be used in training. Encoder and decoder have
         seperated optimizers. Encoder has more than one optimizer for gradient
         parameter unfreeze. Only the loaded optimizers will be used to update model
         parameters.
@@ -196,7 +188,7 @@ class EncoderDecoderTrainer(BaseTrainer):
         self._optimizers = optimizers
 
     def load_schedulers(self, *schedulers):
-        """ Load the learning rate schedulers needed to be updated. The scheduler for
+        """Load the learning rate schedulers needed to be updated. The scheduler for
         frozen parameters should not be updated before unfreezing.
 
         Args:
@@ -205,7 +197,7 @@ class EncoderDecoderTrainer(BaseTrainer):
         self._schedulers = schedulers
 
     def _get_current_idx(self):
-        """ Get the index of unfreezing stage. The index is used to decide which
+        """Get the index of unfreezing stage. The index is used to decide which
         optimizers and schedulers should be loaded.
 
         Returns:
@@ -225,8 +217,7 @@ class EncoderDecoderTrainer(BaseTrainer):
         return i + 1
 
     def _determine_optimizers(self):
-        """ Load optimizers based on current epoch.
-        """
+        """Load optimizers based on current epoch."""
         if self.freeze_encoder:
             idx = self._get_current_idx()
             self.load_optimizers(
@@ -236,8 +227,7 @@ class EncoderDecoderTrainer(BaseTrainer):
             self.load_optimizers(self._decoder_optimizer, *self._encoder_optimizers)
 
     def _determine_schedulers(self):
-        """ Load schedulers based on current epoch.
-        """
+        """Load schedulers based on current epoch."""
         if self.freeze_encoder:
             idx = self._get_current_idx()
             self.load_schedulers(
@@ -250,8 +240,7 @@ class EncoderDecoderTrainer(BaseTrainer):
 
     @property
     def encoder(self):
-        """ The encoder model. Mutable.
-        """
+        """The encoder model. Mutable."""
         return self._encoder
 
     @encoder.setter
@@ -260,8 +249,7 @@ class EncoderDecoderTrainer(BaseTrainer):
 
     @property
     def decoder(self):
-        """ The decoder model. Mutable.
-        """
+        """The decoder model. Mutable."""
         return self._decoder
 
     @decoder.setter
@@ -270,20 +258,17 @@ class EncoderDecoderTrainer(BaseTrainer):
 
     @property
     def train_metrics(self):
-        """ The recorded training metrics values.
-        """
+        """The recorded training metrics values."""
         return self._tr_metrics
 
     @property
     def val_metrics(self):
-        """ The recorded validating metrics values.
-        """
+        """The recorded validating metrics values."""
         return self._val_metrics
 
     @property
     def freeze_encoder(self):
-        """ A boolean value. Whether freeze the encoder parameters. Mutable.
-        """
+        """A boolean value. Whether freeze the encoder parameters. Mutable."""
         return self._freeze
 
     @freeze_encoder.setter
@@ -293,20 +278,17 @@ class EncoderDecoderTrainer(BaseTrainer):
 
     @property
     def epochs(self):
-        """ Total number of training epochs.
-        """
+        """Total number of training epochs."""
         return self.config["encoder_epochs"]
 
     @property
     def criterion(self):
-        """ The criterion used to calculate loss.
-        """
+        """The criterion used to calculate loss."""
         return self._criterion
 
     @property
     def metrics(self):
-        """ Metrics used for monitoring training. Mutable.
-        """
+        """Metrics used for monitoring training. Mutable."""
         return self._metrics
 
     @metrics.setter
@@ -316,18 +298,16 @@ class EncoderDecoderTrainer(BaseTrainer):
 
     @property
     def encoder_lr_scheduler(self):
-        """ The learning rate schedulers for encoder.
-        """
+        """The learning rate schedulers for encoder."""
         return self._encoder_optimizer
 
     @property
     def decoder_lr_scheduler(self):
-        """ The learning rate scheduler for decoder.
-        """
+        """The learning rate scheduler for decoder."""
         return self._decoder_lr_scheduler
 
     def _get_metrics_string(self, metrics):
-        """ Create a printable string of the best metrics values returned by
+        """Create a printable string of the best metrics values returned by
         early_stopper.
 
         Args:
@@ -344,8 +324,8 @@ class EncoderDecoderTrainer(BaseTrainer):
         return s[:-2]
 
     def train(self, save_model=False, save_path="."):
-        """ Train encoder and decoder.
-        
+        """Train encoder and decoder.
+
         Args:
             save_model (bool): Save model after every epoch.
             save_path (str): Path to save the model state_dicts. Default is current dir.
@@ -393,7 +373,8 @@ class EncoderDecoderTrainer(BaseTrainer):
         print(self._get_metrics_string(self.early_stopper.get_best_vl_metrics()))
 
     def log_before_training_status(self):
-        """ Log the metrics before the first epoch with the randomly initialized model.
+        """
+        Log the metrics before the first epoch with the randomly initialized model.
         """
         with torch.no_grad():
             self._setup_models("train")
@@ -406,10 +387,15 @@ class EncoderDecoderTrainer(BaseTrainer):
             for loader, losses, metrics, mode in it:
                 outputs = list()
                 labels = list()
+                n_batches = 0
                 for batch in loader:
                     batch = batch.to(self.device)
                     outputs.append(self.decoder(self.encoder(batch)))
                     labels.append(batch.y)
+                    n_batches += 1
+                    # prevent spending too much time on this
+                    if n_batches > 100:
+                        break
                 out = torch.cat(outputs, 0)
                 y = torch.cat(labels)
                 try:
@@ -421,8 +407,7 @@ class EncoderDecoderTrainer(BaseTrainer):
                 metrics.append(metric)
 
     def train_one_epoch(self):
-        """ Train the encoder and decoder one epoch.
-        """
+        """Train the encoder and decoder one epoch."""
         self._setup_models("train")
         batch_losses = list()
         batch_metrics = list()
@@ -454,8 +439,7 @@ class EncoderDecoderTrainer(BaseTrainer):
         self.train_metrics.append(self._cur_train_metrics)
 
     def validate(self):
-        """ Validating the encoder and decoder with validating dataset.
-        """
+        """Validating the encoder and decoder with validating dataset."""
         self._setup_models("eval")
         with torch.no_grad():
             outputs = list()
@@ -479,8 +463,7 @@ class EncoderDecoderTrainer(BaseTrainer):
         print()
 
     def test(self):
-        """ Testing the encoder and decoder with test dataset.
-        """
+        """Testing the encoder and decoder with test dataset."""
         self._setup_models("test")
         with torch.no_grad():
             outputs = list()
@@ -506,7 +489,7 @@ class EncoderDecoderTrainer(BaseTrainer):
         return root
 
     def log_results(self, out=None, txt_name=None, pk_name=None):
-        """ Log training results:
+        """Log training results:
 
         Args:
             out (str): optional. Path to save the results. Default is the current
@@ -547,7 +530,7 @@ class EncoderDecoderTrainer(BaseTrainer):
             pk.dump(metrics_dict, f)
 
     def plot_training_metrics(self, path=None, name=None):
-        """ Plotting the training and validation loss curves.
+        """Plotting the training and validation loss curves.
 
         Args:
             path (str): optional. Path to save the plottings. Default is the current
@@ -572,7 +555,7 @@ class EncoderDecoderTrainer(BaseTrainer):
         plt.close()
 
     def plot_reconstructions(self, index=0, path=None, name=None):
-        """ Plot reconstruction bar chart with validation data.
+        """Plot reconstruction bar chart with validation data.
 
         Args:
             index (int): optional. The index of the validation data to use. Default is
@@ -606,7 +589,7 @@ class EncoderDecoderTrainer(BaseTrainer):
 
 
 class EncoderClassifierTrainer(EncoderDecoderTrainer):
-    """ Trainer for encoder and classifier.
+    """Trainer for encoder and classifier.
 
     Args:
         config: An instance of slgnn.configs.base.Config class.
@@ -642,12 +625,11 @@ class EncoderClassifierTrainer(EncoderDecoderTrainer):
 
     @property
     def epochs(self):
-        """ Number of total epoch to train the classifier.
-        """
+        """Number of total epoch to train the classifier."""
         return self.config["classifier_epochs"]
 
     def plot_training_metrics(self, path=None, name=None):
-        """ Plot classifier training and validation losses.
+        """Plot classifier training and validation losses.
 
         Args:
             path (str): optional. Path to save the plottings. Default is the current
@@ -687,8 +669,7 @@ class MaskedGraphTrainer(EncoderDecoderTrainer):
         self._mask_rate = self.config["mask_rate"]
 
     def log_before_training_status(self):
-        """ Log the metrics before the first epoch with the randomly initialized model.
-        """
+        """Log the metrics before the first epoch with the randomly initialized model."""
         with torch.no_grad():
             self._setup_models("train")
             it = zip(
@@ -717,8 +698,7 @@ class MaskedGraphTrainer(EncoderDecoderTrainer):
                 metrics.append(metric)
 
     def train_one_epoch(self):
-        """ Train the encoder and decoder one epoch.
-        """
+        """Train the encoder and decoder one epoch."""
         self._setup_models("train")
         batch_losses = list()
         batch_metrics = list()
@@ -751,8 +731,7 @@ class MaskedGraphTrainer(EncoderDecoderTrainer):
         self.train_metrics.append(self._cur_train_metrics)
 
     def validate(self):
-        """ Validating the encoder and decoder with validating dataset.
-        """
+        """Validating the encoder and decoder with validating dataset."""
         self._setup_models("eval")
         with torch.no_grad():
             outputs = list()
