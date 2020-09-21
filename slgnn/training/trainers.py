@@ -135,7 +135,9 @@ class EncoderDecoderTrainer(BaseTrainer):
         )
 
     def _parse_config(self):
-        """Parse the config instance and initialize neccessary components for training."""
+        """
+        Parse the config instance and initialize neccessary components for training.
+        """
         self._lr = self.config["learning_rate"]
         self._device = torch.device(self.config["device"])
         self._early_stopper = self.config["encoder_early_stopper"]()
@@ -669,7 +671,9 @@ class MaskedGraphTrainer(EncoderDecoderTrainer):
         self._mask_rate = self.config["mask_rate"]
 
     def log_before_training_status(self):
-        """Log the metrics before the first epoch with the randomly initialized model."""
+        """
+        Log the metrics before the first epoch with the randomly initialized model.
+        """
         with torch.no_grad():
             self._setup_models("train")
             it = zip(
