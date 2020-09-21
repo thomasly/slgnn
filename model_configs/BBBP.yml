@@ -13,9 +13,9 @@ classifier_data_splitter:
     args:
       ratio: [0.8, 0.1, 0.1]
   # -
-  #   class: FixedSplitter
+  #   class: DataSplitter
   #   args:
-  #     ratio: [0.8, 0.1, 0.1]
+  #     ratio: [0.1, 0.9, 0.]
 #   -
 #     class: FixedSplitter
 #     args:
