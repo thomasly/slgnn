@@ -51,6 +51,7 @@ class AtomFeaturesOneHotTransformer:
         # make formal charge value positive
         data.x[data.x == -1] = 3
         data.x[data.x == -2] = 4
+        data.x[:, 1][data.x[:, 1] > 5] = 5
         for dt, feat in zip(data.x.T, features):
             feat.scatter_(1, dt.unsqueeze(1).type(torch.int64), 1)
         data.x = torch.cat(features, 1)

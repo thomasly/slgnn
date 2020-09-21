@@ -1,0 +1,1 @@
+python -m slgnn.training.train_gin_with_zinc_pretrained_model -c model_configs/BBBP.yml

@@ -21,7 +21,7 @@ learning_rate:
 encoder_epochs:
   - 10000
 hidden_units:
-  - [600, 600, 600, 600]
+  - [2048, 2048, 2048, 2048]
 optimizer:
   - Adam
 scheduler:
