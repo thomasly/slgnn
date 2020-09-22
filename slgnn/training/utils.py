@@ -49,7 +49,7 @@ def plot_train_val_acc(train_accs: list, val_accs: list, output):
 
 
 class EarlyStopper:
-    """ Base class of Early stoppers.
+    """Base class of Early stoppers.
 
     Args:
         epoch (int): current epoch number.
@@ -57,7 +57,7 @@ class EarlyStopper:
     """
 
     def stop(self, epoch, metrics_dict):
-        """ Decide if the training should stop.
+        """Decide if the training should stop.
 
         Returns:
             bool:
@@ -65,7 +65,7 @@ class EarlyStopper:
         raise NotImplementedError("Implement this method!")
 
     def get_best_vl_metrics(self):
-        """ Get the best metrics values.
+        """Get the best metrics values.
 
         Returns:
             dict: the metrics values when the monitored metric reaches the best
@@ -76,7 +76,7 @@ class EarlyStopper:
 
 class Patience(EarlyStopper):
 
-    """ Implement common "patience" technique.
+    """Implement common "patience" technique.
 
     Args:
         patience (int): number of patience. Default 20.
@@ -97,22 +97,24 @@ class Patience(EarlyStopper):
 
     def stop(self, epoch, metrics_dict):
         if self.mode == "min":
-            if metrics_dict[self.monitor] <= self.local_val_optimum:
-                self.counter = 0
-                self.local_val_optimum = metrics_dict[self.monitor]
-                self.best_epoch = epoch
-                self.opt_metrics = metrics_dict.copy()
-                return False
-            else:
-                self.counter += 1
-                return self.counter >= self.patience
+            flag = metrics_dict[self.monitor] <= self.local_val_optimum
         else:
-            if metrics_dict[self.monitor] >= self.local_val_optimum:
-                self.counter = 0
-                self.local_val_optimum = metrics_dict[self.monitor]
-                self.best_epoch = epoch
-                self.opt_metrics = metrics_dict.copy()
-                return False
-            else:
-                self.counter += 1
-                return self.counter >= self.patience
+            flag = metrics_dict[self.monitor] >= self.local_val_optimum
+        if flag:
+            self.counter = 0
+            self.local_val_optimum = metrics_dict[self.monitor]
+            self.best_epoch = epoch
+            self.opt_metrics = metrics_dict.copy()
+            return False
+        else:
+            self.counter += 1
+            return self.counter >= self.patience
+
+    def best_so_far(self, metrics_dict):
+        if self.mode == "min":
+            flag = metrics_dict[self.monitor] <= self.local_val_optimum
+        else:
+            flag = metrics_dict[self.monitor] >= self.local_val_optimum
+        if flag:
+            self.local_val_optimum = metrics_dict[self.monitor]
+        return flag
