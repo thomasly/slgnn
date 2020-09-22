@@ -1,6 +1,6 @@
 encoder_dataset:
   # - [BACE]
-  - [ZINC1k, BACE]
+  - [BACE]
   # - [ZINC1k]
 classifier_dataset:
   - BACE
@@ -14,25 +14,16 @@ classifier_data_splitter:
     class: ScaffoldSplitter
     args:
       ratio: [0.8, 0.1, 0.1]
-  -
-    class: FixedSplitter
-    args:
-      ratio: [0.8, 0.1, 0.1]
+  # -
+  #   class: FixedSplitter
+  #   args:
+  #     ratio: [0.8, 0.1, 0.1]
 #   -
 #     class: FixedSplitter
 #     args:
 #       ratio: [0.1, 0.1, 0.1]
 random_seed:
   - 0
-  - 5
-  - 193
-  - 84234
-  - 839574
-  - 828649
-  - 939786
-  - 158736
-  - 986386
-  - 658349
 model:
   -
     class: GIN
@@ -53,7 +44,7 @@ classifier_epochs:
 frozen_epochs:
   - [5, 10, 15, 20, 25]
 hidden_units:
-  - [600, 600, 600, 600]
+  - [2048, 2048, 2048, 2048]
 optimizer:
   - Adam
 scheduler:

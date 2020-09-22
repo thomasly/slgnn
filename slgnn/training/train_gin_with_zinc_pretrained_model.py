@@ -13,7 +13,11 @@ from slgnn.configs.base import Grid, Config
 from slgnn.configs.arg_parsers import ModelTrainingArgs
 
 # from slgnn.data_processing.deepchem_datasets import ClinTox, ClinToxFP
-from slgnn.data_processing.deepchem_datasets import BBBP, BBBPFP
+# from slgnn.data_processing.deepchem_datasets import BACE, BACEFP
+# from slgnn.data_processing.deepchem_datasets import BBBP, BBBPFP
+from slgnn.data_processing.deepchem_datasets import HIV, HIVFP
+
+# from slgnn.data_processing.deepchem_datasets import Sider, SiderFP
 from slgnn.data_processing.utils import AtomFeaturesOneHotTransformer
 
 # from slgnn.models.gcn.model import GIN
@@ -22,8 +26,8 @@ from .trainers import EncoderDecoderTrainer, EncoderClassifierTrainer
 
 
 if __name__ == "__main__":
-    Dataset = BBBP
-    FPDataset = BBBPFP
+    Dataset = HIV
+    FPDataset = HIVFP
     # ZINC pretrained model
     args = ModelTrainingArgs().parse_args()
     if args.debug:
