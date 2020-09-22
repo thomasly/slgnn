@@ -1,4 +1,4 @@
-from random import shuffle
+from random import shuffle, sample, seed
 from abc import abstractmethod, ABC
 
 import torch
@@ -9,8 +9,12 @@ from rdkit.Chem import MolFromSmiles
 from slgnn.data_processing.utils import fix_random_seed
 
 
+def _myShuffle(x, *s):
+    x[slice(*s)] = sample(x[slice(*s)], len(x[slice(*s)]))
+
+
 class BaseSplitter(ABC):
-    """ Base class for dataloaders.
+    """Base class for dataloaders.
 
     Args:
         dataset (torch_geometric.data.DataSet): the dataset to be used in training.
@@ -100,14 +104,12 @@ class BaseSplitter(ABC):
 
     @abstractmethod
     def _split_dataset(self):
-        """ The method splitting the dataset. Need to be implemented by subclasses.
-        """
+        """The method splitting the dataset. Need to be implemented by subclasses."""
         ...
 
 
 class DataSplitter(BaseSplitter):
-    """ Split dataset with given ratio.
-    """
+    """Split dataset with given ratio."""
 
     def __init__(
         self,
@@ -152,8 +154,7 @@ class DataSplitter(BaseSplitter):
                 )
 
     def _split_from_list(self):
-        """ Split and combine multiple datasets.
-        """
+        """Split and combine multiple datasets."""
         datasets = self.dataset.copy()
         train_l, val_l, test_l = list(), list(), list()
         for dataset in datasets:
@@ -186,7 +187,7 @@ class DataSplitter(BaseSplitter):
 
 
 class ScaffoldSplitter(BaseSplitter):
-    """ Split dataset based on scaffold similarity.
+    """Split dataset based on scaffold similarity.
 
     Args:
         dataset (torch_geometric.data.DataSet): the dataset to be used in training.
@@ -245,6 +246,15 @@ class ScaffoldSplitter(BaseSplitter):
             )
         ]
 
+        # shuffle the order of the sets that have less than 5 members
+        # make label distribution more even
+        for i, scaffold_set in enumerate(all_scaffold_sets):
+            if len(scaffold_set) <= 5:
+                start_point = i
+                break
+        seed(0)
+        _myShuffle(all_scaffold_sets, start_point, None)
+
         # get train, valid, and test indices
         train_cutoff = self.ratio[0] * len(self.dataset)
         valid_cutoff = (self.ratio[0] + self.ratio[1]) * len(self.dataset)
@@ -278,7 +288,7 @@ class ScaffoldSplitter(BaseSplitter):
 
 
 class FixedSplitter(BaseSplitter):
-    """ Fix the test set based on the given ratio. The test set has the same
+    """Fix the test set based on the given ratio. The test set has the same
     data distribution with the training set, especially when the dataset labels are very
     imbalanced.
 

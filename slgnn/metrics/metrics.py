@@ -33,20 +33,18 @@ def _one_class(target):
 
 
 class AUC(ABC):
-    """ Base class of AUC scores.
-    """
+    """Base class of AUC scores."""
 
     def __init__(self):
         self._last = 0
 
     @abstractmethod
     def judger(self):
-        """ The function used to calculate AUC. Must be implemented by subclasses.
-        """
+        """The function used to calculate AUC. Must be implemented by subclasses."""
         pass
 
     def auc_along_col(self, col):
-        """ The argument col is a concatenation of prediction and target. This function
+        """The argument col is a concatenation of prediction and target. This function
         treats the upper half of the col as prediction and the lower half as the target
         and apply scoring function to them.
         """
@@ -62,7 +60,7 @@ class AUC(ABC):
                 return np.nan
 
     def __call__(self, pred, target):
-        """ Calculate the AUC score.
+        """Calculate the AUC score.
 
         Args:
             pred: predicted probabilities.
@@ -92,19 +90,21 @@ class AUC(ABC):
                     score = self._last
             return score
         else:  # multi-label
-            pred_tar = np.concatenate([pred, target], 0)
-            score = np.apply_along_axis(self.auc_along_col, 0, pred_tar)
-            score = score[~np.isnan(score)]
-            try:
-                score = np.sum(score) / score.shape[0]
-                self._last = score
-            except ZeroDivisionError:
-                score = self._last
+            with warnings.catch_warnings():
+                warnings.filterwarnings("error")
+                pred_tar = np.concatenate([pred, target], 0)
+                score = np.apply_along_axis(self.auc_along_col, 0, pred_tar)
+                score = score[~np.isnan(score)]
+                try:
+                    score = np.sum(score) / score.shape[0]
+                    self._last = score
+                except (ZeroDivisionError, RuntimeWarning):
+                    score = self._last
             return score
 
 
 class Accuracy:
-    """ Calculate accuracy.
+    """Calculate accuracy.
 
     Attributes:
         name: "Acc"
@@ -130,7 +130,7 @@ class Accuracy:
 
 
 class ROC_AUC(AUC):
-    """ Calculate ROC_AUC score
+    """Calculate ROC_AUC score
 
     Attributes:
         name: "ROC".
@@ -138,8 +138,7 @@ class ROC_AUC(AUC):
 
     @property
     def judger(self):
-        """ roc_auc_score
-        """
+        """roc_auc_score"""
         return roc_auc_score
 
     @property
@@ -148,14 +147,14 @@ class ROC_AUC(AUC):
 
 
 class F1:
-    """ Calculate F1 score.
+    """Calculate F1 score.
 
     Attributes:
         name: "F1".
     """
 
     def __call__(self, pred, target):
-        """ Calculate F1 with pred and target.
+        """Calculate F1 with pred and target.
 
         Args:
             pred:
@@ -175,7 +174,7 @@ class F1:
 
 
 class AP(AUC):
-    """ Calculate average precision (AP) score
+    """Calculate average precision (AP) score
 
     Attributes:
         name: "AP".
@@ -183,8 +182,7 @@ class AP(AUC):
 
     @property
     def judger(self):
-        """ average_precision_score
-        """
+        """average_precision_score"""
         return average_precision_score
 
     @property
@@ -222,7 +220,7 @@ class FocalLoss(nn.Module):
         self.size_average = size_average
 
     def forward(self, input, target):
-        """ Calculate focal loss. If your target have missing values, just fill the
+        """Calculate focal loss. If your target have missing values, just fill the
         missing values with -1. This loss will apply a mask to the missing labels and
         calculate the loss with unmasked data.
 
@@ -320,7 +318,10 @@ class MaskedBCEWithLogitsLoss(BCEWithLogitsLoss):
     """
 
     def __init__(
-        self, weight=None, reduction="mean", pos_weight=None,
+        self,
+        weight=None,
+        reduction="mean",
+        pos_weight=None,
     ):
         super().__init__(weight=weight, reduction=reduction, pos_weight=pos_weight)
 

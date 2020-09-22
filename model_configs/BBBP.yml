@@ -1,5 +1,5 @@
 encoder_dataset:
-  - [ZINC1k, BBBP]
+  - [BBBP]
 classifier_dataset:
   - BBBP
 encoder_data_splitter:
@@ -12,25 +12,16 @@ classifier_data_splitter:
     class: ScaffoldSplitter
     args:
       ratio: [0.8, 0.1, 0.1]
-  -
-    class: FixedSplitter
-    args:
-      ratio: [0.8, 0.1, 0.1]
+  # -
+  #   class: DataSplitter
+  #   args:
+  #     ratio: [0.1, 0.9, 0.]
 #   -
 #     class: FixedSplitter
 #     args:
 #       ratio: [0.1, 0.1, 0.1]
 random_seed:
   - 0
-  - 5
-  - 193
-  - 84234
-  - 839574
-  - 828649
-  - 939786
-  - 158736
-  - 986386
-  - 658349
 model:
   -
     class: GIN
@@ -51,7 +42,7 @@ classifier_epochs:
 frozen_epochs:
   - [5, 10, 15, 20, 25]
 hidden_units:
-  - [600, 600, 600, 600]
+  - [2048, 2048, 2048, 2048]
 optimizer:
   - Adam
 scheduler:
@@ -84,12 +75,12 @@ encoder_early_stopper:
   -
     class: Patience
     args:
-      patience: 20
+      patience: 10
 early_stopper:
   -
     class: Patience
     args:
-      patience: 20
+      patience: 10
       monitor: val_ROC_AUC
       mode: max
 shuffle:

@@ -21,6 +21,7 @@ dgx_logs/
 
 # playground scripts
 playground/
+playground.ipynb
 
 # testing temp files
 test_data/test*.hdf5

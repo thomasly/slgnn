@@ -2,6 +2,7 @@
 """
 
 import os
+import tempfile
 from abc import ABC, abstractmethod
 import pickle as pk
 from statistics import mean
@@ -39,6 +40,7 @@ class BaseTrainer(ABC):
         self._parse_config()
         self._tr_losses = list()
         self._val_losses = list()
+        self.tempdir = tempfile.TemporaryDirectory()
 
     def _parse_config(self):
         self._lr = self.config["learning_rate"]
@@ -135,7 +137,9 @@ class EncoderDecoderTrainer(BaseTrainer):
         )
 
     def _parse_config(self):
-        """Parse the config instance and initialize neccessary components for training."""
+        """
+        Parse the config instance and initialize neccessary components for training.
+        """
         self._lr = self.config["learning_rate"]
         self._device = torch.device(self.config["device"])
         self._early_stopper = self.config["encoder_early_stopper"]()
@@ -364,8 +368,24 @@ class EncoderDecoderTrainer(BaseTrainer):
                     self.encoder.state_dict(),
                     os.path.join(save_path, f"model_{self.epoch}.pt"),
                 )
-            stop = self.early_stopper.stop(self.epoch, metrics_dict)
-            if stop:
+
+            if self.early_stopper.best_so_far(metrics_dict):
+                torch.save(
+                    self.encoder.state_dict(),
+                    os.path.join(
+                        self.tempdir.name,
+                        f"encoder_best_{self.early_stopper.monitor()}.pt",
+                    ),
+                )
+                torch.save(
+                    self.decoder.state_dict(),
+                    os.path.join(
+                        self.tempdir.name,
+                        f"decoder_best_{self.early_stopper.monitor()}.pt",
+                    ),
+                )
+
+            if self.early_stopper.stop(self.epoch, metrics_dict):
                 break
             for sch in self._schedulers:
                 sch.step()
@@ -464,6 +484,20 @@ class EncoderDecoderTrainer(BaseTrainer):
 
     def test(self):
         """Testing the encoder and decoder with test dataset."""
+        self.encoder.load_state_dict(
+            torch.load(
+                os.path.join(
+                    self.tempdir.name, f"encoder_best_{self.early_stopper.monitor()}.pt"
+                )
+            )
+        )
+        self.decoder.load_state_dict(
+            torch.load(
+                os.path.join(
+                    self.tempdir.name, f"decoder_best_{self.early_stopper.monitor()}.pt"
+                )
+            )
+        )
         self._setup_models("test")
         with torch.no_grad():
             outputs = list()
@@ -669,7 +703,9 @@ class MaskedGraphTrainer(EncoderDecoderTrainer):
         self._mask_rate = self.config["mask_rate"]
 
     def log_before_training_status(self):
-        """Log the metrics before the first epoch with the randomly initialized model."""
+        """
+        Log the metrics before the first epoch with the randomly initialized model.
+        """
         with torch.no_grad():
             self._setup_models("train")
             it = zip(
