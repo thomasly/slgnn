@@ -9,3 +9,6 @@ class ModelTrainingArgs(ArgumentParser):
         self.add_argument(
             "--debug", action="store_true", help="Enable debugging information."
         )
+        self.add_argument(
+            "-p", "--pretrained-model", help="Path to the pretrained model."
+        )

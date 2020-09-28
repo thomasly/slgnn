@@ -21,17 +21,6 @@ classifier_data_splitter:
 #     class: FixedSplitter
 #     args:
 #       ratio: [0.1, 0.1, 0.1]
-random_seed:
-  - 0
-  # - 5
-  # - 193
-  # - 84234
-  # - 839574
-  # - 828649
-  # - 939786
-  # - 158736
-  # - 986386
-  # - 658349
 model:
   -
     class: GIN
