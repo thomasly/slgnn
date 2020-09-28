@@ -22,18 +22,15 @@ classifier_data_splitter:
 #     class: FixedSplitter
 #     args:
 #       ratio: [0.1, 0.1, 0.1]
-random_seed:
-  - 0
 model:
   -
     class: GIN
 embedding_dim:
   - 300
-  # - 128
 device:
   - cuda:0
 batch_size:
-  - 32
+  - 256
 learning_rate:
   - 0.001
 encoder_epochs:

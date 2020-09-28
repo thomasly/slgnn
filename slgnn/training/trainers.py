@@ -374,14 +374,14 @@ class EncoderDecoderTrainer(BaseTrainer):
                     self.encoder.state_dict(),
                     os.path.join(
                         self.tempdir.name,
-                        f"encoder_best_{self.early_stopper.monitor()}.pt",
+                        f"encoder_best_{self.early_stopper.monitor}.pt",
                     ),
                 )
                 torch.save(
                     self.decoder.state_dict(),
                     os.path.join(
                         self.tempdir.name,
-                        f"decoder_best_{self.early_stopper.monitor()}.pt",
+                        f"decoder_best_{self.early_stopper.monitor}.pt",
                     ),
                 )
 
@@ -487,14 +487,14 @@ class EncoderDecoderTrainer(BaseTrainer):
         self.encoder.load_state_dict(
             torch.load(
                 os.path.join(
-                    self.tempdir.name, f"encoder_best_{self.early_stopper.monitor()}.pt"
+                    self.tempdir.name, f"encoder_best_{self.early_stopper.monitor}.pt"
                 )
             )
         )
         self.decoder.load_state_dict(
             torch.load(
                 os.path.join(
-                    self.tempdir.name, f"decoder_best_{self.early_stopper.monitor()}.pt"
+                    self.tempdir.name, f"decoder_best_{self.early_stopper.monitor}.pt"
                 )
             )
         )

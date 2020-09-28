@@ -26,27 +26,15 @@ classifier_data_splitter:
 #     class: FixedSplitter
 #     args:
 #       ratio: [0.1, 0.1, 0.1]
-random_seed:
-  - 0
-  # - 5
-  # - 193
-  # - 84234
-  # - 839574
-  # - 828649
-  # - 939786
-  # - 158736
-  # - 986386
-  # - 658349
 model:
   -
     class: GIN
 embedding_dim:
   - 300
-  # - 128
 device:
   - cuda:0
 batch_size:
-  - 32
+  - 256
 learning_rate:
   - 0.001
 encoder_epochs:
