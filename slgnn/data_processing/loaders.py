@@ -1,4 +1,4 @@
-from random import shuffle, sample, seed
+from random import shuffle, sample, choices, seed
 from abc import abstractmethod, ABC
 
 import torch
@@ -336,6 +336,105 @@ class FixedSplitter(BaseSplitter):
         negative_train_indices = negative_indices[:neg_sep1]
         negative_val_indices = negative_indices[neg_sep1:neg_sep2]
         negative_test_indices = negative_indices[-neg_sep3:]
+
+        self._train_loader = self._dataloader(
+            ConcatDataset(
+                [
+                    positive_dataset[positive_train_indices],
+                    negative_dataset[negative_train_indices],
+                ]
+            ),
+            batch_size=self.batch_size,
+            shuffle=self.shuffle,
+        )
+        self._val_loader = self._dataloader(
+            ConcatDataset(
+                [
+                    positive_dataset[positive_val_indices],
+                    negative_dataset[negative_val_indices],
+                ]
+            ),
+            batch_size=self.batch_size,
+            shuffle=self.shuffle,
+        )
+        self._test_loader = self._dataloader(
+            ConcatDataset(
+                [
+                    positive_dataset[positive_test_indices],
+                    negative_dataset[negative_test_indices],
+                ]
+            ),
+            batch_size=self.batch_size,
+            shuffle=self.shuffle,
+        )
+
+
+class OversamplingSplitter(BaseSplitter):
+    """Oversampling in the training set. Make the number of negative and postive
+    samples even.
+
+    Args:
+        dataset (torch_geometric.data.DataSet): the dataset to be used in training.
+        ratio (list): list of floats indicating the splitting ratios. The numbers
+            represent fractions of training, validating, and testing sets, respectively.
+        shuffle (bool): Whether shuffle the dataset.
+        batch_size (int): size of every mini batches.
+        dataloader (torch_geometric.data.DataLoader): The DataLoader class used to load
+            graph data. Default is DataLoader.
+        random_seed (int): The random seed used in traning and testing set splitting.
+            Default is 0.
+    """
+
+    def __init__(
+        self,
+        dataset,
+        ratio=[0.8, 0.1, 0.1],
+        shuffle=True,
+        batch_size=32,
+        dataloader=DataLoader,
+        random_seed=0,
+    ):
+        self.random_seed = random_seed
+        super().__init__(dataset, ratio, shuffle, batch_size, dataloader=dataloader)
+
+    def _split_dataset(self):
+        seed(self.random_seed)
+
+        mask = self.dataset.data.y == 1
+        positive_dataset = self.dataset[mask]
+        negative_dataset = self.dataset[~mask]
+        positive_indices = list(range(len(positive_dataset)))
+        negative_indices = list(range(len(negative_dataset)))
+        if self.shuffle:
+            shuffle(positive_indices)
+            shuffle(negative_indices)
+
+        pos_sep1 = int(len(positive_dataset) * self.ratio[0])
+        pos_sep2 = int(len(positive_dataset) * (self.ratio[0] + self.ratio[1]))
+        pos_sep3 = int(len(positive_dataset) * self.ratio[2])
+        neg_sep1 = int(len(negative_dataset) * self.ratio[0])
+        neg_sep2 = int(len(negative_dataset) * (self.ratio[0] + self.ratio[1]))
+        neg_sep3 = int(len(negative_dataset) * self.ratio[2])
+
+        positive_train_indices = positive_indices[:pos_sep1]
+        positive_val_indices = positive_indices[pos_sep1:pos_sep2]
+        positive_test_indices = positive_indices[-pos_sep3:]
+        negative_train_indices = negative_indices[:neg_sep1]
+        negative_val_indices = negative_indices[neg_sep1:neg_sep2]
+        negative_test_indices = negative_indices[-neg_sep3:]
+
+        # Over sampling
+        len_pos_train = len(positive_train_indices)
+        len_neg_train = len(negative_train_indices)
+        n_samples = abs(len_pos_train - len_neg_train)
+        if len_pos_train > len_neg_train:
+            negative_train_indices = negative_train_indices + choices(
+                negative_train_indices, k=n_samples
+            )
+        else:
+            positive_train_indices = positive_train_indices + choices(
+                positive_train_indices, k=n_samples
+            )
 
         self._train_loader = self._dataloader(
             ConcatDataset(
