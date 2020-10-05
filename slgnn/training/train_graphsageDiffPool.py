@@ -19,7 +19,7 @@ from slgnn.data_processing.deepchem_datasets import BBBP, BBBPFP
 from slgnn.data_processing.deepchem_datasets import HIV, HIVFP
 from slgnn.data_processing.deepchem_datasets import Sider, SiderFP
 from slgnn.data_processing.pyg_datasets import JAK1, JAK1FP, JAK2, JAK2FP, JAK3, JAK3FP
-from slgnn.data_processing.utils import NumNodesFilter, MyToDense
+from slgnn.data_processing.utils import MyToDense
 from .trainers import EncoderDecoderTrainer, EncoderClassifierTrainer
 
 
@@ -33,15 +33,14 @@ if __name__ == "__main__":
     time_stamp = datetime.now().strftime(r"%Y%m%d_%H%M%S")
 
     exp_datasets = {
-        "Sider": [Sider, SiderFP],
         "JAK1": [JAK1, JAK1FP],
         "JAK2": [JAK2, JAK2FP],
         "JAK3": [JAK3, JAK3FP],
         "BBBP": [BBBP, BBBPFP],
         "BACE": [BACE, BACEFP],
         "Sider": [Sider, SiderFP],
-        "HIV": [HIV, HIVFP],
         "ClinTox": [ClinTox, ClinToxFP],
+        "HIV": [HIV, HIVFP],
     }
     random_seeds = [0, 5, 193, 84234, 839574]
     for ds_name, ds in exp_datasets.items():
