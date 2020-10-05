@@ -423,7 +423,7 @@ class EncoderDecoderTrainer(BaseTrainer):
                 out = torch.cat(outputs, 0)
                 y = torch.cat(labels)
                 try:
-                    loss = self.criterion(out, y).item()
+                    loss = self.criterion(out, y.squeeze()).item()
                 except RuntimeError:
                     loss = self.criterion(out, y.float()).item()
                 except ValueError:
@@ -445,7 +445,7 @@ class EncoderDecoderTrainer(BaseTrainer):
                 encoder_out, *encoder_losses = encoder_out
             out = self.decoder(encoder_out)
             try:
-                train_loss = self.criterion(out, batch.y)
+                train_loss = self.criterion(out, batch.y.squeeze())
             except RuntimeError:
                 train_loss = self.criterion(out, batch.y.float())
             except ValueError:
@@ -491,7 +491,7 @@ class EncoderDecoderTrainer(BaseTrainer):
             out = torch.cat(outputs, 0)
             y = torch.cat(labels)
             try:
-                self._cur_val_loss = self.criterion(out, y).item()
+                self._cur_val_loss = self.criterion(out, y.squeeze()).item()
             except RuntimeError:
                 self._cur_val_loss = self.criterion(out, y.float()).item()
             except ValueError:
@@ -756,9 +756,9 @@ class MaskedGraphTrainer(EncoderDecoderTrainer):
                 out = torch.cat(outputs, 0)
                 y = torch.cat(labels)
                 try:
-                    loss = self.criterion(out, y).item()
+                    loss = self.criterion(out, y.squeeze()).item()
                 except RuntimeError:
-                    loss = self.criterion(out, y.float()).item()
+                    loss = self.criterion(out, y.float().squeeze()).item()
                 metric = [m(out, y) for m in self.metrics]
                 losses.append(loss)
                 metrics.append(metric)
@@ -773,9 +773,11 @@ class MaskedGraphTrainer(EncoderDecoderTrainer):
             node_rep = self.encoder(batch)
             out = self.decoder(node_rep[batch.masked_atom_indices])
             try:
-                train_loss = self.criterion(out, batch.mask_node_label[:, 0])
+                train_loss = self.criterion(out, batch.mask_node_label[:, 0].squeeze())
             except RuntimeError:
-                train_loss = self.criterion(out, batch.mask_node_label[:, 0].float())
+                train_loss = self.criterion(
+                    out, batch.mask_node_label[:, 0].float().squeeze()
+                )
             batch_losses.append(train_loss.item())
             for opt in self._optimizers:
                 opt.zero_grad()
@@ -811,9 +813,9 @@ class MaskedGraphTrainer(EncoderDecoderTrainer):
             out = torch.cat(outputs, 0)
             y = torch.cat(labels)
             try:
-                self._cur_val_loss = self.criterion(out, y).item()
+                self._cur_val_loss = self.criterion(out, y.squeeze()).item()
             except RuntimeError:
-                self._cur_val_loss = self.criterion(out, y.float()).item()
+                self._cur_val_loss = self.criterion(out, y.float().squeeze()).item()
             self._cur_val_metrics = [m(out, y) for m in self.metrics]
         self.val_losses.append(self._cur_val_loss)
         self.val_metrics.append(self._cur_val_metrics)
