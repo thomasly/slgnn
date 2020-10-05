@@ -23,7 +23,6 @@ from slgnn.data_processing.utils import MyToDense
 from .trainers import EncoderDecoderTrainer, EncoderClassifierTrainer
 
 
-SEED = 0
 MAX_NODES = 150
 
 if __name__ == "__main__":
@@ -50,8 +49,8 @@ if __name__ == "__main__":
         for config_idx, config_dict in enumerate(config_grid):
             for seed_idx, seed in enumerate(random_seeds):
                 config = Config.from_dict(config_dict)
-                torch.manual_seed(SEED)
-                random.seed(SEED)
+                torch.manual_seed(seed)
+                random.seed(seed)
                 dataset = FPDataset(transform=MyToDense(MAX_NODES))
                 if config["encoder_epochs"] == 0:
                     ifencoder = "noencoder"
