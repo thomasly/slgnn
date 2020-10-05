@@ -20,7 +20,7 @@ from slgnn.data_processing.covid19_datasets import (
     MproFP,
 )
 from slgnn.data_processing.utils import AtomFeaturesOneHotTransformer
-from slgnn.data_processing.loaders import FixedSplitter
+from slgnn.data_processing.loaders import OversamplingSplitter
 from slgnn.models.decoder.model import GINDecoder
 from .trainers import EncoderDecoderTrainer, EncoderClassifierTrainer
 
@@ -121,7 +121,7 @@ if __name__ == "__main__":
                 classifier = GINDecoder(
                     dim_encoder_target, cls_dataset.num_classes, dropout
                 )
-                cls_dloader = FixedSplitter(
+                cls_dloader = OversamplingSplitter(
                     cls_dataset, batch_size=config["batch_size"], random_seed=seed
                 )
                 cls_trainer = EncoderClassifierTrainer(
@@ -214,7 +214,7 @@ if __name__ == "__main__":
                 classifier = GINDecoder(
                     dim_encoder_target, cls_dataset.num_classes, dropout
                 )
-                cls_dloader = FixedSplitter(
+                cls_dloader = OversamplingSplitter(
                     cls_dataset, batch_size=config["batch_size"], random_seed=seed
                 )
                 cls_trainer = EncoderClassifierTrainer(
