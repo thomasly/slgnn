@@ -425,8 +425,6 @@ class EncoderDecoderTrainer(BaseTrainer):
                 try:
                     loss = self.criterion(out, y.squeeze()).item()
                 except RuntimeError:
-                    loss = self.criterion(out, y.float()).item()
-                except ValueError:
                     loss = self.criterion(out, y.float().squeeze()).item()
                 metric = [m(out, y) for m in self.metrics]
                 losses.append(loss)
@@ -447,9 +445,7 @@ class EncoderDecoderTrainer(BaseTrainer):
             try:
                 train_loss = self.criterion(out, batch.y.squeeze())
             except RuntimeError:
-                train_loss = self.criterion(out, batch.y.float())
-            except ValueError:
-                train_loss = self.criterion(out, batch.y.squeeze().float())
+                train_loss = self.criterion(out, batch.y.float().squeeze())
             batch_losses.append(train_loss.item())
             for opt in self._optimizers:
                 opt.zero_grad()
@@ -493,9 +489,7 @@ class EncoderDecoderTrainer(BaseTrainer):
             try:
                 self._cur_val_loss = self.criterion(out, y.squeeze()).item()
             except RuntimeError:
-                self._cur_val_loss = self.criterion(out, y.float()).item()
-            except ValueError:
-                self._cur_val_loss = self.criterion(out, y.squeeze().float()).item()
+                self._cur_val_loss = self.criterion(out, y.float().squeeze()).item()
             self._cur_val_metrics = [m(out, y) for m in self.metrics]
         self.val_losses.append(self._cur_val_loss)
         self.val_metrics.append(self._cur_val_metrics)
