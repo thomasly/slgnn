@@ -410,7 +410,11 @@ class EncoderDecoderTrainer(BaseTrainer):
                 n_batches = 0
                 for batch in loader:
                     batch = batch.to(self.device)
-                    outputs.append(self.decoder(self.encoder(batch)))
+                    encoder_out = self.encoder(batch)
+                    if isinstance(encoder_out, tuple):
+                        encoder_out, *_ = encoder_out
+                    out = self.decoder(encoder_out)
+                    outputs.append(out)
                     labels.append(batch.y)
                     n_batches += 1
                     # prevent spending too much time on this
@@ -422,6 +426,8 @@ class EncoderDecoderTrainer(BaseTrainer):
                     loss = self.criterion(out, y).item()
                 except RuntimeError:
                     loss = self.criterion(out, y.float()).item()
+                except ValueError:
+                    loss = self.criterion(out, y.float().squeeze()).item()
                 metric = [m(out, y) for m in self.metrics]
                 losses.append(loss)
                 metrics.append(metric)
@@ -433,14 +439,23 @@ class EncoderDecoderTrainer(BaseTrainer):
         batch_metrics = list()
         for i, batch in enumerate(self.dataloader.train_loader):
             batch = batch.to(self.device)
-            out = self.decoder(self.encoder(batch))
+            encoder_out = self.encoder(batch)
+            encoder_losses = []
+            if isinstance(encoder_out, tuple):
+                encoder_out, *encoder_losses = encoder_out
+            out = self.decoder(encoder_out)
             try:
                 train_loss = self.criterion(out, batch.y)
             except RuntimeError:
                 train_loss = self.criterion(out, batch.y.float())
+            except ValueError:
+                train_loss = self.criterion(out, batch.y.squeeze().float())
             batch_losses.append(train_loss.item())
             for opt in self._optimizers:
                 opt.zero_grad()
+            if len(encoder_losses) > 0:
+                for loss in encoder_losses:
+                    train_loss += loss
             train_loss.backward()
             for opt in self._optimizers:
                 opt.step()
@@ -466,7 +481,12 @@ class EncoderDecoderTrainer(BaseTrainer):
             labels = list()
             for batch in self.dataloader.val_loader:
                 batch = batch.to(self.device)
-                outputs.append(self.decoder(self.encoder(batch)))
+                encoder_out = self.encoder(batch)
+                encoder_losses = []
+                if isinstance(encoder_out, tuple):
+                    encoder_out, *encoder_losses = encoder_out
+                out = self.decoder(encoder_out)
+                outputs.append(out)
                 labels.append(batch.y)
             out = torch.cat(outputs, 0)
             y = torch.cat(labels)
@@ -474,6 +494,8 @@ class EncoderDecoderTrainer(BaseTrainer):
                 self._cur_val_loss = self.criterion(out, y).item()
             except RuntimeError:
                 self._cur_val_loss = self.criterion(out, y.float()).item()
+            except ValueError:
+                self._cur_val_loss = self.criterion(out, y.squeeze().float()).item()
             self._cur_val_metrics = [m(out, y) for m in self.metrics]
         self.val_losses.append(self._cur_val_loss)
         self.val_metrics.append(self._cur_val_metrics)
@@ -504,7 +526,12 @@ class EncoderDecoderTrainer(BaseTrainer):
             labels = list()
             for batch in self.dataloader.test_loader:
                 batch = batch.to(self.device)
-                outputs.append(self.decoder(self.encoder(batch)))
+                encoder_out = self.encoder(batch)
+                encoder_losses = []
+                if isinstance(encoder_out, tuple):
+                    encoder_out, *encoder_losses = encoder_out
+                out = self.decoder(encoder_out)
+                outputs.append(out)
                 labels.append(batch.y)
             out = torch.cat(outputs, 0)
             y = torch.cat(labels)
@@ -610,7 +637,10 @@ class EncoderDecoderTrainer(BaseTrainer):
         batch = Batch.from_data_list([data]).to(self.device)
         label = batch.y[0].to("cpu").detach()
         with torch.no_grad():
-            out = self.decoder(self.encoder(batch))
+            encoder_out = self.encoder(batch)
+            if isinstance(encoder_out, tuple):
+                encoder_out, *_ = encoder_out
+            out = self.decoder(encoder_out)
         out = torch.round(torch.sigmoid(out))[0].to("cpu").detach().numpy()
         fig, axes = plt.subplots(2, 1, figsize=(8.0, 12.0))
         ax1, ax2 = axes.flatten()
