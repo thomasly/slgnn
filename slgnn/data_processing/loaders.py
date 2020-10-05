@@ -6,7 +6,6 @@ from torch_geometric.data import DataLoader
 from torch.utils.data import ConcatDataset
 from rdkit.Chem.Scaffolds import MurckoScaffold
 from rdkit.Chem import MolFromSmiles
-from slgnn.data_processing.utils import fix_random_seed
 
 
 def _myShuffle(x, *s):
@@ -307,11 +306,14 @@ class FixedSplitter(BaseSplitter):
         shuffle=True,
         batch_size=32,
         dataloader=DataLoader,
+        random_seed=0,
     ):
+        self.random_seed = random_seed
         super().__init__(dataset, ratio, shuffle, batch_size, dataloader=dataloader)
 
-    @fix_random_seed(seed=0)
     def _split_dataset(self):
+        seed(self.random_seed)
+
         mask = self.dataset.data.y == 1
         positive_dataset = self.dataset[mask]
         negative_dataset = self.dataset[~mask]

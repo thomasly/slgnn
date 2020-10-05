@@ -12,7 +12,7 @@ from slgnn.models.gcn.layers import GraphConvolution, CPANConv
 
 
 class GCN(nn.Module):
-    """ A simple GCN model as in https://arxiv.org/abs/1609.02907
+    """A simple GCN model as in https://arxiv.org/abs/1609.02907
 
     Args:
         nfeat (int): number of input features.
@@ -36,7 +36,7 @@ class GCN(nn.Module):
 
 
 class GIN(nn.Module):
-    """ The GIN model as in https://arxiv.org/abs/1810.00826
+    """The GIN model as in https://arxiv.org/abs/1810.00826
 
     Args:
         dim_features (int): dimension of features.
@@ -113,7 +113,7 @@ class GIN(nn.Module):
         return out
 
     def get_model_parameters_by_layer(self):
-        """ Get model parameters by layer.
+        """Get model parameters by layer.
 
         Returns:
             dict: model parameters with layer names as keys and list of parameters as
@@ -127,7 +127,7 @@ class GIN(nn.Module):
 
 
 class CPAN(nn.Module):
-    """ Shuo's CPAN model.
+    """Shuo's CPAN model.
 
     Args:
         dim_features (int): dimension of features.

@@ -2,9 +2,7 @@ from pathlib import Path
 import json
 import pickle
 from copy import deepcopy
-
-# import os.path as osp
-# import logging
+from functools import partial
 
 from torch.optim import Adam, SGD
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss
@@ -72,11 +70,12 @@ from slgnn.metrics.metrics import (
     FocalLoss2d,
 )
 from slgnn.models.gcn.model import GIN, CPAN
+from slgnn.models.gcn.graphsage_diffpool import GraphSAGEDiffPool
 from contextPred.chem.dataloader import DataLoaderMasking
 
 
 def read_config_file(dict_or_filelike):
-    """ Load config from file
+    """Load config from file
 
     Args:
         dict_or_filelike (dict or str): config dictionary or the file in yaml, pickle,
@@ -193,10 +192,7 @@ class Config:
         "DataLoaderMasking": DataLoaderMasking,
     }
 
-    models = {
-        "CPAN": CPAN,
-        "GIN": GIN,
-    }
+    models = {"CPAN": CPAN, "GIN": GIN, "GraphSAGEDiffPool": GraphSAGEDiffPool}
 
     encoder_losses = {
         "BCEWithLogitsLoss": BCEWithLogitsLoss,
@@ -371,18 +367,14 @@ class Config:
         if "dataloader" in args:
             args["dataloader"] = Config.dataloaders[args["dataloader"]]
         assert spltr_s in Config.encoder_data_splitters, f"Could not find {spltr_s}"
-        return lambda dataset: Config.encoder_data_splitters[spltr_s](dataset, **args)
+        return partial(Config.encoder_data_splitters[spltr_s], **args)
 
     @staticmethod
     def parse_classifier_data_splitter(splitter_dict):
         spltr_s = splitter_dict["class"]
         args = splitter_dict["args"]
         assert spltr_s in Config.classifier_data_splitters, f"Could not find {spltr_s}"
-
-        def splitter(dataset):
-            return Config.classifier_data_splitters[spltr_s](dataset, **args)
-
-        return splitter
+        return partial(Config.classifier_data_splitters[spltr_s], **args)
 
     @staticmethod
     def parse_early_stopper(stopper_dict):
@@ -422,7 +414,7 @@ class Config:
 
 
 class Grid:
-    """ Generate a configuration grid with different hyper parameters in the config
+    """Generate a configuration grid with different hyper parameters in the config
     file. The class read the first level lists of the configuration and generate all
     value combinations. The instance can be used as a generator.
 
@@ -463,7 +455,7 @@ class Grid:
         return iter(self._configs)
 
     def _grid_generator(self, cfgs_dict):
-        """ Generate hyper parameter grid from yaml file for hyper parameter
+        """Generate hyper parameter grid from yaml file for hyper parameter
         tuning.
         """
         keys = cfgs_dict.keys()

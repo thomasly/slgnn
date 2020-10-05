@@ -12,16 +12,16 @@ from slgnn.models.gcn.utils import get_filtered_fingerprint
 
 
 class Amu(DeepchemDataset):
-    """ Amu dataset. FDA-approved compounds screened against SARS-CoV-2 in vitro.
+    """Amu dataset. FDA-approved compounds screened against SARS-CoV-2 in vitro.
     1,484 compounds, 88 hits.
     """
 
-    def __init__(self, root=None, name="amu_sars_cov_2_in_vitro"):
+    def __init__(self, root=None, transform=None, name="amu_sars_cov_2_in_vitro"):
         if root is None:
             root = osp.join("data", "Covid19", "Amu")
         self.root = root
         self.name = name
-        super().__init__(root=root, name=name)
+        super().__init__(root=root, name=name, transform=transform)
 
     def _get_smiles(self):
         df = pd.read_csv(self.raw_paths[0])
@@ -38,13 +38,12 @@ class Amu(DeepchemDataset):
 
 
 class AmuFP(Amu):
-    """ Amu dataset with fingerprints as labels.
-    """
+    """Amu dataset with fingerprints as labels."""
 
-    def __init__(self, root=None, name="amu_sars_cov_2_in_vitro"):
+    def __init__(self, root=None, transform=None, name="amu_sars_cov_2_in_vitro"):
         if root is None:
             root = osp.join("data", "Covid19", "AmuFP")
-        super().__init__(root=root, name=name)
+        super().__init__(root=root, name=name, transform=transform)
 
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])
@@ -60,16 +59,16 @@ class AmuFP(Amu):
 
 
 class Ellinger(DeepchemDataset):
-    """ Ellinger dataset. A large scale drug repurposing collection of compounds
+    """Ellinger dataset. A large scale drug repurposing collection of compounds
     screened against SARS-CoV-2 in vitro. 5,632 compounds, 67 hits.
     """
 
-    def __init__(self, root=None, name="ellinger"):
+    def __init__(self, root=None, transform=None, name="ellinger"):
         if root is None:
             root = osp.join("data", "Covid19", "Ellinger")
         self.root = root
         self.name = name
-        super().__init__(root=root, name=name)
+        super().__init__(root=root, name=name, transform=transform)
 
     def _get_smiles(self):
         df = pd.read_csv(self.raw_paths[0])
@@ -86,13 +85,12 @@ class Ellinger(DeepchemDataset):
 
 
 class EllingerFP(Ellinger):
-    """ Ellinger dataset with fingerprints as labels.
-    """
+    """Ellinger dataset with fingerprints as labels."""
 
-    def __init__(self, root=None, name="ellinger"):
+    def __init__(self, root=None, transform=None, name="ellinger"):
         if root is None:
             root = osp.join("data", "Covid19", "EllingerFP")
-        super().__init__(root=root, name=name)
+        super().__init__(root=root, name=name, transform=transform)
 
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])
@@ -108,16 +106,16 @@ class EllingerFP(Ellinger):
 
 
 class Mpro(DeepchemDataset):
-    """ Mpro dataset. fragments screened for 3CL protease binding using crystallography
+    """Mpro dataset. fragments screened for 3CL protease binding using crystallography
     techniques. 880 compounds, 78 hits.
     """
 
-    def __init__(self, root=None, name="mpro_xchem"):
+    def __init__(self, root=None, transform=None, name="mpro_xchem"):
         if root is None:
             root = osp.join("data", "Covid19", "Mpro")
         self.root = root
         self.name = name
-        super().__init__(root=root, name=name)
+        super().__init__(root=root, name=name, transform=transform)
 
     def _get_smiles(self):
         df = pd.read_csv(self.raw_paths[0])
@@ -134,13 +132,12 @@ class Mpro(DeepchemDataset):
 
 
 class MproFP(Mpro):
-    """ Mpro dataset with fingerprints as labels.
-    """
+    """Mpro dataset with fingerprints as labels."""
 
-    def __init__(self, root=None, name="mpro_xchem"):
+    def __init__(self, root=None, transform=None, name="mpro_xchem"):
         if root is None:
             root = osp.join("data", "Covid19", "MproFP")
-        super().__init__(root=root, name=name)
+        super().__init__(root=root, name=name, transform=transform)
 
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])
@@ -156,16 +153,16 @@ class MproFP(Mpro):
 
 
 class RepurposingFP(DeepchemDataset):
-    """ Drug repurposing dataset from Broad Institue with fingerprints as labels. Can
+    """Drug repurposing dataset from Broad Institue with fingerprints as labels. Can
     be used for pretraining.
     """
 
-    def __init__(self, root=None, name="repurposing_drugs_smiles"):
+    def __init__(self, root=None, transform=None, name="repurposing_drugs_smiles"):
         if root is None:
             root = osp.join("data", "Covid19", "RepurposingFP")
         self.root = root
         self.name = name
-        super().__init__(root=root, name=name)
+        super().__init__(root=root, name=name, transform=transform)
 
     @property
     def raw_file_names(self):
@@ -191,17 +188,17 @@ class RepurposingFP(DeepchemDataset):
 
 
 class AntiviralFP(DeepchemDataset):
-    """ known anti-viral drugs and related chemical compounds that are structurally
+    """known anti-viral drugs and related chemical compounds that are structurally
     similar to known antivirals from CAS with fingerprints as labels. Can be used for
     pretraining.
     """
 
-    def __init__(self, root=None, name="antiviral_updated"):
+    def __init__(self, root=None, transform=None, name="antiviral_updated"):
         if root is None:
             root = osp.join("data", "Covid19", "AntiviralFP")
         self.root = root
         self.name = name
-        super().__init__(root=root, name=name)
+        super().__init__(root=root, name=name, transform=transform)
 
     @property
     def raw_file_names(self):

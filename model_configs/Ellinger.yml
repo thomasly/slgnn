@@ -1,6 +1,6 @@
 encoder_dataset:
   - [Ellinger]
-  - [Repurposing, Ellinger]
+  # - [Repurposing, Ellinger]
 classifier_dataset:
   - Ellinger
 encoder_data_splitter:
@@ -21,17 +21,17 @@ classifier_data_splitter:
 #     class: FixedSplitter
 #     args:
 #       ratio: [0.1, 0.1, 0.1]
-random_seed:
-  - 0
-  - 5
-  - 193
-  - 84234
-  - 839574
-  - 828649
-  - 939786
-  - 158736
-  - 986386
-  - 658349
+# random_seed:
+#   - 0
+#   - 5
+#   - 193
+#   - 84234
+#   - 839574
+#   - 828649
+#   - 939786
+#   - 158736
+#   - 986386
+#   - 658349
 model:
   -
     class: GIN
@@ -41,7 +41,7 @@ embedding_dim:
 device:
   - cuda:0
 batch_size:
-  - 32
+  - 64
 learning_rate:
   - 0.001
 encoder_epochs:
@@ -52,7 +52,7 @@ classifier_epochs:
 frozen_epochs:
   - [5, 10, 15, 20, 25]
 hidden_units:
-  - [600, 600, 600, 600]
+  - [2048, 2048, 2048, 2048]
 optimizer:
   - Adam
 scheduler:

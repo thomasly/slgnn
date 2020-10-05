@@ -71,6 +71,8 @@ class AUC(ABC):
                 targets belongs to the same class), return the last available score.
         """
         # is_valid = ~(target == -1).cpu().detach()
+        pred = pred.squeeze()
+        target = target.squeeze()
         if _one_class(target):
             pred = torch.softmax(pred, 1)[:, 1]
         else:
@@ -92,7 +94,7 @@ class AUC(ABC):
         else:  # multi-label
             with warnings.catch_warnings():
                 warnings.filterwarnings("error")
-                pred_tar = np.concatenate([pred, target], 0)
+                pred_tar = np.concatenate([pred.squeeze(), target.squeeze()], 0)
                 score = np.apply_along_axis(self.auc_along_col, 0, pred_tar)
                 score = score[~np.isnan(score)]
                 try:
@@ -116,12 +118,16 @@ class Accuracy:
             pred:
             target:
         """
-        is_valid = ~(target == -1).cpu().detach()
+        is_valid = ~(target == -1).cpu().detach().squeeze()
         pred, target = _to_numpy(pred, target)
+        pred = pred.squeeze()
+        target = target.squeeze()
         if _one_class(target):
             _, pred = pred.max(dim=1)
         else:
             pred = torch.round(torch.sigmoid(pred))
+        target = target.squeeze()
+        pred = pred.squeeze()
         return accuracy_score(target[is_valid], pred[is_valid])
 
     @property
@@ -160,12 +166,16 @@ class F1:
             pred:
             target:
         """
-        is_valid = ~(target == -1).cpu().detach()
+        pred = pred.squeeze()
+        target = target.squeeze()
+        is_valid = ~(target == -1).cpu().detach().squeeze()
         if _one_class(target):
             _, pred = pred.max(dim=1)
         else:
             pred = torch.round(torch.sigmoid(pred))
         pred, target = _to_numpy(pred, target)
+        pred = pred.squeeze()
+        target = target.squeeze()
         return f1_score(target[is_valid], pred[is_valid], average="micro")
 
     @property

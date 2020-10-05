@@ -9,6 +9,7 @@ from chemreader.readers import Smiles
 from tqdm import tqdm
 
 from slgnn.models.gcn.utils import get_filtered_fingerprint
+from .utils import NumNodesFilter
 
 
 def _smiles_from_csv(path, column):
@@ -73,6 +74,10 @@ class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
                 data_list.append(Data(x=x, edge_index=edge_idx, y=y))
             except AttributeError:  # SMILES invalid
                 continue
+        if self.pre_filter is not None:
+            data_list = [data for data in data_list if self.pre_filter(data)]
+        if self.pre_transform is not None:
+            data_list = [self.pre_transform(data) for data in data_list]
         data, slices = self.collate(data_list)
         torch.save((data, slices), self.processed_paths[0])
 
@@ -101,10 +106,10 @@ class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
 class Sider(DeepchemDataset):
     """Class for Sider dataset."""
 
-    def __init__(self, root=None, name="sider", transform=None):
+    def __init__(self, root=None, name="sider", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "Sider")
-        super().__init__(root=root, name=name, transform=transform)
+        super().__init__(root=root, name=name, **kwargs)
 
     def _get_smiles(self):
         return _smiles_from_csv(self.raw_paths[0], "smiles")
@@ -121,10 +126,10 @@ class Sider(DeepchemDataset):
 class SiderFP(Sider):
     """Class of Sider dataset with fingerprints as labels."""
 
-    def __init__(self, root=None, name="sider", transform=None):
+    def __init__(self, root=None, name="sider", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "SiderFP")
-        super().__init__(root=root, name=name, transform=transform)
+        super().__init__(root=root, name=name, **kwargs)
 
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])
@@ -139,10 +144,10 @@ class SiderFP(Sider):
 class BACE(DeepchemDataset):
     """Class for BACE dataset"""
 
-    def __init__(self, root=None, name="bace", transform=None):
+    def __init__(self, root=None, name="bace", **args):
         if root is None:
             root = osp.join("data", "DeepChem", "BACE")
-        super().__init__(root=root, name=name, transform=transform)
+        super().__init__(root=root, name=name, **args)
 
     def _get_smiles(self):
         return _smiles_from_csv(self.raw_paths[0], "mol")
@@ -159,10 +164,10 @@ class BACE(DeepchemDataset):
 class BACEFP(BACE):
     """Class of BACE dataset with fingerprints as labels."""
 
-    def __init__(self, root=None, name="bace", transform=None):
+    def __init__(self, root=None, name="bace", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "BACEFP")
-        super().__init__(root=root, name=name, transform=transform)
+        super().__init__(root=root, name=name, **kwargs)
 
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])
@@ -177,10 +182,10 @@ class BACEFP(BACE):
 class BBBP(DeepchemDataset):
     """Class of BBBP dataset."""
 
-    def __init__(self, root=None, name="BBBP", transform=None):
+    def __init__(self, root=None, name="BBBP", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "BBBP")
-        super().__init__(root=root, name=name, transform=transform)
+        super().__init__(root=root, name=name, **kwargs)
 
     def _get_smiles(self):
         return _smiles_from_csv(self.raw_paths[0], "smiles")
@@ -197,10 +202,10 @@ class BBBP(DeepchemDataset):
 class BBBPFP(BBBP):
     """Class of BBBP dataset with fingerprints as labels."""
 
-    def __init__(self, root=None, name="BBBP", transform=None):
+    def __init__(self, root=None, name="BBBP", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "BBBPFP")
-        super().__init__(root=root, name=name, transform=transform)
+        super().__init__(root=root, name=name, **kwargs)
 
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])
@@ -215,10 +220,10 @@ class BBBPFP(BBBP):
 class ClinTox(DeepchemDataset):
     """Class of ClinTox dataset."""
 
-    def __init__(self, root=None, name="clintox", transform=None):
+    def __init__(self, root=None, name="clintox", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "ClinTox")
-        super().__init__(root=root, name=name, transform=transform)
+        super().__init__(root=root, name=name, **kwargs)
 
     def _get_smiles(self):
         return _smiles_from_csv(self.raw_paths[0], "smiles")
@@ -228,7 +233,7 @@ class ClinTox(DeepchemDataset):
         # for lb in df["CT_TOX"]:
         #     yield torch.tensor([lb], dtype=torch.long)
         for row in df.iterrows():
-            yield torch.tensor(list(row[1][1:]), dtype=torch.long)[None, :]
+            yield torch.tensor(list(row[1][1:]), dtype=torch.long)
 
     def process(self, verbose=0):
         super().process(verbose)
@@ -237,10 +242,19 @@ class ClinTox(DeepchemDataset):
 class ClinToxFP(ClinTox):
     """Class of ClinTox dataset with fingerprints as labels."""
 
-    def __init__(self, root=None, name="clintox", transform=None):
+    def __init__(self, root=None, name="clintox", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "ClinToxFP")
-        super().__init__(root=root, name=name, transform=transform)
+        super().__init__(root=root, name=name, **kwargs)
+
+    def _get_smiles(self):
+        df = pd.read_csv(self.raw_paths[0])
+        for smi in df["smiles"]:
+            try:
+                get_filtered_fingerprint(smi)
+            except OSError:  # Invalid SMILES input
+                continue
+            yield smi
 
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])
@@ -260,10 +274,10 @@ class ClinToxBalanced(ClinTox):
     equivalent.
     """
 
-    def __init__(self, root=None, name="clintox_balanced", transform=None):
+    def __init__(self, root=None, name="clintox_balanced", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "ClinToxBalanced")
-        super().__init__(root=root, name=name, transform=transform)
+        super().__init__(root=root, name=name, **kwargs)
 
     def process(self, verbose=1):
         super().process(verbose)
@@ -272,10 +286,10 @@ class ClinToxBalanced(ClinTox):
 class HIV(DeepchemDataset):
     """Class of HIV dataset."""
 
-    def __init__(self, root=None, name="HIV", transform=None):
+    def __init__(self, root=None, name="HIV", pre_filter=NumNodesFilter(), **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "HIV")
-        super().__init__(root=root, name=name, transform=transform)
+        super().__init__(root=root, name=name, pre_filter=NumNodesFilter(), **kwargs)
 
     def _get_smiles(self):
         return _smiles_from_csv(self.raw_paths[0], "smiles")
@@ -292,10 +306,10 @@ class HIV(DeepchemDataset):
 class HIVFP(HIV):
     """Class of HIV dataset with fingerprints as labels."""
 
-    def __init__(self, root=None, name="HIV", transform=None):
+    def __init__(self, root=None, name="HIV", pre_filter=NumNodesFilter(), **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "HIVFP")
-        super().__init__(root=root, name=name, transform=transform)
+        super().__init__(root=root, name=name, pre_filter=NumNodesFilter(), **kwargs)
 
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])
@@ -312,10 +326,10 @@ class HIVBalanced(HIV):
     equivalent.
     """
 
-    def __init__(self, root=None, name="hiv_balanced", transform=None):
+    def __init__(self, root=None, name="hiv_balanced", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "HIVBalanced")
-        super().__init__(root=root, name=name, transform=transform)
+        super().__init__(root=root, name=name, **kwargs)
 
     def process(self, verbose=0):
         super().process(verbose)
@@ -324,10 +338,10 @@ class HIVBalanced(HIV):
 class Tox21(DeepchemDataset):
     """Class of Tox21 dataset. NA labels are filled with 2."""
 
-    def __init__(self, root=None, name="tox21", transform=None):
+    def __init__(self, root=None, name="tox21", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "Tox21")
-        super().__init__(root=root, name=name, transform=transform)
+        super().__init__(root=root, name=name, **kwargs)
 
     def _get_smiles(self):
         return _smiles_from_csv(self.raw_paths[0], "smiles")
@@ -345,10 +359,10 @@ class Tox21(DeepchemDataset):
 class Tox21FP(Tox21):
     """Class of Tox21 dataset with fingerprints as labels."""
 
-    def __init__(self, root=None, name="tox21", transform=None):
+    def __init__(self, root=None, name="tox21", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "Tox21FP")
-        super().__init__(root, name, transform=transform)
+        super().__init__(root, name, **kwargs)
 
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])
@@ -363,10 +377,10 @@ class Tox21FP(Tox21):
 class ToxCast(DeepchemDataset):
     """Class of ToxCast dataset. NA labels are filled with 2."""
 
-    def __init__(self, root=None, name="toxcast_data", transform=None):
+    def __init__(self, root=None, name="toxcast_data", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "ToxCast")
-        super().__init__(root=root, name=name, transform=transform)
+        super().__init__(root=root, name=name, **kwargs)
 
     def _get_smiles(self):
         return _smiles_from_csv(self.raw_paths[0], "smiles")
@@ -384,12 +398,12 @@ class ToxCast(DeepchemDataset):
 class ToxCastFP(ToxCast):
     """Class of ToxCast dataset with fingerprints as labels."""
 
-    def __init__(self, root=None, name="toxcast_data", transform=None):
+    def __init__(self, root=None, name="toxcast_data", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "ToxCastFP")
         self._smiles = list()
         self._fps = list()
-        super().__init__(root, name, transform=transform)
+        super().__init__(root, name, **kwargs)
 
     def _get_smiles(self):
         df = pd.read_csv(self.raw_paths[0])
@@ -415,10 +429,10 @@ class ToxCastFP(ToxCast):
 class MUV(DeepchemDataset):
     """Class of MUV dataset. NA labels are fiiled with 2."""
 
-    def __init__(self, root=None, name="muv", transform=None):
+    def __init__(self, root=None, name="muv", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "MUV")
-        super().__init__(root=root, name=name, transform=transform)
+        super().__init__(root=root, name=name, **kwargs)
 
     def _get_smiles(self):
         return _smiles_from_csv(self.raw_paths[0], "smiles")
@@ -436,10 +450,10 @@ class MUV(DeepchemDataset):
 class MUVFP(MUV):
     """Class of MUV dataset with fingerprints as labels."""
 
-    def __init__(self, root=None, name="muv", transform=None):
+    def __init__(self, root=None, name="muv", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "MUVFP")
-        super().__init__(root=root, name=name, transform=transform)
+        super().__init__(root=root, name=name, **kwargs)
 
     def _get_smiles(self):
         return _smiles_from_csv(self.raw_paths[0], "smiles")
