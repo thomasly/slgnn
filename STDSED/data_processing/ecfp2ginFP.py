@@ -46,9 +46,12 @@ def save_cyp450(datapath, encoder, transformer=None):
     return outputs
 
 
-def save_chembl(datapath, encoder, transformer=None):
+def save_chembl(datapath, encoder, batch_size=2048, transformer=None, device="cuda:0"):
     chembldf = pd.read_csv(datapath)
     outputs = list()
+    smiles_list = list()
+    data_list = list()
+    n = 0
     with torch.no_grad():
         it = tqdm(
             chembldf[" SMILES"], desc="Create GIN fingerprints: ", total=chembldf.size,
@@ -61,9 +64,16 @@ def save_chembl(datapath, encoder, transformer=None):
                 continue
             if transformer is not None:
                 data = transformer(data)
-            # get GIN fingerprint
-            out = encoder(Batch.from_data_list([data]).to(GPU))
-            outputs.append([smiles, out.to(CPU).squeeze().numpy().tolist()])
+            data_list.append(data)
+            smiles_list.append(smiles)
+            n += 1
+            if n == batch_size:
+                output = encoder(Batch.from_data_list(data_list).to(device))
+                for smiles, out in zip(smiles_list, output):
+                    outputs.append([smiles, out.to("cpu").squeeze().numpy().tolist()])
+                n = 0
+                smiles_list = []
+                data_list = []
     return outputs
 
 
