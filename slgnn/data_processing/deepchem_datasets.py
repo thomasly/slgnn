@@ -155,7 +155,7 @@ class BACE(DeepchemDataset):
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])
         for lb in df["Class"]:
-            yield torch.tensor([lb], dtype=torch.long)
+            yield torch.tensor([lb], dtype=torch.long)[None, :]
 
     def process(self, verbose=0):
         super().process(verbose)
@@ -193,7 +193,7 @@ class BBBP(DeepchemDataset):
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])
         for lb in df["p_np"]:
-            yield torch.tensor([lb], dtype=torch.long)
+            yield torch.tensor([lb], dtype=torch.long)[None, :]
 
     def process(self, verbose=0):
         super().process(verbose)
@@ -233,7 +233,7 @@ class ClinTox(DeepchemDataset):
         # for lb in df["CT_TOX"]:
         #     yield torch.tensor([lb], dtype=torch.long)
         for row in df.iterrows():
-            yield torch.tensor(list(row[1][1:]), dtype=torch.long)
+            yield torch.tensor(list(row[1][1:]), dtype=torch.long)[None, :]
 
     def process(self, verbose=0):
         super().process(verbose)
@@ -297,7 +297,7 @@ class HIV(DeepchemDataset):
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])
         for lb in df["HIV_active"]:
-            yield torch.tensor([lb], dtype=torch.long)
+            yield torch.tensor([lb], dtype=torch.long)[None, :]
 
     def process(self, verbose=0):
         super().process(verbose)
