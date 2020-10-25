@@ -13,6 +13,7 @@ from rdkit.Chem import AllChem
 from rdkit.Chem.rdMolDescriptors import GetMorganFingerprintAsBitVect
 from torch_geometric.data import Data
 from torch_geometric.data import InMemoryDataset
+from tqdm import tqdm
 
 
 # allowable node and edge features
@@ -67,6 +68,7 @@ def mol_to_graph_data_obj_simple(mol):
         atom_feature = (
             [allowable_features["possible_atomic_num_list"].index(atom.GetAtomicNum())]
             + [allowable_features["possible_degree_list"].index(atom.GetDegree())]
+            + [allowable_features["possible_formal_charge_list"].index(atom.GetFormalCharge())]
             + [
                 allowable_features["possible_hybridization_list"].index(
                     atom.GetHybridization()
@@ -168,9 +170,16 @@ def graph_data_obj_to_nx_simple(data):
     atom_features = data.x.cpu().numpy()
     num_atoms = atom_features.shape[0]
     for i in range(num_atoms):
-        atomic_num_idx, chirality_tag_idx = atom_features[i]
-        G.add_node(i, atom_num_idx=atomic_num_idx, chirality_tag_idx=chirality_tag_idx)
-        pass
+        atom_type, degree, formal_charge, hybrid, aromatic, chirality = atom_features[i]
+        G.add_node(
+            i,
+            atom_type=atom_type,
+            degree=degree,
+            formal_charge=formal_charge,
+            hybrid=hybrid,
+            aromatic=aromatic,
+            chirality=chirality
+        )
 
     # bonds
     edge_index = data.edge_index.cpu().numpy()
@@ -205,7 +214,14 @@ def nx_to_graph_data_obj_simple(G):
     # num_atom_features = 2  # atom type,  chirality tag
     atom_features_list = []
     for _, node in G.nodes(data=True):
-        atom_feature = [node["atom_num_idx"], node["chirality_tag_idx"]]
+        atom_feature = [
+            node["atom_type"],
+            node["degree"],
+            node["formal_charge"],
+            node["hybrid"],
+            node["aromatic"],
+            node["chirality"]
+        ]
         atom_features_list.append(atom_feature)
     x = torch.tensor(np.array(atom_features_list), dtype=torch.long)
 
@@ -347,8 +363,8 @@ class MoleculeDataset(InMemoryDataset):
             input_df = pd.read_csv(input_path, sep=",", compression="gzip", dtype="str")
             smiles_list = list(input_df["smiles"])
             zinc_id_list = list(input_df["zinc_id"])
-            for i in range(len(smiles_list)):
-                print(i)
+            for i in tqdm(range(len(smiles_list))):
+#                 print(i, end="\r")
                 s = smiles_list[i]
                 # each example contains a single species
                 try:
@@ -433,7 +449,7 @@ class MoleculeDataset(InMemoryDataset):
 
             print("processing")
             for i in range(len(rdkit_mol_objs)):
-                print(i)
+                print(i, end="\r")
                 rdkit_mol = rdkit_mol_objs[i]
                 if rdkit_mol is not None:
                     # # convert aromatic bonds to double bonds
@@ -463,7 +479,7 @@ class MoleculeDataset(InMemoryDataset):
         elif self.dataset == "tox21":
             smiles_list, rdkit_mol_objs, labels = _load_tox21_dataset(self.raw_paths[0])
             for i in range(len(smiles_list)):
-                print(i)
+                print(i, end="\r")
                 rdkit_mol = rdkit_mol_objs[i]
                 # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
@@ -479,7 +495,7 @@ class MoleculeDataset(InMemoryDataset):
         elif self.dataset == "hiv":
             smiles_list, rdkit_mol_objs, labels = _load_hiv_dataset(self.raw_paths[0])
             for i in range(len(smiles_list)):
-                print(i)
+                print(i, end="\r")
                 rdkit_mol = rdkit_mol_objs[i]
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
@@ -497,7 +513,7 @@ class MoleculeDataset(InMemoryDataset):
                 self.raw_paths[0]
             )
             for i in range(len(smiles_list)):
-                print(i)
+                print(i, end="\r")
                 rdkit_mol = rdkit_mol_objs[i]
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
@@ -514,7 +530,7 @@ class MoleculeDataset(InMemoryDataset):
         elif self.dataset == "bbbp":
             smiles_list, rdkit_mol_objs, labels = _load_bbbp_dataset(self.raw_paths[0])
             for i in range(len(smiles_list)):
-                print(i)
+                print(i, end="\r")
                 rdkit_mol = rdkit_mol_objs[i]
                 if rdkit_mol is not None:
                     # # convert aromatic bonds to double bonds
@@ -533,7 +549,7 @@ class MoleculeDataset(InMemoryDataset):
                 self.raw_paths[0]
             )
             for i in range(len(smiles_list)):
-                print(i)
+                print(i, end="\r")
                 rdkit_mol = rdkit_mol_objs[i]
                 if rdkit_mol is not None:
                     # # convert aromatic bonds to double bonds
@@ -550,7 +566,7 @@ class MoleculeDataset(InMemoryDataset):
         elif self.dataset == "esol":
             smiles_list, rdkit_mol_objs, labels = _load_esol_dataset(self.raw_paths[0])
             for i in range(len(smiles_list)):
-                print(i)
+                print(i, end="\r")
                 rdkit_mol = rdkit_mol_objs[i]
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
@@ -568,7 +584,7 @@ class MoleculeDataset(InMemoryDataset):
                 self.raw_paths[0]
             )
             for i in range(len(smiles_list)):
-                print(i)
+                print(i, end="\r")
                 rdkit_mol = rdkit_mol_objs[i]
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
@@ -586,7 +602,7 @@ class MoleculeDataset(InMemoryDataset):
                 self.raw_paths[0]
             )
             for i in range(len(smiles_list)):
-                print(i)
+                print(i, end="\r")
                 rdkit_mol = rdkit_mol_objs[i]
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
@@ -602,7 +618,7 @@ class MoleculeDataset(InMemoryDataset):
         elif self.dataset == "muv":
             smiles_list, rdkit_mol_objs, labels = _load_muv_dataset(self.raw_paths[0])
             for i in range(len(smiles_list)):
-                print(i)
+                print(i, end="\r")
                 rdkit_mol = rdkit_mol_objs[i]
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
@@ -619,7 +635,7 @@ class MoleculeDataset(InMemoryDataset):
         #     smiles_list, rdkit_mol_objs, labels = _load_pcba_dataset(
         #         self.raw_paths[0])
         #     for i in range(len(smiles_list)):
-        #         print(i)
+        #         print(i, end="\r")
         #         rdkit_mol = rdkit_mol_objs[i]
         #         # # convert aromatic bonds to double bonds
         #         # Chem.SanitizeMol(rdkit_mol,
@@ -643,7 +659,7 @@ class MoleculeDataset(InMemoryDataset):
         #         )[0]
         #     )
         #     for i in range(len(smiles_list)):
-        #         print(i)
+        #         print(i, end="\r")
         #         if "." not in smiles_list[i]:  # remove examples with
         #             # multiples species
         #             rdkit_mol = rdkit_mol_objs[i]
@@ -668,7 +684,7 @@ class MoleculeDataset(InMemoryDataset):
         elif self.dataset == "sider":
             smiles_list, rdkit_mol_objs, labels = _load_sider_dataset(self.raw_paths[0])
             for i in range(len(smiles_list)):
-                print(i)
+                print(i, end="\r")
                 rdkit_mol = rdkit_mol_objs[i]
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
@@ -686,7 +702,7 @@ class MoleculeDataset(InMemoryDataset):
                 self.raw_paths[0]
             )
             for i in range(len(smiles_list)):
-                print(i)
+                print(i, end="\r")
                 rdkit_mol = rdkit_mol_objs[i]
                 if rdkit_mol is not None:
                     # # convert aromatic bonds to double bonds
@@ -708,7 +724,7 @@ class MoleculeDataset(InMemoryDataset):
             smiles_list = input_df["smiles"]
             labels = input_df["label"].values
             for i in range(len(smiles_list)):
-                print(i)
+                print(i, end="\r")
                 s = smiles_list[i]
                 rdkit_mol = AllChem.MolFromSmiles(s)
                 if rdkit_mol is not None:  # ignore invalid mol objects
@@ -730,7 +746,7 @@ class MoleculeDataset(InMemoryDataset):
             smiles_list = pd.read_csv(smiles_path, sep=" ", header=None)[0]
             labels = pd.read_csv(labels_path, header=None)[0].values
             for i in range(len(smiles_list)):
-                print(i)
+                print(i, end="\r")
                 s = smiles_list[i]
                 rdkit_mol = AllChem.MolFromSmiles(s)
                 if rdkit_mol is not None:  # ignore invalid mol objects
@@ -855,7 +871,7 @@ class MoleculeFingerprintDataset(data.Dataset):
             ) = _load_chembl_with_labels_dataset(os.path.join(self.root, "raw"))
             print("processing")
             for i in range(len(rdkit_mol_objs)):
-                print(i)
+                print(i, end="\r")
                 rdkit_mol = rdkit_mol_objs[i]
                 if rdkit_mol is not None:
                     # # convert aromatic bonds to double bonds
@@ -882,7 +898,7 @@ class MoleculeFingerprintDataset(data.Dataset):
             )
             print("processing")
             for i in range(len(smiles_list)):
-                print(i)
+                print(i, end="\r")
                 rdkit_mol = rdkit_mol_objs[i]
                 # convert aromatic bonds to double bonds
                 fp_arr = create_circular_fingerprint(
@@ -902,7 +918,7 @@ class MoleculeFingerprintDataset(data.Dataset):
             )
             print("processing")
             for i in range(len(smiles_list)):
-                print(i)
+                print(i, end="\r")
                 rdkit_mol = rdkit_mol_objs[i]
                 # # convert aromatic bonds to double bonds
                 fp_arr = create_circular_fingerprint(
@@ -1339,7 +1355,7 @@ def _load_chembl_with_labels_dataset(root_path):
     preprocessed_rdkitArr = []
     print("preprocessing")
     for i in range(len(rdkitArr)):
-        print(i)
+        print(i, end="\r")
         m = rdkitArr[i]
         if m is None:
             preprocessed_rdkitArr.append(None)

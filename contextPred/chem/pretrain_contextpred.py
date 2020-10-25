@@ -1,3 +1,4 @@
+import os
 import argparse
 
 from .loader import MoleculeDataset
@@ -219,7 +220,7 @@ def main():
     parser.add_argument(
         "--dataset",
         type=str,
-        default="zinc_standard_agent",
+        default="contextPred/chem/dataset/zinc_standard_agent",
         help="root directory of dataset for pretraining",
     )
     parser.add_argument(
@@ -255,8 +256,8 @@ def main():
 
     # set up dataset and transform function.
     dataset = MoleculeDataset(
-        "dataset/" + args.dataset,
-        dataset=args.dataset,
+        args.dataset,
+        dataset=os.path.basename(args.dataset),
         transform=ExtractSubstructureContextPair(args.num_layer, l1, l2),
     )
     loader = DataLoaderSubstructContext(
