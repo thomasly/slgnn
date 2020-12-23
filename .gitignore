@@ -18,6 +18,9 @@ trained_models/
 # Logs
 logs/
 dgx_logs/
+slgnn/*.out
+*.out
+*.err
 
 # playground scripts
 playground/
@@ -29,6 +32,7 @@ test_data/index
 
 # ignore datasets
 data/
+contextPred/chem/dataset/
 
 # papers
 papers/
@@ -166,3 +170,16 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+src/processing_scripts/test.csv
+notebooks/svg_text.svg
+notebooks/stderr.txt
+notebooks/matrix.png
+notebooks/matrix2.png
+notebooks/matrix3.png
+notebooks/ligand_distribution.png
+notebooks/ghose_filtered_ligand_distribution.png
+notebooks/example2.mol2
+notebooks/example.mol2
+notebooks/AAAAHL.xaa.mol2
+Docker/Dockerfile
+contextPred/chem/chem_dataset.zip

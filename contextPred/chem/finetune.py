@@ -213,13 +213,13 @@ def main():
         raise ValueError("Invalid dataset name.")
 
     # set up dataset
-    dataset = MoleculeDataset("dataset/" + args.dataset, dataset=args.dataset)
+    dataset = MoleculeDataset("contextPred/chem/dataset/" + args.dataset, dataset=args.dataset)
 
     print(dataset)
 
     if args.split == "scaffold":
         smiles_list = pd.read_csv(
-            "dataset/" + args.dataset + "/processed/smiles.csv", header=None
+            "contextPred/chem/dataset/" + args.dataset + "/processed/smiles.csv", header=None
         )[0].tolist()
         train_dataset, valid_dataset, test_dataset = scaffold_split(
             dataset,
@@ -242,7 +242,7 @@ def main():
         print("random")
     elif args.split == "random_scaffold":
         smiles_list = pd.read_csv(
-            "dataset/" + args.dataset + "/processed/smiles.csv", header=None
+            "contextPred/chem/dataset/" + args.dataset + "/processed/smiles.csv", header=None
         )[0].tolist()
         train_dataset, valid_dataset, test_dataset = random_scaffold_split(
             dataset,

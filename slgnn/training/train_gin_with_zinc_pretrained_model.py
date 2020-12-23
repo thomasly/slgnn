@@ -29,14 +29,14 @@ if __name__ == "__main__":
     time_stamp = datetime.now().strftime(r"%Y%m%d_%H%M%S")
 
     exp_datasets = {
-        "ClinTox": [ClinTox, ClinToxFP],
+#        "ClinTox": [ClinTox, ClinToxFP],
         "BACE": [BACE, BACEFP],
         "BBBP": [BBBP, BBBPFP],
-        "HIV": [HIV, HIVFP],
         "Sider": [Sider, SiderFP],
         "JAK1": [JAK1, JAK1FP],
         "JAK2": [JAK2, JAK2FP],
         "JAK3": [JAK3, JAK3FP],
+        "HIV": [HIV, HIVFP]
     }
     random_seeds = [0, 5, 193, 84234, 839574]
     # random_seeds = [0, 1]
