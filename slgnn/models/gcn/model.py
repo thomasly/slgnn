@@ -4,7 +4,7 @@ from collections import defaultdict
 import torch
 import torch.nn as nn
 from torch.nn import BatchNorm1d
-from torch.nn import Sequential, Linear, ReLU
+from torch.nn import Sequential, Linear, ReLU, ELU
 import torch.nn.functional as F
 from torch_geometric.nn import GINConv, global_add_pool, global_mean_pool
 
@@ -124,6 +124,71 @@ class GIN(nn.Module):
             layer = name.split(".")[1]
             params[layer].append(param)
         return params
+
+
+class GIN_DISMAT(torch.nn.Module):
+    def __init__(self, num_features, dim_node, dim_graph, config):
+        """ GIN model from PyG examples. Output distance matrix.
+        https://github.com/rusty1s/pytorch_geometric/blob/master/examples/mutag_gin.py
+        """
+        super().__init__()
+
+        dim = config["hidden_units"]
+
+        nn1 = Sequential(Linear(num_features, dim), ELU(), Linear(dim, dim))
+        self.conv1 = GINConv(nn1)
+        self.bn1 = torch.nn.BatchNorm1d(dim)
+
+        nn2 = Sequential(Linear(dim, dim), ELU(), Linear(dim, dim))
+        self.conv2 = GINConv(nn2)
+        self.bn2 = torch.nn.BatchNorm1d(dim)
+
+        nn3 = Sequential(Linear(dim, dim), ELU(), Linear(dim, dim))
+        self.conv3 = GINConv(nn3)
+        self.bn3 = torch.nn.BatchNorm1d(dim)
+
+        nn4 = Sequential(Linear(dim, dim), ELU(), Linear(dim, dim))
+        self.conv4 = GINConv(nn4)
+        self.bn4 = torch.nn.BatchNorm1d(dim)
+
+        nn5 = Sequential(Linear(dim, dim), ELU(), Linear(dim, dim_node))
+        self.conv5 = GINConv(nn5)
+        self.bn5 = torch.nn.BatchNorm1d(dim_node)
+
+        self.fc1 = Linear(dim_node, dim_node)
+        self.fc2 = Linear(dim_node, dim_graph)
+
+    def forward(self, x, edge_index, batch):
+        x = F.elu(self.conv1(x, edge_index))
+        x = self.bn1(x)
+        x = F.elu(self.conv2(x, edge_index))
+        x = self.bn2(x)
+        x = F.elu(self.conv3(x, edge_index))
+        x = self.bn3(x)
+        x = F.elu(self.conv4(x, edge_index))
+        x = self.bn4(x)
+        x = F.elu(self.conv5(x, edge_index))
+        node_embeddings = self.bn5(x)
+        pooled = global_add_pool(node_embeddings, batch)
+        x = F.elu(self.fc1(pooled))
+        x = F.dropout(x, p=0.25, training=self.training)
+        x = self.fc2(x)
+#         print(f"Output from fc size: {x.size()}")
+        x = torch.bmm(x[:, :, None], x[:, None, :])
+#         print(f"Size after batch mm: {x.size()}")
+#         x = torch.cat(
+#             [torch.mm(x[r][..., None], x[r][None, ...]) for r in range(x.size(0))],
+#             axis=0,
+#         )
+#         print(f"Pooled size: {pooled.size()}")
+#         print(f"Batch size: {x.size()}")
+#         print(f"expanded x size: {x.expand_as(pooled).size()}")
+        output = torch.ones(x.size() + (pooled.size(-1), )).to(x.device)
+#         print(f"output size: {output.size()}")
+        for i in range(x.size(0)):
+            output[i] = pooled[i] * x[i, :, :, None]
+#         x = torch.mul(pooled, x)
+        return output
 
 
 class CPAN(nn.Module):
