@@ -22,9 +22,16 @@ class ThreeDimensionOneHot:
 
     def __call__(self, data):
         new_y = torch.round(data.y)
+        # capping
         new_y[new_y >= self.num_bins - 3] = self.num_bins - 2
+        # assign padding
         new_y[new_y == -1] = self.num_bins - 1
+        # to 3d one-hot
         new_y = (torch.arange(self.num_bins) == new_y[..., None]).type(torch.float)
+        # create data mask
+        data.mask = torch.ones(*data.y.size())
+        data.mask[data.y == -1] = 0
+        data.mask = torch.stack([data.mask for _ in range(new_y.size(-1))], dim=2)
         data.y = new_y
         return data
 
