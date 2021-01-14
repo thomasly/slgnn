@@ -334,7 +334,7 @@ class MoleculeDataset(InMemoryDataset):
         for key in self.data.keys:
             item, slices = self.data[key], self.slices[key]
             s = list(repeat(slice(None), item.dim()))
-            s[data.cat_dim(key, item)] = slice(slices[idx], slices[idx + 1])
+            s[data.__cat_dim__(key, item)] = slice(slices[idx], slices[idx + 1])
             data[key] = item[s]
         return data
 
@@ -387,22 +387,22 @@ class MoleculeDataset(InMemoryDataset):
 
         elif self.dataset == "chembl_filtered":
             # get downstream test molecules.
-            from splitters import scaffold_split
+            from .splitters import scaffold_split
 
             # dataset dirs
             downstream_dir = [
-                "dataset/bace",
-                "dataset/bbbp",
-                "dataset/clintox",
-                "dataset/esol",
-                "dataset/freesolv",
-                "dataset/hiv",
-                "dataset/lipophilicity",
-                "dataset/muv",
+                "contextPred/chem/dataset/bace",
+                "contextPred/chem/dataset/bbbp",
+                "contextPred/chem/dataset/clintox",
+                "contextPred/chem/dataset/esol",
+                "contextPred/chem/dataset/freesolv",
+                "contextPred/chem/dataset/hiv",
+                "contextPred/chem/dataset/lipophilicity",
+                "contextPred/chem/dataset/muv",
                 # 'dataset/pcba/processed/smiles.csv',
-                "dataset/sider",
-                "dataset/tox21",
-                "dataset/toxcast",
+                "contextPred/chem/dataset/sider",
+                "contextPred/chem/dataset/tox21",
+                "contextPred/chem/dataset/toxcast"
             ]
 
             downstream_inchi_set = set()
@@ -759,6 +759,23 @@ class MoleculeDataset(InMemoryDataset):
                     data.y = torch.tensor([labels[i]])
                     data_list.append(data)
                     data_smiles_list.append(smiles_list[i])
+                    
+        elif self.dataset in ["jak1", "jak2", "jak3"]:
+            smiles_list, rdkit_mol_objs, labels = _load_jak_dataset(
+                os.path.join(self.raw_dir, f"filtered_{self.dataset.upper()}.csv"))
+            for i in range(len(smiles_list)):
+                print(i, end="\r")
+                rdkit_mol = rdkit_mol_objs[i]
+                # # convert aromatic bonds to double bonds
+                # Chem.SanitizeMol(rdkit_mol,
+                #                  sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
+                data = mol_to_graph_data_obj_simple(rdkit_mol)
+                # manually add mol id
+                data.id = torch.tensor([i])  # id here is the index of the mol in
+                # the dataset
+                data.y = torch.tensor([labels[i]])
+                data_list.append(data)
+                data_smiles_list.append(smiles_list[i])
 
         else:
             raise ValueError("Invalid dataset name")
@@ -1254,7 +1271,18 @@ def _load_sider_dataset(input_path):
     labels = labels.replace(0, -1)
     assert len(smiles_list) == len(rdkit_mol_objs_list)
     assert len(smiles_list) == len(labels)
-    return smiles_list, rdkit_mol_objs_list, labels.value
+    return smiles_list, rdkit_mol_objs_list, labels.values
+
+def _load_jak_dataset(input_path):
+    input_df = pd.read_csv(input_path, sep=",")
+    smiles_list = input_df["Smiles"]
+    rdkit_mol_objs_list = [AllChem.MolFromSmiles(s) for s in smiles_list]
+    labels = input_df["Activity"]
+    # convert 0 to -1
+    labels = labels.replace(0, -1)
+    assert len(smiles_list) == len(rdkit_mol_objs_list)
+    assert len(smiles_list) == len(labels)
+    return smiles_list, rdkit_mol_objs_list, labels.values
 
 
 def _load_toxcast_dataset(input_path):

@@ -14,7 +14,7 @@ import numpy as np
 from .model import GNN, GNN_graphpred
 from sklearn.metrics import roc_auc_score
 
-from .splitters import scaffold_split
+from .splitters import scaffold_split, random_split
 import pandas as pd
 
 import os
@@ -209,6 +209,8 @@ def main():
         num_tasks = 27
     elif args.dataset == "clintox":
         num_tasks = 2
+    elif args.dataset in ["jak1", "jak2", "jak3"]:
+        num_tasks = 1
     else:
         raise ValueError("Invalid dataset name.")
 
@@ -312,12 +314,12 @@ def main():
     test_acc_list = []
 
     if not args.filename == "":
-        fname = "runs/finetune_cls_runseed" + str(args.runseed) + "/" + args.filename
-        # delete the directory if there exists one
-        if os.path.exists(fname):
-            shutil.rmtree(fname)
-            print("removed the existing file.")
-        writer = SummaryWriter(fname)
+#         fname = "runs/finetune_cls_runseed" + str(args.runseed) + "/" + args.filename
+#         # delete the directory if there exists one
+#         if os.path.exists(fname):
+#             shutil.rmtree(fname)
+#             print("removed the existing file.")
+        writer = SummaryWriter(args.filename)
 
     for epoch in range(1, args.epochs + 1):
         print("====epoch " + str(epoch))

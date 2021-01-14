@@ -183,3 +183,8 @@ notebooks/example.mol2
 notebooks/AAAAHL.xaa.mol2
 Docker/Dockerfile
 contextPred/chem/chem_dataset.zip
+contextPred/chem/finetune_logs/
+mol.png
+mol2.png
+mol3.png
+mol4.png

@@ -49,8 +49,9 @@ class GINConv(MessagePassing):
         edge_attr = torch.cat((edge_attr, self_loop_attr), dim = 0)
 
         edge_embeddings = self.edge_embedding1(edge_attr[:,0]) + self.edge_embedding2(edge_attr[:,1])
-
-        return self.propagate(self.aggr, edge_index, x=x, edge_attr=edge_embeddings)
+        
+        return self.propagate(edge_index[0], x=x, edge_attr=edge_embeddings)
+#         return self.propagate(self.aggr, edge_index, x=x, edge_attr=edge_embeddings)
 
     def message(self, x_j, edge_attr):
         return x_j + edge_attr
@@ -101,8 +102,9 @@ class GCNConv(MessagePassing):
         norm = self.norm(edge_index, x.size(0), x.dtype)
 
         x = self.linear(x)
-
-        return self.propagate(self.aggr, edge_index, x=x, edge_attr=edge_embeddings, norm = norm)
+        
+        return self.propagate(edge_index[0], x=x, edge_attr=edge_embeddings, norm = norm)
+#         return self.propagate(self.aggr, edge_index, x=x, edge_attr=edge_embeddings, norm = norm)
 
     def message(self, x_j, edge_attr, norm):
         return norm.view(-1, 1) * (x_j + edge_attr)
@@ -273,7 +275,13 @@ class GNN(torch.nn.Module):
         else:
             raise ValueError("unmatched number of arguments.")
 
-        x = self.x_embedding1(x[:,0]) + self.x_embedding2(x[:,1]) + self.x_embedding3(x[:,2]) + self.x_embedding4(x[:,3]) + self.x_embedding5(x[:,4]) + self.x_embedding6(x[:,5])
+        x = self.x_embedding1(x[:,0].type(torch.long)) + \
+            self.x_embedding2(x[:,1].type(torch.long)) + \
+            self.x_embedding3(x[:,2].type(torch.long)) + \
+            self.x_embedding4(x[:,3].type(torch.long)) + \
+            self.x_embedding5(x[:,4].type(torch.long)) + \
+            self.x_embedding6(x[:,5].type(torch.long))
+#         x = self.x_embedding1(x[:,0]) + self.x_embedding2(x[:,1])
 
         h_list = [x]
         for layer in range(self.num_layer):

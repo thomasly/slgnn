@@ -173,22 +173,29 @@ class GIN_DISMAT(torch.nn.Module):
         x = F.elu(self.fc1(pooled))
         x = F.dropout(x, p=0.25, training=self.training)
         x = self.fc2(x)
-#         print(f"Output from fc size: {x.size()}")
+        #         print(f"Output from fc size: {x.size()}")
         x = torch.bmm(x[:, :, None], x[:, None, :])
-#         print(f"Size after batch mm: {x.size()}")
-#         x = torch.cat(
-#             [torch.mm(x[r][..., None], x[r][None, ...]) for r in range(x.size(0))],
-#             axis=0,
-#         )
-#         print(f"Pooled size: {pooled.size()}")
-#         print(f"Batch size: {x.size()}")
-#         print(f"expanded x size: {x.expand_as(pooled).size()}")
-        output = torch.ones(x.size() + (pooled.size(-1), )).to(x.device)
-#         print(f"output size: {output.size()}")
-        for i in range(x.size(0)):
-            output[i] = pooled[i] * x[i, :, :, None]
-#         x = torch.mul(pooled, x)
-        return output
+        #         print(f"Size after batch mm: {x.size()}")
+        #         x = torch.cat(
+        #             [torch.mm(x[r][..., None], x[r][None, ...]) for r in range(x.size(0))],
+        #             axis=0,
+        #         )
+        #         print(f"Pooled size: {pooled.size()}")
+        #         print(f"Batch size: {x.size()}")
+        #         print(f"expanded x size: {x.expand_as(pooled).size()}")
+        #         output = torch.ones(x.size() + (pooled.size(-1), )).to(x.device)
+        #         print(f"output size: {output.size()}")
+        #         for i in range(x.size(0)):
+        #             output[i] = pooled[i] * x[i, :, :, None]
+        #         x = torch.mul(pooled, x)
+        batch_size = x.size(0)
+        feature_size = pooled.size(1)
+        x_dim = x.size(1)
+        pooled = pooled.repeat_interleave(x_dim * x_dim, dim=0).view(
+            batch_size, x_dim, x_dim, -1
+        )
+        x = x.repeat_interleave(feature_size, dim=2).view(batch_size, x_dim, x_dim, -1)
+        return pooled * x
 
 
 class CPAN(nn.Module):
