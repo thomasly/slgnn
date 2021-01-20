@@ -247,13 +247,14 @@ class ScaffoldSplitter(BaseSplitter):
 
         # shuffle the order of the sets that have less than 5 members
         # make label distribution more even
-        for i, scaffold_set in enumerate(all_scaffold_sets):
-            if len(scaffold_set) <= 5:
-                start_point = i
-                break
-        seed(0)
-        _myShuffle(all_scaffold_sets, start_point, None)
-
+        if self.shuffle:
+            for i, scaffold_set in enumerate(all_scaffold_sets):
+                if len(scaffold_set) <= 5:
+                    start_point = i
+                    break
+            seed(0)
+            _myShuffle(all_scaffold_sets, start_point, None)
+        
         # get train, valid, and test indices
         train_cutoff = self.ratio[0] * len(self.dataset)
         valid_cutoff = (self.ratio[0] + self.ratio[1]) * len(self.dataset)
@@ -284,6 +285,7 @@ class ScaffoldSplitter(BaseSplitter):
             self._test_loader = self._dataloader(
                 test_dataset, batch_size=self.batch_size, shuffle=self.shuffle
             )
+        return train_idx, valid_idx, test_idx
 
 
 class FixedSplitter(BaseSplitter):
