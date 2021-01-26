@@ -1,0 +1,3 @@
+[submodule "chem_reader"]
+	path = chem_reader
+	url = git@github.com:thomasly/chem_reader.git
