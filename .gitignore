@@ -21,6 +21,8 @@ dgx_logs/
 slgnn/*.out
 *.out
 *.err
+contextPred/chem/finetune_logs/
+*.png
 
 # playground scripts
 playground/

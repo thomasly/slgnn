@@ -1,6 +1,6 @@
 import argparse
 
-from loader import MoleculeDataset
+from .loader import MoleculeDataset
 from torch_geometric.data import DataLoader
 
 import torch
@@ -12,10 +12,10 @@ from tqdm import tqdm
 import numpy as np
 
 #from model import GNN, GNN_graphpred
-from model_extra import GNN, GNN_graphpred
+from .model import GNN, GNN_graphpred
 from sklearn.metrics import roc_auc_score
 
-from splitters import scaffold_split, random_split, random_scaffold_split
+from .splitters import scaffold_split, random_split, random_scaffold_split
 import pandas as pd
 
 from tensorboardX import SummaryWriter
