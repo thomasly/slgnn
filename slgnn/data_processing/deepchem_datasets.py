@@ -39,24 +39,32 @@ class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
             processed directory, process method will be called.
     """
 
-    def __init__(self, root, name, transform=None, pre_transform=None, pre_filter=None, fragment_label=False):
+    def __init__(
+        self,
+        root,
+        name,
+        transform=None,
+        pre_transform=None,
+        pre_filter=None,
+        fragment_label=False,
+    ):
         self.root = root
         self.name = name
-        self.fragment_label=fragment_label
+        self.fragment_label = fragment_label
         super().__init__(root, transform, pre_transform, pre_filter)
         self.data, self.slices = torch.load(self.processed_paths[0])
-    
+
     @property
     def raw_dir(self):
-        return osp.join(self.root, 'raw')
+        return osp.join(self.root, "raw")
 
     @property
     def processed_dir(self):
         if self.fragment_label:
             return osp.join(self.root, "fragment_label_processed")
         else:
-            return osp.join(self.root, 'processed')
-    
+            return osp.join(self.root, "processed")
+
     @property
     def raw_file_names(self):
         raw_file_name = self.name + ".csv"
@@ -299,10 +307,10 @@ class ClinToxBalanced(ClinTox):
 class HIV(DeepchemDataset):
     """Class of HIV dataset."""
 
-    def __init__(self, root=None, name="HIV", pre_filter=NumNodesFilter(), **kwargs):
+    def __init__(self, root=None, name="HIV", pre_filter=None, **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "HIV")
-        super().__init__(root=root, name=name, pre_filter=NumNodesFilter(), **kwargs)
+        super().__init__(root=root, name=name, pre_filter=pre_filter, **kwargs)
 
     def _get_smiles(self):
         return _smiles_from_csv(self.raw_paths[0], "smiles")
@@ -312,17 +320,17 @@ class HIV(DeepchemDataset):
         for lb in df["HIV_active"]:
             yield torch.tensor([lb], dtype=torch.long)[None, :]
 
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         super().process(verbose)
 
 
 class HIVFP(HIV):
     """Class of HIV dataset with fingerprints as labels."""
 
-    def __init__(self, root=None, name="HIV", pre_filter=NumNodesFilter(), **kwargs):
+    def __init__(self, root=None, name="HIV", pre_filter=None, **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "HIVFP")
-        super().__init__(root=root, name=name, pre_filter=NumNodesFilter(), **kwargs)
+        super().__init__(root=root, name=name, pre_filter=pre_filter, **kwargs)
 
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])

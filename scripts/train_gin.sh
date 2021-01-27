@@ -7,7 +7,8 @@
 
 # for conf in ToxCast.yml MUV.yml Sider.yml HIV.yml
 # for conf in BBBP.yml
-for dataset in BACE BBBP ClinTox HIV
+# for dataset in BACE BBBP ClinTox HIV
+for dataset in HIV
 do
     CUDA_VISIBLE_DEVICES=$1 nohup \
         python -m slgnn.training.train_gin \

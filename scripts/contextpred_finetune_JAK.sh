@@ -23,5 +23,6 @@ do
         --input_model_file ./contextPred/chem/trained_models/chemblFiltered_and_supervise_pretrained_model_with_contextPred.pth \
         --dataset ${jak} \
         --filename ./contextPred/chem/finetune_logs/split_${split}/dataset_${jak}/seed_${seed} \
+        --save_model_to ./contextPred/chem/trained_models/chemblFiltered_and_supervise_pretrained_${jak}_finetuned_model_with_contextPred.pth \
         --split ${split} > ./logs/contextPred_finetune_${jak}.out 2>&1 &
 done
