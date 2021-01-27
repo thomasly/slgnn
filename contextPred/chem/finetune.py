@@ -153,6 +153,9 @@ def main():
         default="",
         help="filename to read the model (if there is any)",
     )
+    parser.add_argument(
+        "--save_model_to", type=str, default="", help="path to save the finetuned model"
+    )
     parser.add_argument("--filename", type=str, default="", help="output filename")
     parser.add_argument(
         "--seed", type=int, default=42, help="Seed for splitting the dataset."
@@ -215,13 +218,16 @@ def main():
         raise ValueError("Invalid dataset name.")
 
     # set up dataset
-    dataset = MoleculeDataset("contextPred/chem/dataset/" + args.dataset, dataset=args.dataset)
+    dataset = MoleculeDataset(
+        "contextPred/chem/dataset/" + args.dataset, dataset=args.dataset
+    )
 
     print(dataset)
 
     if args.split == "scaffold":
         smiles_list = pd.read_csv(
-            "contextPred/chem/dataset/" + args.dataset + "/processed/smiles.csv", header=None
+            "contextPred/chem/dataset/" + args.dataset + "/processed/smiles.csv",
+            header=None,
         )[0].tolist()
         train_dataset, valid_dataset, test_dataset = scaffold_split(
             dataset,
@@ -244,7 +250,8 @@ def main():
         print("random")
     elif args.split == "random_scaffold":
         smiles_list = pd.read_csv(
-            "contextPred/chem/dataset/" + args.dataset + "/processed/smiles.csv", header=None
+            "contextPred/chem/dataset/" + args.dataset + "/processed/smiles.csv",
+            header=None,
         )[0].tolist()
         train_dataset, valid_dataset, test_dataset = random_scaffold_split(
             dataset,
@@ -314,11 +321,11 @@ def main():
     test_acc_list = []
 
     if not args.filename == "":
-#         fname = "runs/finetune_cls_runseed" + str(args.runseed) + "/" + args.filename
-#         # delete the directory if there exists one
-#         if os.path.exists(fname):
-#             shutil.rmtree(fname)
-#             print("removed the existing file.")
+        #         fname = "runs/finetune_cls_runseed" + str(args.runseed) + "/" + args.filename
+        #         # delete the directory if there exists one
+        #         if os.path.exists(fname):
+        #             shutil.rmtree(fname)
+        #             print("removed the existing file.")
         writer = SummaryWriter(args.filename)
 
     for epoch in range(1, args.epochs + 1):
@@ -350,6 +357,8 @@ def main():
 
     if not args.filename == "":
         writer.close()
+    if not args.save_model_to == "":
+        torch.save(model.gnn.state_dict(), args.save_model_to)
 
 
 if __name__ == "__main__":
