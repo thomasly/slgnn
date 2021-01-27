@@ -5,7 +5,7 @@ import torch
 from torch_geometric.data import Data
 from torch_geometric.data import InMemoryDataset
 import pandas as pd
-from chemreader.readers import Smiles
+from chem_reader.chemreader.readers import Smiles
 from tqdm import tqdm
 
 from slgnn.models.gcn.utils import get_filtered_fingerprint
@@ -30,6 +30,7 @@ class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
             data to graphs.
         pre_filter: optional. The filter function filters data while converting raw
             data to graphs.
+        fragment_label (bool): Include fragment labels in atom features. Default: False.
 
     Attributes:
         raw_file_names: name of the raw file. If the file is not found in raw directory,
@@ -38,12 +39,24 @@ class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
             processed directory, process method will be called.
     """
 
-    def __init__(self, root, name, transform=None, pre_transform=None, pre_filter=None):
+    def __init__(self, root, name, transform=None, pre_transform=None, pre_filter=None, fragment_label=False):
         self.root = root
         self.name = name
+        self.fragment_label=fragment_label
         super().__init__(root, transform, pre_transform, pre_filter)
         self.data, self.slices = torch.load(self.processed_paths[0])
+    
+    @property
+    def raw_dir(self):
+        return osp.join(self.root, 'raw')
 
+    @property
+    def processed_dir(self):
+        if self.fragment_label:
+            return osp.join(self.root, "fragment_label_processed")
+        else:
+            return osp.join(self.root, 'processed')
+    
     @property
     def raw_file_names(self):
         raw_file_name = self.name + ".csv"
@@ -82,7 +95,7 @@ class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
         torch.save((data, slices), self.processed_paths[0])
 
     def _graph_helper(self, smi):
-        graph = Smiles(smi).to_graph(sparse=True)
+        graph = Smiles(smi).to_graph(sparse=True, fragment_label=self.fragment_label)
         x = torch.tensor(graph["atom_features"], dtype=torch.float)
         edge_idx = graph["adjacency"].tocoo()
         edge_idx = torch.tensor([edge_idx.row, edge_idx.col], dtype=torch.long)

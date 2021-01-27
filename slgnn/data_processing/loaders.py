@@ -200,7 +200,7 @@ class ScaffoldSplitter(BaseSplitter):
         self,
         dataset,
         ratio=[0.8, 0.1, 0.1],
-        shuffle=True,
+        shuffle=False,
         batch_size=32,
         dataloader=DataLoader,
     ):

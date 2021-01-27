@@ -76,6 +76,7 @@ if __name__ == "__main__":
         dim_encoder_target = config["embedding_dim"]
         dim_decoder_target = datasets[0].data.y.size(1)
         dim_features = datasets[0].data.x.size(1)
+        print(f"dim_features: {dim_features}")
         dropout = config["dropout"]
         Encoder = config["model"]
         encoder = Encoder(
@@ -98,7 +99,8 @@ if __name__ == "__main__":
                     index, log_dir, f"reconstruction_{index}.png"
                 )
 
-        cls_dataset = config["classifier_dataset"]()
+        cls_dataset = config["classifier_dataset"](
+            fragment_label=config["fragment_label"])
         classifier = GINDecoder(dim_encoder_target, cls_dataset.num_classes, dropout)
         cls_dloader = config["classifier_data_splitter"](cls_dataset)
         cls_trainer = EncoderClassifierTrainer(

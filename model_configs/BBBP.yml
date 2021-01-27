@@ -1,7 +1,9 @@
 encoder_dataset:
-  - [BBBP]
+  - [BBBP_fragment]
 classifier_dataset:
   - BBBP
+fragment_label:
+  - true
 encoder_data_splitter:
   -
     class: DataSplitter
@@ -32,7 +34,7 @@ batch_size:
 learning_rate:
   - 0.001
 encoder_epochs:
-  - 0
+#   - 0
   - 10000
 classifier_epochs:
   - 10000
@@ -51,11 +53,12 @@ scheduler:
 encoder_loss:
   - BCEWithLogitsLoss
 classifier_loss:
-  -
-    class: FocalLoss
-    args:
-      gamma: 2
-      alpha: 0.3
+  - CrossEntropyLoss
+#   -
+#     class: FocalLoss
+#     args:
+#       gamma: 2
+#       alpha: 0.3
 metrics:
   - [Accuracy, ROC_AUC, F1, Average_precision]
 train_eps:
@@ -84,7 +87,13 @@ shuffle:
   - True
 resume:
   - False
-
+random_seed:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  
 # for CPAN
 # n_layer:
 #   - 4  

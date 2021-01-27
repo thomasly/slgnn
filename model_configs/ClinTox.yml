@@ -1,8 +1,10 @@
 encoder_dataset:
-  - [ClinTox]
+  - [ClinTox_fragment]
   # - [ZINC1k]
 classifier_dataset:
   - ClinTox
+fragment_label:
+  - true
 encoder_data_splitter:
   -
     class: DataSplitter
@@ -34,7 +36,7 @@ batch_size:
 learning_rate:
   - 0.001
 encoder_epochs:
-  - 0
+#   - 0
   - 10000
 classifier_epochs:
   - 10000
@@ -83,3 +85,9 @@ shuffle:
   - True
 resume:
   - False
+random_seed:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5

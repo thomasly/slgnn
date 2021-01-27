@@ -5,11 +5,13 @@
 #     -c model_configs/$conf
 # done
 
-for conf in ToxCast.yml MUV.yml Sider.yml HIV.yml
+# for conf in ToxCast.yml MUV.yml Sider.yml HIV.yml
+# for conf in BBBP.yml
+for dataset in BACE BBBP ClinTox HIV
 do
-    CUDA_VISIBLE_DEVICES=$1 \
-    python -m slgnn.training.train_gin \
-    -c model_configs/$conf
+    CUDA_VISIBLE_DEVICES=$1 nohup \
+        python -m slgnn.training.train_gin \
+        -c model_configs/${dataset}.yml > logs/train_gin_with_${dataset}_fragment.out 2>&1 &
 done
 
 # for conf in config_GIN_Amu.yml config_GIN_Ellinger.yml config_GIN_Mpro.yml

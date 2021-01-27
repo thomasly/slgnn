@@ -141,9 +141,13 @@ class Config:
         "JAK3Dude": JAK3Dude,
         "Sider": SiderFP,
         "BACE": BACEFP,
+        "BACE_fragment": BACEFP,
         "BBBP": BBBPFP,
+        "BBBP_fragment": BBBPFP,
         "ClinTox": ClinToxFP,
+        "ClinTox_fragment": ClinToxFP,
         "HIV": HIVFP,
+        "HIV_fragment": HIVFP,
         "Repurposing": RepurposingFP,
         "Amu": AmuFP,
         "Ellinger": EllingerFP,
@@ -299,7 +303,13 @@ class Config:
     def parse_encoder_dataset(dataset_l):
         for dataset_s in dataset_l:
             assert dataset_s in Config.encoder_datasets, f"Could not find {dataset_s}"
-        return [Config.encoder_datasets[s]() for s in dataset_l]
+        datasets = list()
+        for s in dataset_l:
+            if "fragment" in s:
+                datasets.append(Config.encoder_datasets[s](fragment_label=True))
+            else:
+                datasets.append(Config.encoder_datasets[s](fragment_label=False))
+        return datasets
 
     @staticmethod
     def parse_classifier_dataset(dataset_s):
