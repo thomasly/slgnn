@@ -318,7 +318,7 @@ class HIV(DeepchemDataset):
     def _get_labels(self):
         df = pd.read_csv(self.raw_paths[0])
         for lb in df["HIV_active"]:
-            yield torch.tensor([lb], dtype=torch.long)[None, :]
+            yield torch.tensor([lb], dtype=torch.long)
 
     def process(self, verbose=1):
         super().process(verbose)

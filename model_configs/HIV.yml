@@ -55,7 +55,7 @@ scheduler:
 encoder_loss:
   - BCEWithLogitsLoss
 classifier_loss:
-  - BCEWithLogitsLoss
+  - CrossEntropyLoss
 #   -
 #     class: FocalLoss
 #     args:
