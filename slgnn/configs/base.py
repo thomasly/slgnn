@@ -69,7 +69,7 @@ from slgnn.metrics.metrics import (
     FocalLoss,
     FocalLoss2d,
 )
-from slgnn.models.gcn.model import GIN, CPAN
+from slgnn.models.gcn.model import GIN, CPAN, GINFE_graphpred
 from slgnn.models.gcn.graphsage_diffpool import GraphSAGEDiffPool
 from contextPred.chem.dataloader import DataLoaderMasking
 
@@ -196,7 +196,12 @@ class Config:
         "DataLoaderMasking": DataLoaderMasking,
     }
 
-    models = {"CPAN": CPAN, "GIN": GIN, "GraphSAGEDiffPool": GraphSAGEDiffPool}
+    models = {
+        "CPAN": CPAN,
+        "GIN": GIN,
+        "GraphSAGEDiffPool": GraphSAGEDiffPool,
+        "GINFE": GINFE_graphpred,
+    }
 
     encoder_losses = {
         "BCEWithLogitsLoss": BCEWithLogitsLoss,

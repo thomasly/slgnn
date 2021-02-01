@@ -76,12 +76,26 @@ if __name__ == "__main__":
         dim_encoder_target = config["embedding_dim"]
         dim_decoder_target = datasets[0].data.y.size(1)
         dim_features = datasets[0].data.x.size(1)
-        print(f"dim_features: {dim_features}")
+#         print(f"dim_features: {dim_features}")
         dropout = config["dropout"]
         Encoder = config["model"]
-        encoder = Encoder(
-            dim_features=dim_features, dim_target=dim_encoder_target, config=config
-        )
+        if config["model_name"] == "GIN":
+            encoder = Encoder(
+                dim_features=dim_features, dim_target=dim_encoder_target, config=config
+            )
+        elif config["model_name"] == "GINFE":
+            encoder = Encoder(
+                num_layer=config["num_layer"],
+                num_emb=config["num_emb"],
+                emb_dim=config["emb_dim"],
+                feat_dim=dim_features,
+                num_tasks=dim_encoder_target,
+                eps=config["eps"],
+                train_eps=config["train_eps"],
+            )
+        else:
+            raise ValueError(f"Model name: {config['model_name']} is invalid.")
+
         if config["encoder_epochs"] > 0:
             decoder = GINDecoder(dim_encoder_target, dim_decoder_target, dropout)
 
@@ -100,7 +114,8 @@ if __name__ == "__main__":
                 )
 
         cls_dataset = config["classifier_dataset"](
-            fragment_label=config["fragment_label"])
+            fragment_label=config["fragment_label"]
+        )
         classifier = GINDecoder(dim_encoder_target, cls_dataset.num_classes, dropout)
         cls_dloader = config["classifier_data_splitter"](cls_dataset)
         cls_trainer = EncoderClassifierTrainer(
