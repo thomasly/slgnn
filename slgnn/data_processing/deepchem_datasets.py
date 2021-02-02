@@ -121,8 +121,23 @@ class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
             smiles (str), label (tensor)
         """
         ...
+        
+    def get_fingerprint(self, smiles):
+        if self.fp_type == "pubchem":
+            try:
+                fp = get_filtered_fingerprint(smiles)
+            except OSError: # Invalid SMILES
+                return
+            fp = torch.tensor(list(fp), dtype=torch.long)[None, :]
+        else:
+            mol = Chem.MolFromSmiles(smiles)
+            if mol is None:
+                return
+            fp = AllChem.GetMorganFingerprintAsBitVect(mol, 4, nBits=1024)
+            fp = torch.tensor(list(fp), dtype=torch.long)[None, :]
+        return fp
 
-
+    
 class Sider(DeepchemDataset):
     """Class for Sider dataset."""
 
@@ -138,16 +153,10 @@ class Sider(DeepchemDataset):
             smiles = row["smiles"].strip()
             if self.fp_type is None:
                 label = torch.tensor(list(row[1:]), dtype=torch.long)[None, :]
-            elif self.fp_type == "pubchem":
-                try:
-                    label = get_filtered_fingerprint(smiles)
-                except OSError: # Invalid SMILES
-                    continue
-                label = torch.tensor(list(label), dtype=torch.long)[None, :]
             else:
-                mol = Chem.MolFromSmiles(smiles)
-                label = AllChem.GetMorganFingerprintAsBitVect(mol, 4, nBits=1024)
-                label = torch.tensor(list(label), dtype=torch.long)[None, :]
+                label = self.get_fingerprint(smiles)
+                if label is None:
+                    continue
             yield smiles, label
 
     def process(self, verbose=1):
@@ -167,37 +176,34 @@ class SiderFP(Sider):
 class BACE(DeepchemDataset):
     """Class for BACE dataset"""
 
-    def __init__(self, root=None, name="bace", **args):
+    def __init__(self, root=None, name="bace", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "BACE")
-        super().__init__(root=root, name=name, **args)
-
-    def _get_smiles(self):
-        return _smiles_from_csv(self.raw_paths[0], "mol")
-
-    def _get_labels(self):
+        self.n_data = 1513
+        super().__init__(root=root, name=name, **kwargs)
+        
+    def _get_data(self):
         df = pd.read_csv(self.raw_paths[0])
-        for lb in df["Class"]:
-            yield torch.tensor([lb], dtype=torch.long)
+        for i, row in df.iterrows():
+            smiles = row["mol"].strip()
+            if self.fp_type is None:
+                label = torch.tensor([row["Class"]], dtype=torch.long)
+            else:
+                label = self.get_fingerprint(smiles)
+                if label is None:
+                    continue
+            yield smiles, label
 
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         super().process(verbose)
 
 
 class BACEFP(BACE):
     """Class of BACE dataset with fingerprints as labels."""
-
-    def __init__(self, root=None, name="bace", **kwargs):
-        if root is None:
-            root = osp.join("data", "DeepChem", "BACEFP")
-        super().__init__(root=root, name=name, **kwargs)
-
-    def _get_labels(self):
-        df = pd.read_csv(self.raw_paths[0])
-        for smi in df["mol"]:
-            fp = get_filtered_fingerprint(smi)
-            yield torch.tensor(list(fp), dtype=torch.long)[None, :]
-
+    
+    def __init__(self, root=None, name="bace", fp_type="pubchem", **kwargs):
+        super().__init__(root=root, name=name, fp_type=fp_type, **kwargs)
+    
     def process(self, verbose=1):
         super().process(verbose)
 
