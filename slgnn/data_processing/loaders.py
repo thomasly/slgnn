@@ -226,7 +226,7 @@ class ScaffoldSplitter(BaseSplitter):
         # create dict of the form {scaffold_i: [idx1, idx....]}
         all_scaffolds = {}
         i = 0
-        for smiles in self.dataset._get_smiles():
+        for smiles, _, _ in self.dataset._get_data():
             if MolFromSmiles(smiles) is None:
                 continue
             scaffold = self._generate_scaffold(smiles, include_chirality=True)

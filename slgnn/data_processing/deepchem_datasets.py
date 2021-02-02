@@ -326,7 +326,7 @@ class HIV(DeepchemDataset):
     def __init__(self, root=None, name="HIV", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "HIV")
-        self.n_data = 1513
+        self.n_data = 41127
         super().__init__(root=root, name=name, **kwargs)
         
     def _get_data(self):
@@ -439,7 +439,7 @@ class MUV(DeepchemDataset):
     def __init__(self, root=None, name="muv", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "MUV")
-        self.n_data = 1513
+        self.n_data = 93087
         super().__init__(root=root, name=name, **kwargs)
         
     def _get_data(self):
