@@ -86,16 +86,27 @@ class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
         """Get raw data and save to raw directory."""
         pass
     
-    def create_graph_data(self, idx, smi, y, data_list):
+    def progress_monitor(self, q, data_list):
+        while 1:
+            data = q.get()
+            if data == "END":
+                return
+            elif data == 0:
+                continue
+            data_list.append(data[1])
+            print(f"Data #{data[0]}/{self.n_data} processed.", end="\r")
+                
+    def create_graph_data(self, idx, smi, y, q):
         try:
             x, edge_idx = self._graph_helper(smi)
         except AttributeError:  # SMILES invalid
-            return
+            q.put(0)
         if y is None:
             y = self.get_fingerprint(smi)
             if y is None: # fail to create fingerprint for the smi
-                return
-        data_list.append(Data(x=x, edge_index=edge_idx, y=y, id=idx))
+                q.put(0)
+        item = (idx, Data(x=x, edge_index=edge_idx, y=y, id=idx))
+        q.put(item)
 
     def process(self, verbose=0):
         """The method converting SMILES and labels to graphs.
@@ -104,14 +115,24 @@ class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
             verbose (int): Whether show the progress bar. Not showing if verbose == 0,
                 show otherwise.
         """
+        
         mng = mp.Manager()
         data_list = mng.list()
+        q = mng.Queue(10)
+        
+        pm = mp.Process(target=self.progress_monitor, args=(q, data_list))
+        pm.start()
+        
         pool = mp.Pool(self.n_workers)
         pb = tqdm(self._get_data(), total=self.n_data) if verbose else self._get_data()
         for smi, y, i in pb:
-            pool.apply_async(self.create_graph_data, (i, smi, y, data_list))
+            pool.apply_async(self.create_graph_data, (i, smi, y, q))
+        
         pool.close()
         pool.join()
+        q.put("END")
+        pm.join()
+        
         if self.pre_filter is not None:
             data_list = [data for data in data_list if self.pre_filter(data)]
         if self.pre_transform is not None:
@@ -172,7 +193,7 @@ class Sider(DeepchemDataset):
                 label = None
             yield smiles, label, i
 
-    def process(self, verbose=1):
+    def process(self, verbose=0):
         super().process(verbose)
 
 
@@ -182,7 +203,7 @@ class SiderFP(Sider):
     def __init__(self, root=None, name="sider", fp_type="pubchem", **kwargs):
         super().__init__(root=root, name=name, fp_type=fp_type, **kwargs)
     
-    def process(self, verbose=1):
+    def process(self, verbose=0):
         super().process(verbose)
 
         
@@ -205,7 +226,7 @@ class BACE(DeepchemDataset):
                 label = None
             yield smiles, label, i
 
-    def process(self, verbose=1):
+    def process(self, verbose=0):
         super().process(verbose)
 
 
@@ -215,7 +236,7 @@ class BACEFP(BACE):
     def __init__(self, root=None, name="bace", fp_type="pubchem", **kwargs):
         super().__init__(root=root, name=name, fp_type=fp_type, **kwargs)
     
-    def process(self, verbose=1):
+    def process(self, verbose=0):
         super().process(verbose)
 
 
@@ -225,15 +246,18 @@ class BBBP(DeepchemDataset):
     def __init__(self, root=None, name="BBBP", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "BBBP")
+        self.n_data = 2049
         super().__init__(root=root, name=name, **kwargs)
-
-    def _get_smiles(self):
-        return _smiles_from_csv(self.raw_paths[0], "smiles")
-
-    def _get_labels(self):
+        
+    def _get_data(self):
         df = pd.read_csv(self.raw_paths[0])
-        for lb in df["p_np"]:
-            yield torch.tensor([lb], dtype=torch.long)
+        for i, row in df.iterrows():
+            smiles = row["smiles"].strip()
+            if self.fp_type is None:
+                label = torch.tensor([row["p_np"]], dtype=torch.long)
+            else:
+                label = None
+            yield smiles, label, i
 
     def process(self, verbose=0):
         super().process(verbose)
@@ -241,39 +265,32 @@ class BBBP(DeepchemDataset):
 
 class BBBPFP(BBBP):
     """Class of BBBP dataset with fingerprints as labels."""
-
-    def __init__(self, root=None, name="BBBP", **kwargs):
-        if root is None:
-            root = osp.join("data", "DeepChem", "BBBPFP")
-        super().__init__(root=root, name=name, **kwargs)
-
-    def _get_labels(self):
-        df = pd.read_csv(self.raw_paths[0])
-        for smi in df["smiles"]:
-            fp = get_filtered_fingerprint(smi)
-            yield torch.tensor(list(fp), dtype=torch.long)[None, :]
-
-    def process(self, verbose=1):
+    
+    def __init__(self, root=None, name="BBBP", fp_type="pubchem", **kwargs):
+        super().__init__(root=root, name=name, fp_type=fp_type, **kwargs)
+    
+    def process(self, verbose=0):
         super().process(verbose)
 
 
 class ClinTox(DeepchemDataset):
     """Class of ClinTox dataset."""
-
+    
     def __init__(self, root=None, name="clintox", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "ClinTox")
+        self.n_data = 1483
         super().__init__(root=root, name=name, **kwargs)
-
-    def _get_smiles(self):
-        return _smiles_from_csv(self.raw_paths[0], "smiles")
-
-    def _get_labels(self):
+        
+    def _get_data(self):
         df = pd.read_csv(self.raw_paths[0])
-        # for lb in df["CT_TOX"]:
-        #     yield torch.tensor([lb], dtype=torch.long)
-        for row in df.iterrows():
-            yield torch.tensor(list(row[1][1:]), dtype=torch.long)[None, :]
+        for i, row in df.iterrows():
+            smiles = row["smiles"].strip()
+            if self.fp_type is None:
+                label = torch.tensor(list(row[1:]), dtype=torch.long)[None, :]
+            else:
+                label = None
+            yield smiles, label, i
 
     def process(self, verbose=0):
         super().process(verbose)
@@ -281,31 +298,11 @@ class ClinTox(DeepchemDataset):
 
 class ClinToxFP(ClinTox):
     """Class of ClinTox dataset with fingerprints as labels."""
-
-    def __init__(self, root=None, name="clintox", **kwargs):
-        if root is None:
-            root = osp.join("data", "DeepChem", "ClinToxFP")
-        super().__init__(root=root, name=name, **kwargs)
-
-    def _get_smiles(self):
-        df = pd.read_csv(self.raw_paths[0])
-        for smi in df["smiles"]:
-            try:
-                get_filtered_fingerprint(smi)
-            except OSError:  # Invalid SMILES input
-                continue
-            yield smi
-
-    def _get_labels(self):
-        df = pd.read_csv(self.raw_paths[0])
-        for smi in df["smiles"]:
-            try:
-                fp = get_filtered_fingerprint(smi)
-            except OSError:  # Invalid SMILES input
-                continue
-            yield torch.tensor(list(fp), dtype=torch.long)[None, :]
-
-    def process(self, verbose=1):
+    
+    def __init__(self, root=None, name="clintox", fp_type="pubchem", **kwargs):
+        super().__init__(root=root, name=name, fp_type=fp_type, **kwargs)
+    
+    def process(self, verbose=0):
         super().process(verbose)
 
 
@@ -319,45 +316,40 @@ class ClinToxBalanced(ClinTox):
             root = osp.join("data", "DeepChem", "ClinToxBalanced")
         super().__init__(root=root, name=name, **kwargs)
 
-    def process(self, verbose=1):
+    def process(self, verbose=0):
         super().process(verbose)
 
 
 class HIV(DeepchemDataset):
     """Class of HIV dataset."""
-
-    def __init__(self, root=None, name="HIV", pre_filter=None, **kwargs):
+    
+    def __init__(self, root=None, name="HIV", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "HIV")
-        super().__init__(root=root, name=name, pre_filter=pre_filter, **kwargs)
-
-    def _get_smiles(self):
-        return _smiles_from_csv(self.raw_paths[0], "smiles")
-
-    def _get_labels(self):
+        self.n_data = 1513
+        super().__init__(root=root, name=name, **kwargs)
+        
+    def _get_data(self):
         df = pd.read_csv(self.raw_paths[0])
-        for lb in df["HIV_active"]:
-            yield torch.tensor([lb], dtype=torch.long)
-
-    def process(self, verbose=1):
+        for i, row in df.iterrows():
+            smiles = row["smiles"].strip()
+            if self.fp_type is None:
+                label = torch.tensor([row["HIV_active"]], dtype=torch.long)
+            else:
+                label = None
+            yield smiles, label, i
+            
+    def process(self, verbose=0):
         super().process(verbose)
 
 
 class HIVFP(HIV):
     """Class of HIV dataset with fingerprints as labels."""
-
-    def __init__(self, root=None, name="HIV", pre_filter=None, **kwargs):
-        if root is None:
-            root = osp.join("data", "DeepChem", "HIVFP")
-        super().__init__(root=root, name=name, pre_filter=pre_filter, **kwargs)
-
-    def _get_labels(self):
-        df = pd.read_csv(self.raw_paths[0])
-        for smi in df["smiles"]:
-            fp = get_filtered_fingerprint(smi)
-            yield torch.tensor(list(fp), dtype=torch.long)[None, :]
-
-    def process(self, verbose=1):
+    
+    def __init__(self, root=None, name="HIV", fp_type="pubchem", **kwargs):
+        super().__init__(root=root, name=name, fp_type=fp_type, **kwargs)
+    
+    def process(self, verbose=0):
         super().process(verbose)
 
 
@@ -377,20 +369,22 @@ class HIVBalanced(HIV):
 
 class Tox21(DeepchemDataset):
     """Class of Tox21 dataset. NA labels are filled with 2."""
-
+    
     def __init__(self, root=None, name="tox21", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "Tox21")
+        self.n_data = 7830
         super().__init__(root=root, name=name, **kwargs)
-
-    def _get_smiles(self):
-        return _smiles_from_csv(self.raw_paths[0], "smiles")
-
-    def _get_labels(self):
+        
+    def _get_data(self):
         df = pd.read_csv(self.raw_paths[0])
-        for row in df.iterrows():
-            label = row[1][:-2].fillna(-1)
-            yield torch.tensor(list(label), dtype=torch.long)[None, :]
+        for i, row in df.iterrows():
+            smiles = row["smiles"].strip()
+            if self.fp_type is None:
+                label = torch.tensor(list(row[:-2].fillna(-1)), dtype=torch.long)[None, :]
+            else:
+                label = None
+            yield smiles, label, i
 
     def process(self, verbose=0):
         super().process(verbose)
@@ -398,38 +392,32 @@ class Tox21(DeepchemDataset):
 
 class Tox21FP(Tox21):
     """Class of Tox21 dataset with fingerprints as labels."""
-
-    def __init__(self, root=None, name="tox21", **kwargs):
-        if root is None:
-            root = osp.join("data", "DeepChem", "Tox21FP")
-        super().__init__(root, name, **kwargs)
-
-    def _get_labels(self):
-        df = pd.read_csv(self.raw_paths[0])
-        for smi in df["smiles"]:
-            fp = get_filtered_fingerprint(smi)
-            yield torch.tensor(list(fp), dtype=torch.long)[None, :]
-
-    def process(self, verbose=1):
+    
+    def __init__(self, root=None, name="tox21", fp_type="pubchem", **kwargs):
+        super().__init__(root=root, name=name, fp_type=fp_type, **kwargs)
+    
+    def process(self, verbose=0):
         super().process(verbose)
 
 
 class ToxCast(DeepchemDataset):
     """Class of ToxCast dataset. NA labels are filled with 2."""
-
+    
     def __init__(self, root=None, name="toxcast_data", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "ToxCast")
+        self.n_data = 8596
         super().__init__(root=root, name=name, **kwargs)
-
-    def _get_smiles(self):
-        return _smiles_from_csv(self.raw_paths[0], "smiles")
-
-    def _get_labels(self):
+        
+    def _get_data(self):
         df = pd.read_csv(self.raw_paths[0])
-        for row in df.iterrows():
-            label = row[1][1:].fillna(-1)
-            yield torch.tensor(list(label), dtype=torch.long)[None, :]
+        for i, row in df.iterrows():
+            smiles = row["smiles"].strip()
+            if self.fp_type is None:
+                label = torch.tensor(list(row[1:].fillna(-1)), dtype=torch.long)[None, :]
+            else:
+                label = None
+            yield smiles, label, i
 
     def process(self, verbose=0):
         super().process(verbose)
@@ -437,72 +425,42 @@ class ToxCast(DeepchemDataset):
 
 class ToxCastFP(ToxCast):
     """Class of ToxCast dataset with fingerprints as labels."""
-
-    def __init__(self, root=None, name="toxcast_data", **kwargs):
-        if root is None:
-            root = osp.join("data", "DeepChem", "ToxCastFP")
-        self._smiles = list()
-        self._fps = list()
-        super().__init__(root, name, **kwargs)
-
-    def _get_smiles(self):
-        df = pd.read_csv(self.raw_paths[0])
-        for smi in tqdm(df["smiles"]):
-            try:
-                fp = get_filtered_fingerprint(smi)
-            except OSError:
-                continue
-            fp = torch.tensor(list(fp), dtype=torch.long)[None, :]
-            self._smiles.append(smi)
-            self._fps.append(fp)
-        return self._smiles
-
-    def _get_labels(self):
-        if len(self._fps) == 0:
-            self._get_smiles()
-        return self._fps
-
+    
+    def __init__(self, root=None, name="toxcast_data", fp_type="pubchem", **kwargs):
+        super().__init__(root=root, name=name, fp_type=fp_type, **kwargs)
+    
     def process(self, verbose=0):
         super().process(verbose)
 
 
 class MUV(DeepchemDataset):
     """Class of MUV dataset. NA labels are fiiled with 2."""
-
+    
     def __init__(self, root=None, name="muv", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "MUV")
+        self.n_data = 1513
         super().__init__(root=root, name=name, **kwargs)
-
-    def _get_smiles(self):
-        return _smiles_from_csv(self.raw_paths[0], "smiles")
-
-    def _get_labels(self):
+        
+    def _get_data(self):
         df = pd.read_csv(self.raw_paths[0])
-        for row in df.iterrows():
-            label = row[1][:-2].fillna(-1)
-            yield torch.tensor(list(label), dtype=torch.long)[None, :]
+        for i, row in df.iterrows():
+            smiles = row["smiles"].strip()
+            if self.fp_type is None:
+                label = torch.tensor(list(row[:-2].fillna(-1)), dtype=torch.long)[None, :]
+            else:
+                label = None
+            yield smiles, label, i
 
-    def process(self, verbose=1):
+    def process(self, verbose=0):
         super().process(verbose)
 
 
 class MUVFP(MUV):
     """Class of MUV dataset with fingerprints as labels."""
-
-    def __init__(self, root=None, name="muv", **kwargs):
-        if root is None:
-            root = osp.join("data", "DeepChem", "MUVFP")
-        super().__init__(root=root, name=name, **kwargs)
-
-    def _get_smiles(self):
-        return _smiles_from_csv(self.raw_paths[0], "smiles")
-
-    def _get_labels(self):
-        df = pd.read_csv(self.raw_paths[0])
-        for smi in df["smiles"]:
-            fp = get_filtered_fingerprint(smi)
-            yield torch.tensor(list(fp), dtype=torch.long)[None, :]
-
-    def process(self, verbose=1):
+    
+    def __init__(self, root=None, name="muv", fp_type="pubchem", **kwargs):
+        super().__init__(root=root, name=name, fp_type=fp_type, **kwargs)
+    
+    def process(self, verbose=0):
         super().process(verbose)
