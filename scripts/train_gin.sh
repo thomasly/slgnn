@@ -13,6 +13,7 @@ do
     CUDA_VISIBLE_DEVICES=$1 nohup \
         python -m slgnn.training.train_gin \
         -c model_configs/${dataset}.yml > logs/train_ginfe_with_${dataset}_fragment.out 2>&1 &
+    wait
 done
 
 # for conf in config_GIN_Amu.yml config_GIN_Ellinger.yml config_GIN_Mpro.yml
