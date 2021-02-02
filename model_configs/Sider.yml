@@ -90,7 +90,7 @@ early_stopper:
   -
     class: Patience
     args:
-      patience: 40
+      patience: 80
       # monitor: val_Average_precision
       monitor: val_ROC_AUC
       mode: max
