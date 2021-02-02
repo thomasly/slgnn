@@ -102,6 +102,7 @@ shuffle:
   - True
 resume:
   - False
+# Good ones 1, 4, 5, 6, 11
 random_seed:
   - 0
   - 1
