@@ -1,5 +1,6 @@
 import os.path as osp
 from abc import ABCMeta, abstractmethod
+import multiprocessing as mp
 
 import torch
 from torch_geometric.data import Data
@@ -49,11 +50,13 @@ class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
         pre_transform=None,
         pre_filter=None,
         fragment_label=False,
-        fp_type=None
+        fp_type=None,
+        n_workers=4
     ):
         self.root = root
         self.name = name
         self.fragment_label = fragment_label
+        self.n_workers=n_workers
         if fp_type is not None:
             assert fp_type in ["pubchem", "ecfp"], "fp_type should be pubchem or ecfp"
         self.fp_type = fp_type
@@ -82,6 +85,17 @@ class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
     def download(self):
         """Get raw data and save to raw directory."""
         pass
+    
+    def create_graph_data(self, idx, smi, y, data_list):
+        try:
+            x, edge_idx = self._graph_helper(smi)
+        except AttributeError:  # SMILES invalid
+            return
+        if y is None:
+            y = self.get_fingerprint(smi)
+            if y is None: # fail to create fingerprint for the smi
+                return
+        data_list.append(Data(x=x, edge_index=edge_idx, y=y, id=idx))
 
     def process(self, verbose=0):
         """The method converting SMILES and labels to graphs.
@@ -90,18 +104,19 @@ class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
             verbose (int): Whether show the progress bar. Not showing if verbose == 0,
                 show otherwise.
         """
-        data_list = list()
+        mng = mp.Manager()
+        data_list = mng.list()
+        pool = mp.Pool(self.n_workers)
         pb = tqdm(self._get_data(), total=self.n_data) if verbose else self._get_data()
-        for smi, y in pb:
-            try:
-                x, edge_idx = self._graph_helper(smi)
-                data_list.append(Data(x=x, edge_index=edge_idx, y=y))
-            except AttributeError:  # SMILES invalid
-                continue
+        for smi, y, i in pb:
+            pool.apply_async(self.create_graph_data, (i, smi, y, data_list))
+        pool.close()
+        pool.join()
         if self.pre_filter is not None:
             data_list = [data for data in data_list if self.pre_filter(data)]
         if self.pre_transform is not None:
             data_list = [self.pre_transform(data) for data in data_list]
+        data_list = sorted(data_list, key=lambda x: x.id)
         data, slices = self.collate(data_list)
         torch.save((data, slices), self.processed_paths[0])
 
@@ -154,10 +169,8 @@ class Sider(DeepchemDataset):
             if self.fp_type is None:
                 label = torch.tensor(list(row[1:]), dtype=torch.long)[None, :]
             else:
-                label = self.get_fingerprint(smiles)
-                if label is None:
-                    continue
-            yield smiles, label
+                label = None
+            yield smiles, label, i
 
     def process(self, verbose=1):
         super().process(verbose)
@@ -189,10 +202,8 @@ class BACE(DeepchemDataset):
             if self.fp_type is None:
                 label = torch.tensor([row["Class"]], dtype=torch.long)
             else:
-                label = self.get_fingerprint(smiles)
-                if label is None:
-                    continue
-            yield smiles, label
+                label = None
+            yield smiles, label, i
 
     def process(self, verbose=1):
         super().process(verbose)
