@@ -1,7 +1,10 @@
 encoder_dataset:
   # - [BACE]
-  - [Sider_fragment]
+  - [Sider]
   # - [ZINC1k]
+fp_type:
+  - ecfp
+  - pubchem
 classifier_dataset:
   - Sider
 fragment_label:
@@ -71,6 +74,8 @@ classifier_loss:
   - MaskedBCEWithLogitsLoss
 metrics:
   - [Accuracy, ROC_AUC, F1, Average_precision]
+eps:
+  - 0.1
 train_eps:
   - true
 l2:

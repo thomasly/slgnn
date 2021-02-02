@@ -139,15 +139,11 @@ class Config:
         "JAK1Dude": JAK1Dude,
         "JAK2Dude": JAK2Dude,
         "JAK3Dude": JAK3Dude,
-        "Sider": SiderFP,
-        "BACE": BACEFP,
-        "BACE_fragment": BACEFP,
-        "BBBP": BBBPFP,
-        "BBBP_fragment": BBBPFP,
-        "ClinTox": ClinToxFP,
-        "ClinTox_fragment": ClinToxFP,
-        "HIV": HIVFP,
-        "HIV_fragment": HIVFP,
+        "Sider": Sider,
+        "BACE": BACE,
+        "BBBP": BBBP,
+        "ClinTox": ClinTox,
+        "HIV": HIV,
         "Repurposing": RepurposingFP,
         "Amu": AmuFP,
         "Ellinger": EllingerFP,
@@ -310,10 +306,7 @@ class Config:
             assert dataset_s in Config.encoder_datasets, f"Could not find {dataset_s}"
         datasets = list()
         for s in dataset_l:
-            if "fragment" in s:
-                datasets.append(Config.encoder_datasets[s](fragment_label=True))
-            else:
-                datasets.append(Config.encoder_datasets[s](fragment_label=False))
+            datasets.append(Config.encoder_datasets[s])
         return datasets
 
     @staticmethod

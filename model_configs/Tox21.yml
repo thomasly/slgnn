@@ -72,6 +72,8 @@ classifier_loss:
   - MaskedBCEWithLogitsLoss
 metrics:
   - [Accuracy, ROC_AUC, F1, Average_precision]
+eps:
+  - 0.1
 train_eps:
   - true
 l2:

@@ -1,5 +1,8 @@
 encoder_dataset:
-  - [BBBP_fragment]
+  - [BBBP]
+fp_type:
+  - ecfp
+  - pubchem
 classifier_dataset:
   - BBBP
 fragment_label:
@@ -70,6 +73,8 @@ classifier_loss:
 #       alpha: 0.3
 metrics:
   - [Accuracy, ROC_AUC, F1, Average_precision]
+eps:
+  - 0.1
 train_eps:
   - true
 l2:

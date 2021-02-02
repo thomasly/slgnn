@@ -27,7 +27,10 @@ if __name__ == "__main__":
         config = Config.from_dict(config_dict)
         torch.manual_seed(config["random_seed"])
         random.seed(config["random_seed"])
-        datasets = config["encoder_dataset"]
+        datasets = [
+            ds(fragment_label=config["fragment_label"], fp_type=config["fp_type"])
+            for ds in config["encoder_dataset"]
+        ]
         if config["encoder_epochs"] == 0:
             ifencoder = "noencoder"
         else:
@@ -36,6 +39,7 @@ if __name__ == "__main__":
             log_name = "_".join(
                 [
                     config["encoder_dataset_name"],
+                    config["fp_type"],
                     config["classifier_dataset_name"],
                     config["classifier_data_splitter_name"],
                     "_".join(map(str, config["data_splitting_ratio"])),
@@ -55,6 +59,7 @@ if __name__ == "__main__":
             log_name = "_".join(
                 [
                     config["encoder_dataset_name"],
+                    config["fp_type"],
                     config["classifier_dataset_name"],
                     config["classifier_data_splitter_name"],
                     "_".join(map(str, config["data_splitting_ratio"])),
@@ -76,7 +81,7 @@ if __name__ == "__main__":
         dim_encoder_target = config["embedding_dim"]
         dim_decoder_target = datasets[0].data.y.size(1)
         dim_features = datasets[0].data.x.size(1)
-#         print(f"dim_features: {dim_features}")
+        #         print(f"dim_features: {dim_features}")
         dropout = config["dropout"]
         Encoder = config["model"]
         if config["model_name"] == "GIN":

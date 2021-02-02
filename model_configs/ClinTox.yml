@@ -1,6 +1,9 @@
 encoder_dataset:
-  - [ClinTox_fragment]
+  - [ClinTox]
   # - [ZINC1k]
+fp_type:
+  - ecfp
+  - pubchem
 classifier_dataset:
   - ClinTox
 fragment_label:
@@ -67,6 +70,8 @@ classifier_loss:
   - BCEWithLogitsLoss
 metrics:
   - [Accuracy, ROC_AUC, F1, Average_precision]
+eps:
+  - 0.1
 train_eps:
   - true
 l2:

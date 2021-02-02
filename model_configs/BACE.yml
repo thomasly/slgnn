@@ -1,7 +1,10 @@
 encoder_dataset:
 #   - [BACE]
-  - [BACE_fragment]
+  - [BACE]
   # - [ZINC1k]
+fp_type:
+  - ecfp
+  - pubchem
 classifier_dataset:
   - BACE
 fragment_label:
@@ -104,23 +107,23 @@ resume:
   - False
 # Good ones 1, 4, 5, 6, 11
 random_seed:
-  - 0
+#   - 0
   - 1
 #   - 2
 #   - 3
   - 4
-  - 5
+#   - 5
   - 6
-  - 7
-  - 8
-  - 9
-  - 10
+#   - 7
+#   - 8
+#   - 9
+#   - 10
   - 11
   - 12
   - 13
-  - 14
-  - 15
-  - 16
-  - 17
+#   - 14
+#   - 15
+#   - 16
+#   - 17
   - 18
   - 19
