@@ -7,6 +7,8 @@ from torch_geometric.data import InMemoryDataset
 import pandas as pd
 from chem_reader.chemreader.readers import Smiles
 from tqdm import tqdm
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
 from slgnn.models.gcn.utils import get_filtered_fingerprint
 from .utils import NumNodesFilter
@@ -47,10 +49,14 @@ class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
         pre_transform=None,
         pre_filter=None,
         fragment_label=False,
+        fp_type=None
     ):
         self.root = root
         self.name = name
         self.fragment_label = fragment_label
+        if fp_type is not None:
+            assert fp_type in ["pubchem", "ecfp"], "fp_type should be pubchem or ecfp"
+        self.fp_type = fp_type
         super().__init__(root, transform, pre_transform, pre_filter)
         self.data, self.slices = torch.load(self.processed_paths[0])
 
@@ -60,10 +66,9 @@ class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
 
     @property
     def processed_dir(self):
-        if self.fragment_label:
-            return osp.join(self.root, "fragment_label_processed")
-        else:
-            return osp.join(self.root, "processed")
+        fg = "fragment_label_" if self.fragment_label else ""
+        fp = "" if self.fp_type is None else self.fp_type + "_"
+        return osp.join(self.root, "{}{}processed".format(fg, fp))
 
     @property
     def raw_file_names(self):
@@ -85,10 +90,8 @@ class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
             verbose (int): Whether show the progress bar. Not showing if verbose == 0,
                 show otherwise.
         """
-        smiles = self._get_smiles()
-        labels = self._get_labels()
         data_list = list()
-        pb = tqdm(zip(smiles, labels)) if verbose else zip(smiles, labels)
+        pb = tqdm(self._get_data(), total=self.n_data) if verbose else self._get_data()
         for smi, y in pb:
             try:
                 x, edge_idx = self._graph_helper(smi)
@@ -110,16 +113,12 @@ class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
         return x, edge_idx
 
     @abstractmethod
-    def _get_smiles(self):
-        """Method to get SMILES strings from the raw data. Must be implemented by all
-        subclasses.
-        """
-        ...
-
-    @abstractmethod
-    def _get_labels(self):
-        """Method to get labels from the raw data. Must be implemented by all
-        subclasses.
+    def _get_data(self):
+        """Method to yield SMILES and labels from the raw data. Must be implemented by
+        all subclasses.
+        
+        Returns:
+            smiles (str), label (tensor)
         """
         ...
 
@@ -130,38 +129,41 @@ class Sider(DeepchemDataset):
     def __init__(self, root=None, name="sider", **kwargs):
         if root is None:
             root = osp.join("data", "DeepChem", "Sider")
+        self.n_data = 1427
         super().__init__(root=root, name=name, **kwargs)
-
-    def _get_smiles(self):
-        return _smiles_from_csv(self.raw_paths[0], "smiles")
-
-    def _get_labels(self):
+        
+    def _get_data(self):
         df = pd.read_csv(self.raw_paths[0])
-        for row in df.iterrows():
-            yield torch.tensor(list(row[1][1:]), dtype=torch.long)[None, :]
+        for i, row in df.iterrows():
+            smiles = row["smiles"].strip()
+            if self.fp_type is None:
+                label = torch.tensor(list(row[1:]), dtype=torch.long)[None, :]
+            elif self.fp_type == "pubchem":
+                try:
+                    label = get_filtered_fingerprint(smiles)
+                except OSError: # Invalid SMILES
+                    continue
+                label = torch.tensor(list(label), dtype=torch.long)[None, :]
+            else:
+                mol = Chem.MolFromSmiles(smiles)
+                label = AllChem.GetMorganFingerprintAsBitVect(mol, 4, nBits=1024)
+                label = torch.tensor(list(label), dtype=torch.long)[None, :]
+            yield smiles, label
 
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         super().process(verbose)
 
 
 class SiderFP(Sider):
     """Class of Sider dataset with fingerprints as labels."""
 
-    def __init__(self, root=None, name="sider", **kwargs):
-        if root is None:
-            root = osp.join("data", "DeepChem", "SiderFP")
-        super().__init__(root=root, name=name, **kwargs)
-
-    def _get_labels(self):
-        df = pd.read_csv(self.raw_paths[0])
-        for smi in df["smiles"]:
-            fp = get_filtered_fingerprint(smi)
-            yield torch.tensor(list(fp), dtype=torch.long)[None, :]
-
+    def __init__(self, root=None, name="sider", fp_type="pubchem", **kwargs):
+        super().__init__(root=root, name=name, fp_type=fp_type, **kwargs)
+    
     def process(self, verbose=1):
         super().process(verbose)
 
-
+        
 class BACE(DeepchemDataset):
     """Class for BACE dataset"""
 
