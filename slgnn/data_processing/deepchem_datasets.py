@@ -1,3 +1,4 @@
+import os
 import os.path as osp
 from abc import ABCMeta, abstractmethod
 import multiprocessing as mp
@@ -51,12 +52,10 @@ class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
         pre_filter=None,
         fragment_label=False,
         fp_type=None,
-        n_workers=4
     ):
         self.root = root
         self.name = name
         self.fragment_label = fragment_label
-        self.n_workers=n_workers
         if fp_type is not None:
             assert fp_type in ["pubchem", "ecfp"], "fp_type should be pubchem or ecfp"
         self.fp_type = fp_type
@@ -85,59 +84,34 @@ class DeepchemDataset(InMemoryDataset, metaclass=ABCMeta):
     def download(self):
         """Get raw data and save to raw directory."""
         pass
-    
-    def progress_monitor(self, q, data_list):
-        while 1:
-            data = q.get()
-            if data == "END":
-                return
-            elif data == 0:
-                continue
-            data_list.append(data[1])
-            print(f"Data #{data[0]}/{self.n_data} processed.", end="\r")
                 
-    def create_graph_data(self, idx, smi, y, q):
+    def create_graph_data(self, idx, smi, y):
         try:
             x, edge_idx = self._graph_helper(smi)
         except AttributeError:  # SMILES invalid
-            q.put(0)
+            return
         if y is None:
             y = self.get_fingerprint(smi)
             if y is None: # fail to create fingerprint for the smi
-                q.put(0)
-        item = (idx, Data(x=x, edge_index=edge_idx, y=y, id=idx))
-        q.put(item)
+                return
+        return Data(x=x, edge_index=edge_idx, y=y, id=idx)
 
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         """The method converting SMILES and labels to graphs.
 
         Args:
             verbose (int): Whether show the progress bar. Not showing if verbose == 0,
                 show otherwise.
         """
-        
-        mng = mp.Manager()
-        data_list = mng.list()
-        q = mng.Queue(10)
-        
-        pm = mp.Process(target=self.progress_monitor, args=(q, data_list))
-        pm.start()
-        
-        pool = mp.Pool(self.n_workers)
+        data_list = list()
+
         pb = tqdm(self._get_data(), total=self.n_data) if verbose else self._get_data()
         for smi, y, i in pb:
-            pool.apply_async(self.create_graph_data, (i, smi, y, q))
-        
-        pool.close()
-        pool.join()
-        q.put("END")
-        pm.join()
-        
+            data_list.append(self.create_graph_data(i, smi, y))
         if self.pre_filter is not None:
             data_list = [data for data in data_list if self.pre_filter(data)]
         if self.pre_transform is not None:
             data_list = [self.pre_transform(data) for data in data_list]
-        data_list = sorted(data_list, key=lambda x: x.id)
         data, slices = self.collate(data_list)
         torch.save((data, slices), self.processed_paths[0])
 
@@ -193,7 +167,7 @@ class Sider(DeepchemDataset):
                 label = None
             yield smiles, label, i
 
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         super().process(verbose)
 
 
@@ -203,7 +177,7 @@ class SiderFP(Sider):
     def __init__(self, root=None, name="sider", fp_type="pubchem", **kwargs):
         super().__init__(root=root, name=name, fp_type=fp_type, **kwargs)
     
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         super().process(verbose)
 
         
@@ -226,7 +200,26 @@ class BACE(DeepchemDataset):
                 label = None
             yield smiles, label, i
 
-    def process(self, verbose=0):
+    def process(self, verbose=1):
+        super().process(verbose)
+        
+
+class Debugging(BACE):
+    
+    def __init__(self, root=None, name="bace_debugging", **kwargs):
+        if root is None:
+            root = osp.join("data", "DeepChem", "BACE")
+        self.n_data = 100
+        super().__init__(root=root, name=name, **kwargs)
+        self.n_data = 100
+        
+    @property
+    def processed_dir(self):
+        fg = "fragment_label_" if self.fragment_label else ""
+        fp = "" if self.fp_type is None else self.fp_type + "_"
+        return osp.join(self.root, "debugging_{}{}processed".format(fg, fp))
+
+    def process(self, verbose=1):
         super().process(verbose)
 
 
@@ -236,7 +229,7 @@ class BACEFP(BACE):
     def __init__(self, root=None, name="bace", fp_type="pubchem", **kwargs):
         super().__init__(root=root, name=name, fp_type=fp_type, **kwargs)
     
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         super().process(verbose)
 
 
@@ -259,7 +252,7 @@ class BBBP(DeepchemDataset):
                 label = None
             yield smiles, label, i
 
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         super().process(verbose)
 
 
@@ -269,7 +262,7 @@ class BBBPFP(BBBP):
     def __init__(self, root=None, name="BBBP", fp_type="pubchem", **kwargs):
         super().__init__(root=root, name=name, fp_type=fp_type, **kwargs)
     
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         super().process(verbose)
 
 
@@ -292,7 +285,7 @@ class ClinTox(DeepchemDataset):
                 label = None
             yield smiles, label, i
 
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         super().process(verbose)
 
 
@@ -302,7 +295,7 @@ class ClinToxFP(ClinTox):
     def __init__(self, root=None, name="clintox", fp_type="pubchem", **kwargs):
         super().__init__(root=root, name=name, fp_type=fp_type, **kwargs)
     
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         super().process(verbose)
 
 
@@ -316,7 +309,7 @@ class ClinToxBalanced(ClinTox):
             root = osp.join("data", "DeepChem", "ClinToxBalanced")
         super().__init__(root=root, name=name, **kwargs)
 
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         super().process(verbose)
 
 
@@ -339,7 +332,7 @@ class HIV(DeepchemDataset):
                 label = None
             yield smiles, label, i
             
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         super().process(verbose)
 
 
@@ -349,7 +342,7 @@ class HIVFP(HIV):
     def __init__(self, root=None, name="HIV", fp_type="pubchem", **kwargs):
         super().__init__(root=root, name=name, fp_type=fp_type, **kwargs)
     
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         super().process(verbose)
 
 
@@ -363,7 +356,7 @@ class HIVBalanced(HIV):
             root = osp.join("data", "DeepChem", "HIVBalanced")
         super().__init__(root=root, name=name, **kwargs)
 
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         super().process(verbose)
 
 
@@ -386,7 +379,7 @@ class Tox21(DeepchemDataset):
                 label = None
             yield smiles, label, i
 
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         super().process(verbose)
 
 
@@ -396,7 +389,7 @@ class Tox21FP(Tox21):
     def __init__(self, root=None, name="tox21", fp_type="pubchem", **kwargs):
         super().__init__(root=root, name=name, fp_type=fp_type, **kwargs)
     
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         super().process(verbose)
 
 
@@ -419,7 +412,7 @@ class ToxCast(DeepchemDataset):
                 label = None
             yield smiles, label, i
 
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         super().process(verbose)
 
 
@@ -429,7 +422,7 @@ class ToxCastFP(ToxCast):
     def __init__(self, root=None, name="toxcast_data", fp_type="pubchem", **kwargs):
         super().__init__(root=root, name=name, fp_type=fp_type, **kwargs)
     
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         super().process(verbose)
 
 
@@ -452,7 +445,7 @@ class MUV(DeepchemDataset):
                 label = None
             yield smiles, label, i
 
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         super().process(verbose)
 
 
@@ -462,5 +455,5 @@ class MUVFP(MUV):
     def __init__(self, root=None, name="muv", fp_type="pubchem", **kwargs):
         super().__init__(root=root, name=name, fp_type=fp_type, **kwargs)
     
-    def process(self, verbose=0):
+    def process(self, verbose=1):
         super().process(verbose)

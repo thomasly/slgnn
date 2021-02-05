@@ -1,0 +1,110 @@
+encoder_dataset:
+#   - [BACE]
+  - [Debugging]
+  # - [ZINC1k]
+fp_type:
+#   - ecfp
+  - pubchem
+classifier_dataset:
+  - Debugging
+fragment_label:
+  - false
+encoder_data_splitter:
+  -
+    class: DataSplitter
+    args:
+      ratio: [0.9, 0.1, 0.]
+classifier_data_splitter:
+  -
+    class: DataSplitter
+    args:
+      ratio: [0.8, 0.1, 0.1]
+  # -
+  #   class: FixedSplitter
+  #   args:
+  #     ratio: [0.8, 0.1, 0.1]
+#   -
+#     class: FixedSplitter
+#     args:
+#       ratio: [0.1, 0.1, 0.1]
+model:
+#   - 
+#     class: GIN
+  -
+    class: GINFE
+# model args
+num_layer:
+  - 5
+num_emb:
+  - [26, 11, 11, 7, 3, 4]
+emb_dim:
+  - 300
+embedding_dim:
+  - 300
+device:
+  - cuda:0
+#   - cpu
+batch_size:
+  - 32
+learning_rate:
+  - 0.001
+encoder_epochs:
+#   - 0
+  - 10000
+classifier_epochs:
+  - 10000
+frozen_epochs:
+  - [30, 60, 90, 120, 150]
+hidden_units:
+  - [2048, 2048, 2048, 2048]
+optimizer:
+  - Adam
+scheduler:
+  -
+    class: StepLR
+    args:
+      step_size: 10
+      gamma: 0.5
+encoder_loss:
+  - BCEWithLogitsLoss
+classifier_loss:
+  - CrossEntropyLoss
+#   -
+#     class: FocalLoss
+#     args:
+#       gamma: 4
+#       alpha: 0.9
+metrics:
+  - [Accuracy, ROC_AUC, F1, Average_precision]
+eps:
+  - 0.1
+train_eps:
+  - true
+l2:
+  - 0.001
+aggregation:
+  - mean
+gradient_clipping:
+  - null
+dropout:
+  - 0.2
+encoder_early_stopper:
+  -
+    class: Patience
+    args:
+      patience: 20
+early_stopper:
+  -
+    class: Patience
+    args:
+      patience: 80
+      # monitor: val_Average_precision
+      monitor: val_ROC_AUC
+      mode: max
+shuffle:
+  - True
+resume:
+  - False
+# Good ones 1, 4, 5, 6, 11
+random_seed:
+  - 0

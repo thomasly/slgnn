@@ -606,7 +606,7 @@ class EncoderDecoderTrainer(BaseTrainer):
         axe.set_ylabel("BCE loss")
         axe.set_xlabel("Steps")
         axe.legend()
-        fig.savefig(filep, dpi=300, bbox_inches="tight")
+        fig.savefig(filep, dpi=150, bbox_inches="tight")
         plt.close()
 
     def plot_reconstructions(self, index=0, path=None, name=None):
@@ -635,14 +635,12 @@ class EncoderDecoderTrainer(BaseTrainer):
             if isinstance(encoder_out, tuple):
                 encoder_out, *_ = encoder_out
             out = self.decoder(encoder_out)
-        out = torch.round(torch.sigmoid(out))[0].to("cpu").detach().numpy()
-        fig, axes = plt.subplots(2, 1, figsize=(8.0, 12.0))
-        ax1, ax2 = axes.flatten()
-        ax1.bar(list(range(out.shape[0])), label)
-        ax1.set_xlabel("PubChem Fingerprint")
-        ax2.bar(list(range(out.shape[0])), out)
-        ax2.set_xlabel("Reconstructed Fingerprint")
-        fig.savefig(filep, dpi=300, bbox_inches="tight")
+        out = torch.sigmoid(out)[0].to("cpu").detach().numpy()
+        fig, axe = plt.subplots(1, 1, figsize=(8.0, 6.0))
+        axe.bar(list(range(out.shape[0])), -label, label="Fingerprint")
+        axe.bar(list(range(out.shape[0])), out, label="Prediction")
+        axe.legend(bbox_to_anchor=(1.01, 0.9))
+        fig.savefig(filep, dpi=150, bbox_inches="tight")
         plt.close()
 
 
@@ -701,7 +699,7 @@ class EncoderClassifierTrainer(EncoderDecoderTrainer):
         else:
             filep = os.path.join(root, name)
         ncols = len(self.metrics) + 1
-        fig, axes = plt.subplots(ncols=ncols, figsize=(ncols * 8.0, 6.0))
+        fig, axes = plt.subplots(ncols=ncols, figsize=(ncols * 4.0, 3.0))
         x = list(range(len(self.train_losses)))
         axes[0].plot(x, self.train_losses, label="train_loss")
         axes[0].plot(x, self.val_losses, label="val_loss")
@@ -717,7 +715,7 @@ class EncoderClassifierTrainer(EncoderDecoderTrainer):
             axes[i + 1].set_xlabel("Epochs")
             axes[i + 1].set_title(self.metrics[i].name)
             axes[i + 1].legend()
-        fig.savefig(filep, dpi=300, bbox_inches="tight")
+        fig.savefig(filep, dpi=100, bbox_inches="tight")
         plt.close()
 
 

@@ -28,6 +28,7 @@ from slgnn.data_processing.pyg_datasets import (
     JAK3Dude,
 )
 from slgnn.data_processing.deepchem_datasets import (
+    Debugging,
     Sider,
     SiderFP,
     BBBP,
@@ -129,6 +130,7 @@ class Config:
     """
 
     encoder_datasets = {
+        "Debugging": Debugging,
         "ZINC": ZINC,
         "ZINC1k": ZINC1k,
         "ZINC10k": ZINC10k,
@@ -160,6 +162,7 @@ class Config:
     }
 
     classifier_datasets = {
+        "Debugging": Debugging,
         "JAK1": JAK1,
         "JAK2": JAK2,
         "JAK3": JAK3,
