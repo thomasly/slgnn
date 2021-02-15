@@ -290,12 +290,16 @@ class GNN(torch.nn.Module):
         else:
             raise ValueError("unmatched number of arguments.")
 
-        x = self.x_embedding1(x[:,0].type(torch.long)) + \
-            self.x_embedding2(x[:,1].type(torch.long)) + \
-            self.x_embedding3(x[:,2].type(torch.long)) + \
-            self.x_embedding4(x[:,3].type(torch.long)) + \
-            self.x_embedding5(x[:,4].type(torch.long)) + \
-            self.x_embedding6(x[:,5].type(torch.long))
+        x_emb = self.x_embedding1(x[:,0].type(torch.long)) + \
+                self.x_embedding2(x[:,1].type(torch.long)) + \
+                self.x_embedding3(x[:,2].type(torch.long)) + \
+                self.x_embedding4(x[:,3].type(torch.long)) + \
+                self.x_embedding5(x[:,4].type(torch.long)) + \
+                self.x_embedding6(x[:,5].type(torch.long))
+        if x.size(1) > 6:
+            x = torch.cat([x_emb, x[:, 6:]], dim=1)
+        else:
+            x = x_emb
 #         x = self.x_embedding1(x[:,0]) + self.x_embedding2(x[:,1])
 
         h_list = [x]
