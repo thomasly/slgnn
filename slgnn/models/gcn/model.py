@@ -1,9 +1,7 @@
-from typing import Callable, Union
 import copy
 from collections import defaultdict
 
 import torch
-from torch import Tensor
 import torch.nn as nn
 from torch.nn import BatchNorm1d
 from torch.nn import Sequential, Linear, ReLU, ELU
@@ -13,9 +11,8 @@ from torch_geometric.nn import (
     global_add_pool,
     global_mean_pool,
 )
-from torch_sparse import SparseTensor, matmul
-from torch_geometric.nn.inits import reset
-from torch_geometric.typing import OptPairTensor, Adj, OptTensor, Size
+from torch_geometric.nn.conv.message_passing import MessagePassing
+from torch_geometric.utils import add_self_loops
 
 from slgnn.models.gcn.layers import GraphConvolution, CPANConv
 
@@ -26,8 +23,8 @@ class MyGINConv(GINConv):
 
     Args:
         emb_dim (int): dimensionality of embeddings for nodes and edges.
-        embed_input (bool): whether to embed input or not. 
-        
+        embed_input (bool): whether to embed input or not.
+
 
     See https://arxiv.org/abs/1810.00826
     """
@@ -40,6 +37,56 @@ class MyGINConv(GINConv):
             torch.nn.Linear(2 * emb_dim, emb_dim),
         )
         super().__init__(nn, **kwargs)
+
+
+class GINE(MessagePassing):
+    """
+    Extension of GIN aggregation to incorporate edge information by concatenation.
+    Not the same as contextPred, use MLP instead of embedding layer to convert input
+    dimension.
+
+    Args:
+        emb_dim (int): dimensionality of embeddings for nodes and edges.
+        
+
+    See https://arxiv.org/abs/1810.00826
+    """
+
+    def __init__(self, edge_feat_dim, emb_dim, aggr="add"):
+        super(GINE, self).__init__()
+        # input convert
+        self.edge_in_mlp = torch.nn.Sequential(
+            torch.nn.Linear(edge_feat_dim, 2 * emb_dim),
+            torch.nn.Relu(),
+            torch.nn.Linear(2 * emb_dim, emb_dim),
+        )
+        # multi-layer perceptron
+        self.mlp = torch.nn.Sequential(
+            torch.nn.Linear(emb_dim, 2 * emb_dim),
+            torch.nn.ReLU(),
+            torch.nn.Linear(2 * emb_dim, emb_dim),
+        )
+
+        self.aggr = aggr
+
+    def forward(self, x, edge_index, edge_attr):
+        # add self loops in the edge space
+        edge_index = add_self_loops(edge_index, num_nodes=x.size(0))
+
+        # add features corresponding to self-loop edges.
+        self_loop_attr = torch.zeros(x.size(0), 2)
+        self_loop_attr[:, 0] = 4  # bond type for self-loop edge
+        self_loop_attr = self_loop_attr.to(edge_attr.device).to(edge_attr.dtype)
+        edge_attr = torch.cat((edge_attr, self_loop_attr), dim=0)
+
+        edge_attr = self.in_mlp(edge_attr)
+        return self.propagate(edge_index[0], x=x, edge_attr=edge_attr)
+
+    def message(self, x_j, edge_attr):
+        return x_j + edge_attr
+
+    def update(self, aggr_out):
+        return self.mlp(aggr_out)
 
 
 class GCN(nn.Module):
@@ -157,6 +204,104 @@ class GIN(nn.Module):
         return params
 
 
+class GINE_NoEmbedding(nn.Module):
+
+    """The GIN model with edge attributes included. Use MLP instead of embeddings to
+    change input dimension (different from the GINE in contextPred).
+
+    Args:
+        dim_features (int): dimension of features.
+        dim_target (int): dimension of output.
+        config: an instance of slgnn.configs.base.Config class. Must have dropout,
+            hidden_units, train_eps, aggregation attributes.
+    """
+
+    def __init__(self, dim_node_features, dim_edge_features, dim_target, config):
+        super().__init__()
+
+        self.config = config
+        self.dropout = config["dropout"]
+        self.embeddings_dim = [config["hidden_units"][0]] + config["hidden_units"]
+        self.no_layers = len(self.embeddings_dim)
+        self.first_h = []
+        self.nns = []
+        self.convs = []
+        self.linears = []
+
+        train_eps = config["train_eps"]
+        if config["aggregation"] == "sum":
+            self.pooling = global_add_pool
+        elif config["aggregation"] == "mean":
+            self.pooling = global_mean_pool
+
+        for layer, out_emb_dim in enumerate(self.embeddings_dim):
+            if layer == 0:
+                # first hidden layer
+                self.first_h = Sequential(
+                    Linear(dim_node_features, 2 * out_emb_dim),
+                    BatchNorm1d(2 * out_emb_dim),
+                    ReLU(),
+                    Linear(2 * out_emb_dim, out_emb_dim),
+                    BatchNorm1d(out_emb_dim),
+                    ReLU(),
+                )
+                self.linears.append(Linear(out_emb_dim, dim_target))
+            else:
+                input_emb_dim = self.embeddings_dim[layer - 1]
+                self.nns.append(
+                    Sequential(
+                        Linear(input_emb_dim, 2 * out_emb_dim),
+                        BatchNorm1d(2 * out_emb_dim),
+                        ReLU(),
+                        Linear(2 * out_emb_dim, out_emb_dim),
+                        BatchNorm1d(out_emb_dim),
+                        ReLU(),
+                    )
+                )
+                self.convs.append(GINE(dim_edge_features, out_emb_dim))
+                self.linears.append(Linear(out_emb_dim, dim_target))
+
+        self.nns = torch.nn.ModuleList(self.nns)
+        self.convs = torch.nn.ModuleList(self.convs)
+        self.linears = torch.nn.ModuleList(self.linears)
+
+    def forward(self, data):
+        x, edge_attr, edge_index, batch = (
+            data.x,
+            data.edge_attr,
+            data.edge_index,
+            data.batch,
+        )
+        out = 0
+        for layer in range(self.no_layers):
+            if layer == 0:
+                x = self.first_h(x)
+                out += F.dropout(
+                    self.pooling(self.linears[layer](x), batch), p=self.dropout
+                )
+            else:
+                x = self.convs[layer - 1](x, edge_index, edge_attr)
+                out += F.dropout(
+                    self.linears[layer](self.pooling(x, batch)),
+                    p=self.dropout,
+                    training=self.training,
+                )
+        return out
+
+    def get_model_parameters_by_layer(self):
+        """Get model parameters by layer.
+
+        Returns:
+            dict: model parameters with layer names as keys and list of parameters as
+                values.
+        """
+        params = defaultdict(list)
+        for name, param in self.named_parameters():
+            layer = name.split(".")[1]
+            params[layer].append(param)
+        return params
+
+
 class GIN_DISMAT(torch.nn.Module):
     def __init__(self, num_features, dim_node, dim_graph, config):
         """ GIN model from PyG examples. Output distance matrix.
@@ -204,21 +349,21 @@ class GIN_DISMAT(torch.nn.Module):
         x = F.elu(self.fc1(pooled))
         x = F.dropout(x, p=0.25, training=self.training)
         x = self.fc2(x)
-        #         print(f"Output from fc size: {x.size()}")
+        # print(f"Output from fc size: {x.size()}")
         x = torch.bmm(x[:, :, None], x[:, None, :])
-        #         print(f"Size after batch mm: {x.size()}")
-        #         x = torch.cat(
-        #             [torch.mm(x[r][..., None], x[r][None, ...]) for r in range(x.size(0))],
-        #             axis=0,
-        #         )
-        #         print(f"Pooled size: {pooled.size()}")
-        #         print(f"Batch size: {x.size()}")
-        #         print(f"expanded x size: {x.expand_as(pooled).size()}")
-        #         output = torch.ones(x.size() + (pooled.size(-1), )).to(x.device)
-        #         print(f"output size: {output.size()}")
-        #         for i in range(x.size(0)):
-        #             output[i] = pooled[i] * x[i, :, :, None]
-        #         x = torch.mul(pooled, x)
+        # print(f"Size after batch mm: {x.size()}")
+        # x = torch.cat(
+        #     [torch.mm(x[r][..., None], x[r][None, ...]) for r in range(x.size(0))],
+        #     axis=0,
+        # )
+        # print(f"Pooled size: {pooled.size()}")
+        # print(f"Batch size: {x.size()}")
+        # print(f"expanded x size: {x.expand_as(pooled).size()}")
+        # output = torch.ones(x.size() + (pooled.size(-1), )).to(x.device)
+        # print(f"output size: {output.size()}")
+        # for i in range(x.size(0)):
+        #     output[i] = pooled[i] * x[i, :, :, None]
+        # x = torch.mul(pooled, x)
         batch_size = x.size(0)
         feature_size = pooled.size(1)
         x_dim = x.size(1)
@@ -304,7 +449,7 @@ class CPAN(nn.Module):
 
 class GINFE(nn.Module):
     """ GIN model with node feature embedding layers.
-    
+
     Args:
         num_layer (int): the number of GNN layers
         num_emb (list):  sizes of the dictionaries of embeddings. The number of

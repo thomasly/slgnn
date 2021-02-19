@@ -358,7 +358,7 @@ def main():
     if not args.filename == "":
         writer.close()
     if not args.save_model_to == "":
-        torch.save(model.gnn.state_dict(), args.save_model_to)
+        torch.save(model.state_dict(), args.save_model_to)
 
 
 if __name__ == "__main__":
