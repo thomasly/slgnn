@@ -15,6 +15,8 @@ from torch_geometric.data import Data
 from torch_geometric.data import InMemoryDataset
 from tqdm import tqdm
 
+from chem_reader.chemreader.readers import MolFragmentsLabel
+
 
 # allowable node and edge features
 allowable_features = {
@@ -53,7 +55,7 @@ allowable_features = {
 }
 
 
-def mol_to_graph_data_obj_simple(mol):
+def mol_to_graph_data_obj_simple(mol, fragment_label=False):
     """
     Converts rdkit mol object to graph Data object required by the pytorch
     geometric package. NB: Uses simplified atom and bond features, and represent
@@ -63,12 +65,19 @@ def mol_to_graph_data_obj_simple(mol):
     """
     # atoms
     # num_atom_features = 6  # atom type,  chirality tag
+    if fragment_label:
+        mfl = MolFragmentsLabel()
+        frag_labels = mfl.create_labels_for(mol, sparse=False)
     atom_features_list = []
     for atom in mol.GetAtoms():
         atom_feature = (
             [allowable_features["possible_atomic_num_list"].index(atom.GetAtomicNum())]
             + [allowable_features["possible_degree_list"].index(atom.GetDegree())]
-            + [allowable_features["possible_formal_charge_list"].index(atom.GetFormalCharge())]
+            + [
+                allowable_features["possible_formal_charge_list"].index(
+                    atom.GetFormalCharge()
+                )
+            ]
             + [
                 allowable_features["possible_hybridization_list"].index(
                     atom.GetHybridization()
@@ -77,6 +86,8 @@ def mol_to_graph_data_obj_simple(mol):
             + [allowable_features["possible_aromatic_list"].index(atom.GetIsAromatic())]
             + [allowable_features["possible_chirality_list"].index(atom.GetChiralTag())]
         )
+        if fragment_label:
+            atom_feature.extend(frag_labels[:, atom.GetIdx()].tolist())
         atom_features_list.append(atom_feature)
     x = torch.tensor(np.array(atom_features_list), dtype=torch.long)
 
@@ -178,7 +189,7 @@ def graph_data_obj_to_nx_simple(data):
             formal_charge=formal_charge,
             hybrid=hybrid,
             aromatic=aromatic,
-            chirality=chirality
+            chirality=chirality,
         )
 
     # bonds
@@ -220,7 +231,7 @@ def nx_to_graph_data_obj_simple(G):
             node["formal_charge"],
             node["hybrid"],
             node["aromatic"],
-            node["chirality"]
+            node["chirality"],
         ]
         atom_features_list.append(atom_feature)
     x = torch.tensor(np.array(atom_features_list), dtype=torch.long)
@@ -302,6 +313,7 @@ class MoleculeDataset(InMemoryDataset):
         pre_filter=None,
         dataset="zinc250k",
         empty=False,
+        fragment_label=False,
     ):
         """
         Adapted from qm9.py. Disabled the download functionality
@@ -316,6 +328,7 @@ class MoleculeDataset(InMemoryDataset):
         """
         self.dataset = dataset
         self.root = root
+        self.fragment_label = fragment_label
 
         super(MoleculeDataset, self).__init__(
             root, transform, pre_transform, pre_filter
@@ -347,6 +360,8 @@ class MoleculeDataset(InMemoryDataset):
 
     @property
     def processed_file_names(self):
+        if self.fragment_label:
+            return "geometric_data_fragment_label_processed.pt"
         return "geometric_data_processed.pt"
 
     def download(self):
@@ -364,7 +379,7 @@ class MoleculeDataset(InMemoryDataset):
             smiles_list = list(input_df["smiles"])
             zinc_id_list = list(input_df["zinc_id"])
             for i in tqdm(range(len(smiles_list))):
-#                 print(i, end="\r")
+                #                 print(i, end="\r")
                 s = smiles_list[i]
                 # each example contains a single species
                 try:
@@ -373,7 +388,9 @@ class MoleculeDataset(InMemoryDataset):
                         # # convert aromatic bonds to double bonds
                         # Chem.SanitizeMol(rdkit_mol,
                         #                  sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-                        data = mol_to_graph_data_obj_simple(rdkit_mol)
+                        data = mol_to_graph_data_obj_simple(
+                            rdkit_mol, fragment_label=self.fragment_label
+                        )
                         # manually add mol id
                         id = int(zinc_id_list[i].split("ZINC")[1].lstrip("0"))
                         data.id = torch.tensor(
@@ -402,7 +419,7 @@ class MoleculeDataset(InMemoryDataset):
                 # 'dataset/pcba/processed/smiles.csv',
                 "contextPred/chem/dataset/sider",
                 "contextPred/chem/dataset/tox21",
-                "contextPred/chem/dataset/toxcast"
+                "contextPred/chem/dataset/toxcast",
             ]
 
             downstream_inchi_set = set()
@@ -459,7 +476,9 @@ class MoleculeDataset(InMemoryDataset):
                     if 50 <= mw <= 900:
                         inchi = create_standardized_mol_id(smiles_list[i])
                         if inchi is not None and inchi not in downstream_inchi_set:
-                            data = mol_to_graph_data_obj_simple(rdkit_mol)
+                            data = mol_to_graph_data_obj_simple(
+                                rdkit_mol, fragment_label=self.fragment_label
+                            )
                             # manually add mol id
                             data.id = torch.tensor(
                                 [i]
@@ -484,7 +503,9 @@ class MoleculeDataset(InMemoryDataset):
                 # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
                 # sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-                data = mol_to_graph_data_obj_simple(rdkit_mol)
+                data = mol_to_graph_data_obj_simple(
+                    rdkit_mol, fragment_label=self.fragment_label
+                )
                 # manually add mol id
                 data.id = torch.tensor([i])  # id here is the index of the mol in
                 # the dataset
@@ -500,7 +521,9 @@ class MoleculeDataset(InMemoryDataset):
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
                 #                  sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-                data = mol_to_graph_data_obj_simple(rdkit_mol)
+                data = mol_to_graph_data_obj_simple(
+                    rdkit_mol, fragment_label=self.fragment_label
+                )
                 # manually add mol id
                 data.id = torch.tensor([i])  # id here is the index of the mol in
                 # the dataset
@@ -518,7 +541,9 @@ class MoleculeDataset(InMemoryDataset):
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
                 #                  sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-                data = mol_to_graph_data_obj_simple(rdkit_mol)
+                data = mol_to_graph_data_obj_simple(
+                    rdkit_mol, fragment_label=self.fragment_label
+                )
                 # manually add mol id
                 data.id = torch.tensor([i])  # id here is the index of the mol in
                 # the dataset
@@ -536,7 +561,9 @@ class MoleculeDataset(InMemoryDataset):
                     # # convert aromatic bonds to double bonds
                     # Chem.SanitizeMol(rdkit_mol,
                     #                  sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-                    data = mol_to_graph_data_obj_simple(rdkit_mol)
+                    data = mol_to_graph_data_obj_simple(
+                        rdkit_mol, fragment_label=self.fragment_label
+                    )
                     # manually add mol id
                     data.id = torch.tensor([i])  # id here is the index of the mol in
                     # the dataset
@@ -555,7 +582,9 @@ class MoleculeDataset(InMemoryDataset):
                     # # convert aromatic bonds to double bonds
                     # Chem.SanitizeMol(rdkit_mol,
                     #                  sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-                    data = mol_to_graph_data_obj_simple(rdkit_mol)
+                    data = mol_to_graph_data_obj_simple(
+                        rdkit_mol, fragment_label=self.fragment_label
+                    )
                     # manually add mol id
                     data.id = torch.tensor([i])  # id here is the index of the mol in
                     # the dataset
@@ -571,7 +600,9 @@ class MoleculeDataset(InMemoryDataset):
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
                 #                  sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-                data = mol_to_graph_data_obj_simple(rdkit_mol)
+                data = mol_to_graph_data_obj_simple(
+                    rdkit_mol, fragment_label=self.fragment_label
+                )
                 # manually add mol id
                 data.id = torch.tensor([i])  # id here is the index of the mol in
                 # the dataset
@@ -589,7 +620,9 @@ class MoleculeDataset(InMemoryDataset):
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
                 #                  sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-                data = mol_to_graph_data_obj_simple(rdkit_mol)
+                data = mol_to_graph_data_obj_simple(
+                    rdkit_mol, fragment_label=self.fragment_label
+                )
                 # manually add mol id
                 data.id = torch.tensor([i])  # id here is the index of the mol in
                 # the dataset
@@ -607,7 +640,9 @@ class MoleculeDataset(InMemoryDataset):
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
                 #                  sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-                data = mol_to_graph_data_obj_simple(rdkit_mol)
+                data = mol_to_graph_data_obj_simple(
+                    rdkit_mol, fragment_label=self.fragment_label
+                )
                 # manually add mol id
                 data.id = torch.tensor([i])  # id here is the index of the mol in
                 # the dataset
@@ -623,7 +658,9 @@ class MoleculeDataset(InMemoryDataset):
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
                 #                  sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-                data = mol_to_graph_data_obj_simple(rdkit_mol)
+                data = mol_to_graph_data_obj_simple(
+                    rdkit_mol, fragment_label=self.fragment_label
+                )
                 # manually add mol id
                 data.id = torch.tensor([i])  # id here is the index of the mol in
                 # the dataset
@@ -640,7 +677,7 @@ class MoleculeDataset(InMemoryDataset):
         #         # # convert aromatic bonds to double bonds
         #         # Chem.SanitizeMol(rdkit_mol,
         #         #                  sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-        #         data = mol_to_graph_data_obj_simple(rdkit_mol)
+        #         data = mol_to_graph_data_obj_simple(rdkit_mol, fragment_label=self.fragment_label)
         #         # manually add mol id
         #         data.id = torch.tensor([i])  # id here is the index of the mol in
         #         # the dataset
@@ -671,7 +708,7 @@ class MoleculeDataset(InMemoryDataset):
         #                     # Chem.SanitizeMol(
         #                     #     rdkit_mol,
         #                     #     sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-        #                     data = mol_to_graph_data_obj_simple(rdkit_mol)
+        #                     data = mol_to_graph_data_obj_simple(rdkit_mol, fragment_label=self.fragment_label)
         #                     # manually add mol id
         #                     data.id = torch.tensor(
         #                         [i]
@@ -689,7 +726,9 @@ class MoleculeDataset(InMemoryDataset):
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
                 #                  sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-                data = mol_to_graph_data_obj_simple(rdkit_mol)
+                data = mol_to_graph_data_obj_simple(
+                    rdkit_mol, fragment_label=self.fragment_label
+                )
                 # manually add mol id
                 data.id = torch.tensor([i])  # id here is the index of the mol in
                 # the dataset
@@ -708,7 +747,9 @@ class MoleculeDataset(InMemoryDataset):
                     # # convert aromatic bonds to double bonds
                     # Chem.SanitizeMol(rdkit_mol,
                     #                  sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-                    data = mol_to_graph_data_obj_simple(rdkit_mol)
+                    data = mol_to_graph_data_obj_simple(
+                        rdkit_mol, fragment_label=self.fragment_label
+                    )
                     # manually add mol id
                     data.id = torch.tensor([i])  # id here is the index of the mol in
                     # the dataset
@@ -731,7 +772,9 @@ class MoleculeDataset(InMemoryDataset):
                     # # convert aromatic bonds to double bonds
                     # Chem.SanitizeMol(rdkit_mol,
                     #                  sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-                    data = mol_to_graph_data_obj_simple(rdkit_mol)
+                    data = mol_to_graph_data_obj_simple(
+                        rdkit_mol, fragment_label=self.fragment_label
+                    )
                     # manually add mol id
                     data.id = torch.tensor([i])
                     data.y = torch.tensor([labels[i]])
@@ -753,23 +796,28 @@ class MoleculeDataset(InMemoryDataset):
                     # # convert aromatic bonds to double bonds
                     # Chem.SanitizeMol(rdkit_mol,
                     #                  sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-                    data = mol_to_graph_data_obj_simple(rdkit_mol)
+                    data = mol_to_graph_data_obj_simple(
+                        rdkit_mol, fragment_label=self.fragment_label
+                    )
                     # manually add mol id
                     data.id = torch.tensor([i])
                     data.y = torch.tensor([labels[i]])
                     data_list.append(data)
                     data_smiles_list.append(smiles_list[i])
-                    
+
         elif self.dataset in ["jak1", "jak2", "jak3"]:
             smiles_list, rdkit_mol_objs, labels = _load_jak_dataset(
-                os.path.join(self.raw_dir, f"filtered_{self.dataset.upper()}.csv"))
+                os.path.join(self.raw_dir, f"filtered_{self.dataset.upper()}.csv")
+            )
             for i in range(len(smiles_list)):
                 print(i, end="\r")
                 rdkit_mol = rdkit_mol_objs[i]
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
                 #                  sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-                data = mol_to_graph_data_obj_simple(rdkit_mol)
+                data = mol_to_graph_data_obj_simple(
+                    rdkit_mol, fragment_label=self.fragment_label
+                )
                 # manually add mol id
                 data.id = torch.tensor([i])  # id here is the index of the mol in
                 # the dataset
@@ -1273,6 +1321,7 @@ def _load_sider_dataset(input_path):
     assert len(smiles_list) == len(labels)
     return smiles_list, rdkit_mol_objs_list, labels.values
 
+
 def _load_jak_dataset(input_path):
     input_df = pd.read_csv(input_path, sep=",")
     smiles_list = input_df["Smiles"]
@@ -1471,15 +1520,24 @@ def create_all_datasets():
 
     for dataset_name in downstream_dir:
         print(dataset_name)
-        root = "dataset/" + dataset_name
+        root = "contextPred/chem/dataset/" + dataset_name
         os.makedirs(root + "/processed", exist_ok=True)
         dataset = MoleculeDataset(root, dataset=dataset_name)
+        dataset = MoleculeDataset(root, dataset=dataset_name, fragment_label=True)
         print(dataset)
 
-    dataset = MoleculeDataset(root="dataset/chembl_filtered", dataset="chembl_filtered")
+    dataset = MoleculeDataset(root="contextPred/chem/dataset/chembl_filtered", dataset="chembl_filtered")
+    dataset = MoleculeDataset(
+        root="contextPred/chem/dataset/chembl_filtered", dataset="chembl_filtered", fragment_label=True
+    )
     print(dataset)
     dataset = MoleculeDataset(
-        root="dataset/zinc_standard_agent", dataset="zinc_standard_agent"
+        root="contextPred/chem/dataset/zinc_standard_agent", dataset="zinc_standard_agent"
+    )
+    dataset = MoleculeDataset(
+        root="contextPred/chem/dataset/zinc_standard_agent",
+        dataset="zinc_standard_agent",
+        fragment_label=True,
     )
     print(dataset)
 
