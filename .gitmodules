@@ -4,3 +4,6 @@
 [submodule "chemreader"]
 	path = chemreader
 	url = git@github.com:thomasly/chemreader.git
+[submodule "SubGNN"]
+	path = SubGNN
+	url = git@github.com:thomasly/SubGNN.git
