@@ -110,7 +110,9 @@ if __name__ == "__main__":
             encoder_trainer.freeze_encoder = False
             encoder_trainer.train()
             encoder_trainer.log_results(
-                out=log_dir, txt_name="encoder_losses.txt", pk_name="encoder_losses.pk"
+                out=log_dir,
+                txt_name="encoder_metrics.txt",
+                pk_name="encoder_metrics.pk",
             )
             encoder_trainer.plot_training_metrics(log_dir, name="encoder_losses.png")
             for index in range(5):

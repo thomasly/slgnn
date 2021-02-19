@@ -561,7 +561,7 @@ class EncoderDecoderTrainer(BaseTrainer):
         else:
             txt_file = os.path.join(root, txt_name)
         if pk_name is None:
-            pk_file = os.path.join(root, "losses.pk")
+            pk_file = os.path.join(root, "metrics.pk")
         else:
             pk_file = os.path.join(root, pk_name)
         with open(txt_file, "w") as f:

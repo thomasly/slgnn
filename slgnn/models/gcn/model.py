@@ -10,6 +10,7 @@ from torch_geometric.nn import (
     GINConv,
     global_add_pool,
     global_mean_pool,
+    global_max_pool,
 )
 from torch_geometric.nn.conv.message_passing import MessagePassing
 from torch_geometric.utils import add_self_loops
@@ -47,7 +48,7 @@ class GINE(MessagePassing):
 
     Args:
         emb_dim (int): dimensionality of embeddings for nodes and edges.
-        
+
 
     See https://arxiv.org/abs/1810.00826
     """
@@ -228,7 +229,7 @@ class GINE_NoEmbedding(nn.Module):
         self.convs = []
         self.linears = []
 
-        train_eps = config["train_eps"]
+        # train_eps = config["train_eps"]
         if config["aggregation"] == "sum":
             self.pooling = global_add_pool
         elif config["aggregation"] == "mean":
@@ -525,7 +526,7 @@ class GINFE(nn.Module):
                 h = F.dropout(F.relu(h), self.drop_ratio, training=self.training)
             h_list.append(h)
 
-        ### Different implementations of Jk-concat
+        # Different implementations of Jk-concat
         if self.JK == "concat":
             node_representation = torch.cat(h_list, dim=1)
         elif self.JK == "last":
@@ -607,7 +608,7 @@ class GINFE_graphpred(nn.Module):
 
     def forward(self, *args):
         if len(args) == 3:
-            x, edge_index, batch = argv[0], argv[1], argv[2]
+            x, edge_index, batch = args[0], args[1], args[2]
         elif len(args) == 1:
             data = args[0]
             x, edge_index, batch = (
