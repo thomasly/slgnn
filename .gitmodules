@@ -1,3 +1,6 @@
 [submodule "ContextPred"]
 	path = ContextPred
 	url = git@github.com:thomasly/ContextPred.git
+[submodule "chemreader"]
+	path = chemreader
+	url = git@github.com:thomasly/chemreader.git
