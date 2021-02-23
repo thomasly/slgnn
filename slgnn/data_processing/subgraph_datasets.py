@@ -1,16 +1,22 @@
 import os
 
-import networkx as nx
 from rdkit import Chem
-from chemreader.readers import Smiles
 
 
-def find_subgraph_and_label(smiles, patterns):
-    mol = Chem.MolFromSmiles(smiles)
+def _mol_from_smiles(mol):
+    if isinstance(mol, str):
+        smiles = mol
+        mol = Chem.MolFromSmiles(mol)
     if mol is None:
         raise RuntimeError(
             f"The SMILES ({smiles}) can't be converted to rdkit Mol object."
         )
+    mol = Chem.AddHs(mol)
+    return mol
+
+
+def find_subgraph_and_label(mol, patterns):
+    mol = _mol_from_smiles(mol)
     subgraphs = dict()
     for i, pat in enumerate(patterns):
         matches = mol.GetSubstructMatches(pat)
@@ -19,10 +25,14 @@ def find_subgraph_and_label(smiles, patterns):
     return subgraphs
 
 
-def find_edge_list(smiles, data=False):
-    convertor = Smiles(smiles)
-    graph = convertor.to_graph(networkx=True)
-    return nx.generate_edgelist(graph, data=data)
+def find_edge_list(mol):
+    mol = _mol_from_smiles(mol)
+    edge_list = list()
+    for bond in mol.GetBonds():
+        start = bond.GetBeginAtomIdx()
+        end = bond.GetEndAtomIdx()
+        edge_list.append(f"{start} {end}")
+    return edge_list
 
 
 def write_to_subgraphs(
@@ -78,7 +88,13 @@ def main(args):
     patterns_df = pd.read_csv("chemreader/resources/pubchemFPKeys_to_SMARTSpattern.csv")
     patterns = [Chem.MolFromSmarts(sm) for sm in patterns_df.SMARTS]
     subgraphs = find_subgraph_and_label(args.smi, patterns)
-    write_to_subgraphs(edgelist, subgraphs, "test_subgraphs", 1000, "val", "w")
+    write_to_subgraphs(edgelist, subgraphs, "test_subgraphs", 0, "val", "w")
+
+    mol = Chem.MolFromSmiles(args.smi)
+    mol = Chem.AddHs(mol)
+    edgelist = find_edge_list(mol)
+    subgraphs = find_subgraph_and_label(mol, patterns)
+    write_to_subgraphs(edgelist, subgraphs, "test_subgraphs", 65, "train", "a")
 
 
 if __name__ == "__main__":
