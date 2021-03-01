@@ -14,8 +14,7 @@ from rdkit.Chem.rdMolDescriptors import GetMorganFingerprintAsBitVect
 from torch_geometric.data import Data
 from torch_geometric.data import InMemoryDataset
 from tqdm import tqdm
-
-from chem_reader.chemreader.readers import MolFragmentsLabel
+from chemreader.readers import MolFragmentsLabel
 
 
 # allowable node and edge features
@@ -1526,13 +1525,18 @@ def create_all_datasets():
         dataset = MoleculeDataset(root, dataset=dataset_name, fragment_label=True)
         print(dataset)
 
-    dataset = MoleculeDataset(root="contextPred/chem/dataset/chembl_filtered", dataset="chembl_filtered")
     dataset = MoleculeDataset(
-        root="contextPred/chem/dataset/chembl_filtered", dataset="chembl_filtered", fragment_label=True
+        root="contextPred/chem/dataset/chembl_filtered", dataset="chembl_filtered"
+    )
+    dataset = MoleculeDataset(
+        root="contextPred/chem/dataset/chembl_filtered",
+        dataset="chembl_filtered",
+        fragment_label=True,
     )
     print(dataset)
     dataset = MoleculeDataset(
-        root="contextPred/chem/dataset/zinc_standard_agent", dataset="zinc_standard_agent"
+        root="contextPred/chem/dataset/zinc_standard_agent",
+        dataset="zinc_standard_agent",
     )
     dataset = MoleculeDataset(
         root="contextPred/chem/dataset/zinc_standard_agent",
