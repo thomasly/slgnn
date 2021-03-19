@@ -7,3 +7,6 @@
 [submodule "SubGNN"]
 	path = SubGNN
 	url = git@github.com:thomasly/SubGNN.git
+[submodule "contextSub"]
+	path = contextSub
+	url = git@github.com:thomasly/contextSub.git

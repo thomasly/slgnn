@@ -83,6 +83,7 @@ def train(
                 dim=0,
             )
 
+            # batchwise dot product
             pred_pos = torch.sum(substruct_rep * context_rep, dim=1)
             pred_neg = torch.sum(
                 substruct_rep.repeat((args.neg_samples, 1)) * neg_context_rep, dim=1
