@@ -11,6 +11,7 @@ results_analyzers/
 login_wandb.bat
 login_wandb.sh
 wandb/
+runs/
 
 # trained models
 trained_models/
