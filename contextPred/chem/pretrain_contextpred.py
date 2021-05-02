@@ -301,7 +301,8 @@ def main():
             optimizer_context,
             device,
         )
-        print(train_loss, train_acc)
+        print()
+        print(f"train loss: {train_loss}, train acc: {train_acc}")
 
     if not args.output_model_file == "":
         torch.save(model_substruct.state_dict(), args.output_model_file + ".pth")

@@ -214,6 +214,8 @@ def main():
         num_tasks = 2
     elif args.dataset in ["jak1", "jak2", "jak3"]:
         num_tasks = 1
+    elif args.dataset in ["amu", "ellinger", "mpro"]:
+        num_tasks = 1
     else:
         raise ValueError("Invalid dataset name.")
 

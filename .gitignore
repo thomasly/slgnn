@@ -11,13 +11,14 @@ results_analyzers/
 login_wandb.bat
 login_wandb.sh
 wandb/
-runs/
 
 # trained models
 trained_models/
 
 # Logs
 logs/
+runs/
+nohup_logs/
 dgx_logs/
 slgnn/*.out
 *.out
