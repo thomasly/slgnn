@@ -37,6 +37,7 @@ test_data/index
 # ignore datasets
 data/
 contextPred/chem/dataset/
+dataset/
 
 # papers
 papers/

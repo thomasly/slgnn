@@ -1,5 +1,9 @@
+from random import sample
+from collections import defaultdict
+
 from chemreader.readers import Smiles
 from rdkit.DataStructs import BulkTanimotoSimilarity
+import numpy as np
 from tqdm import tqdm
 
 
@@ -78,3 +82,43 @@ class Cluster:
         for i in idx[1:]:
             self.clusters[idx[0]].extend(self.clusters[i])
             self.clusters.pop(i)
+
+
+def clustering(smiles_list, threshold=0.75, verbose=False):
+    smiles_list = np.array(smiles_list)
+    fp_list = [Smiles(sms).fingerprint for sms in smiles_list]
+    smiles_set = set(smiles_list)
+    clusters = []
+    n = 1
+    while len(smiles_set) > 0:
+        c = Smiles(sample(smiles_set, 1)[0])
+        sim_scores = BulkTanimotoSimilarity(c.fingerprint, fp_list)
+        clusters.append(set(smiles_list[np.array(sim_scores) > threshold]))
+        smiles_set = smiles_set - clusters[-1]
+        if verbose:
+            print(f"Step: {n}")
+            n += 1
+    return clusters
+
+
+def merge_common(lists):
+    """ Merge function to  merge all sublist having common elements.
+    """
+    neigh = defaultdict(set)
+    visited = set()
+    for each in lists:
+        for item in each:
+            neigh[item].update(each)
+
+    def comp(node, neigh=neigh, visited=visited, vis=visited.add):
+        nodes = set([node])
+        next_node = nodes.pop
+        while nodes:
+            node = next_node()
+            vis(node)
+            nodes |= neigh[node] - visited
+            yield node
+
+    for node in neigh:
+        if node not in visited:
+            yield sorted(comp(node))
