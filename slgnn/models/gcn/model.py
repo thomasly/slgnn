@@ -145,23 +145,41 @@ class GIN(nn.Module):
         for layer, out_emb_dim in enumerate(self.embeddings_dim):
             if layer == 0:
                 # first hidden layer
+                # self.first_h = Sequential(
+                #     Linear(dim_features, 2 * out_emb_dim),
+                #     BatchNorm1d(2 * out_emb_dim),
+                #     ReLU(),
+                #     Linear(2 * out_emb_dim, out_emb_dim),
+                #     BatchNorm1d(out_emb_dim),
+                #     ReLU(),
+                # )
                 self.first_h = Sequential(
-                    Linear(dim_features, 2 * out_emb_dim),
-                    BatchNorm1d(2 * out_emb_dim),
+                    Linear(dim_features, out_emb_dim),
+                    BatchNorm1d(out_emb_dim),
                     ReLU(),
-                    Linear(2 * out_emb_dim, out_emb_dim),
+                    Linear(out_emb_dim, out_emb_dim),
                     BatchNorm1d(out_emb_dim),
                     ReLU(),
                 )
                 self.linears.append(Linear(out_emb_dim, dim_target))
             else:
                 input_emb_dim = self.embeddings_dim[layer - 1]
+                # self.nns.append(
+                #     Sequential(
+                #         Linear(input_emb_dim, 2 * out_emb_dim),
+                #         BatchNorm1d(2 * out_emb_dim),
+                #         ReLU(),
+                #         Linear(2 * out_emb_dim, out_emb_dim),
+                #         BatchNorm1d(out_emb_dim),
+                #         ReLU(),
+                #     )
+                # )
                 self.nns.append(
                     Sequential(
-                        Linear(input_emb_dim, 2 * out_emb_dim),
-                        BatchNorm1d(2 * out_emb_dim),
+                        Linear(input_emb_dim, out_emb_dim),
+                        BatchNorm1d(out_emb_dim),
                         ReLU(),
-                        Linear(2 * out_emb_dim, out_emb_dim),
+                        Linear(out_emb_dim, out_emb_dim),
                         BatchNorm1d(out_emb_dim),
                         ReLU(),
                     )

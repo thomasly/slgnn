@@ -9,7 +9,7 @@ def initial_clustering(threshold, output_name):
         sep="\t",
         header=9,
     )
-    smiles_list = list(df.smiles)
+    smiles_list = list(set(df.smiles))
     clusters = clustering(smiles_list, threshold=threshold, verbose=True)
     with open(output_name, "wb") as f:
         pk.dump(clusters, f)

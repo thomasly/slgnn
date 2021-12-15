@@ -5,7 +5,7 @@ import torch
 from torch_geometric.data import Data
 from torch_geometric.data import InMemoryDataset
 import pandas as pd
-from chem_reader.chemreader.readers import Smiles
+from chemreader.readers import Smiles
 from tqdm import tqdm
 from rdkit import Chem
 from rdkit.Chem import AllChem

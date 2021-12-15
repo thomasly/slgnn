@@ -23,7 +23,7 @@ def smiles2graph(smiles):
     return Data(x=x, edge_index=edge_idx)
 
 
-def save_cyp450(datapath, encoder, transformer=None):
+def save_cyp450(datapath, encoder, transformer=None, device="cuda:0"):
     cypdf = pd.read_csv(datapath)
     outputs = list()
     with torch.no_grad():
@@ -41,8 +41,8 @@ def save_cyp450(datapath, encoder, transformer=None):
             if transformer is not None:
                 data = transformer(data)
             # get GIN fingerprint
-            out = encoder(Batch.from_data_list([data]).to(GPU))
-            outputs.append([smiles, out.to(CPU).squeeze().numpy().tolist(), label])
+            out = encoder(Batch.from_data_list([data]).to(device))
+            outputs.append([smiles, out.to("cpu").squeeze().numpy().tolist(), label])
     return outputs
 
 
@@ -54,7 +54,9 @@ def save_chembl(datapath, encoder, batch_size=2048, transformer=None, device="cu
     n = 0
     with torch.no_grad():
         it = tqdm(
-            chembldf[" SMILES"], desc="Create GIN fingerprints: ", total=chembldf.size,
+            chembldf[" SMILES"],
+            desc="Create GIN fingerprints: ",
+            total=chembldf.shape[0],
         )
         for smiles in it:
             # transform smiles to input data
@@ -74,6 +76,28 @@ def save_chembl(datapath, encoder, batch_size=2048, transformer=None, device="cu
                 n = 0
                 smiles_list = []
                 data_list = []
+    return outputs
+
+
+def save_tox21(datapath, encoder, transformer=None, device="cuda:0"):
+    tox21df = pd.read_csv(datapath)
+    outputs = list()
+    with torch.no_grad():
+        it = tqdm(
+            zip(tox21df["smiles"], tox21df["Label"]),
+            desc="Create GIN fingerprints: ",
+            total=tox21df.shape[0],
+        )
+        for smiles, label in it:
+            # transform smiles to input data
+            try:
+                data = smiles2graph(smiles.strip())
+            except AttributeError:
+                continue
+            if transformer is not None:
+                data = transformer(data)
+            out = encoder(Batch.from_data_list([data]).to(device))
+            outputs.append([smiles, out.to("cpu").squeeze().numpy().tolist(), label])
     return outputs
 
 
@@ -122,6 +146,9 @@ if __name__ == "__main__":
     elif args.dataset_name == "chembl":
         data_path = os.path.join("data", "ChEMBL24_all_compounds.csv.gz")
         outputs = save_chembl(data_path, encoder, transformer=transformer)
+    elif args.dataset_name == "tox21":
+        data_path = os.path.join("data", "MolNet_ecfp", "tox21_ecfp.csv")
+        outputs = save_tox21(data_path, encoder, transformer=transformer)
 
     # write smiles, GIN fingerprints, and labels to file
     with open(args.output_path, "w") as outf:

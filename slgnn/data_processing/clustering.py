@@ -3,6 +3,7 @@ from collections import defaultdict
 
 from chemreader.readers import Smiles
 from rdkit.DataStructs import BulkTanimotoSimilarity
+from rdkit import Chem
 import numpy as np
 from tqdm import tqdm
 
@@ -85,18 +86,21 @@ class Cluster:
 
 
 def clustering(smiles_list, threshold=0.75, verbose=False):
-    smiles_list = np.array(smiles_list)
+    smiles_list = np.array(
+        [sm for sm in smiles_list if Chem.MolFromSmiles(sm) is not None]
+    )
     fp_list = [Smiles(sms).fingerprint for sms in smiles_list]
     smiles_set = set(smiles_list)
     clusters = []
     n = 1
+    total = len(smiles_set)
     while len(smiles_set) > 0:
         c = Smiles(sample(smiles_set, 1)[0])
         sim_scores = BulkTanimotoSimilarity(c.fingerprint, fp_list)
         clusters.append(set(smiles_list[np.array(sim_scores) > threshold]))
         smiles_set = smiles_set - clusters[-1]
         if verbose:
-            print(f"Step: {n}")
+            print(f"{(total-len(smiles_set))/total * 100:.2f} %", end="\r")
             n += 1
     return clusters
 
